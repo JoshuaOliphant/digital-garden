@@ -1,0 +1,24 @@
+<!-- app/templates/index.html -->
+{% extends "base.html" %} {% block content %}
+<div id="content-area">{% include "partials/content.html" %}</div>
+<nav class="mt-4">
+    <ul>
+        {% for page in pages %}
+        <li>
+            <a
+                href="/pages/{{ page }}"
+                hx-get="/pages/{{ page }}"
+                hx-target="#content-area"
+                hx-swap="innerHTML"
+                class="text-blue-500 hover:underline"
+            >
+                {{ page.replace('-', ' ').title() }}
+            </a>
+        </li>
+        {% endfor %}
+    </ul>
+</nav>
+<div id="loading" class="hidden">
+    <p>Loading...</p>
+</div>
+{% endblock %}
