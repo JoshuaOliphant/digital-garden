@@ -1,3 +1,4 @@
+{% extends "base.html" %} {% block content %}
 <article class="prose max-w-none">
     <h1 class="text-4xl font-bold mb-4">{{ metadata.title }}</h1>
     {% if metadata.status %}
@@ -59,3 +60,4 @@
         </div>
     </div>
 </div>
+{% endblock %}

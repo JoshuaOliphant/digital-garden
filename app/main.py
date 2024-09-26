@@ -1,122 +1,156 @@
-# app/main.py
-
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from jinja2 import Environment, FileSystemLoader
 import markdown
+from markdown.treeprocessors import Treeprocessor
 import os
 import yaml
 import glob
-import logging
-import subprocess
+import bleach
+from markdown.extensions.toc import TocExtension
+from markdown.extensions.fenced_code import FencedCodeExtension
 
 app = FastAPI()
-
-# Set up logging
-logging.basicConfig(level=logging.INFO)
 
 # Mount static files
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
-# Set up Jinja2 environment
+# Set up Jinja2 templates
 env = Environment(loader=FileSystemLoader("app/templates"))
 
-# Custom Markdown extension to add HTMX attributes to links
-from markdown.extensions import Extension
-from markdown.treeprocessors import Treeprocessor
-
-class HTMXLinkProcessor(Treeprocessor):
-    def run(self, root):
-        for element in root.iter('a'):
-            href = element.get('href', '')
-            if href.startswith('/pages/'):
-                element.set('hx-get', href)
-                element.set('hx-target', '#content-area')
-                element.set('hx-swap', 'innerHTML')
-                existing_class = element.get('class', '')
-                element.set('class', f"{existing_class} text-blue-500 hover:underline".strip())
-
-class HTMXLinkExtension(Extension):
-    def extendMarkdown(self, md):
-        md.treeprocessors.register(HTMXLinkProcessor(md), 'htmx_link', 15)
+# Define allowed HTML tags and attributes for sanitization
+ALLOWED_TAGS = list(bleach.sanitizer.ALLOWED_TAGS) + [
+    "p", "pre", "code", "h1", "h2", "h3", "h4", "h5", "h6",
+    "blockquote", "ul", "ol", "li", "strong", "em", "a", "img",
+    "table", "thead", "tbody", "tr", "th", "td"
+]
+ALLOWED_ATTRIBUTES = {
+    **bleach.sanitizer.ALLOWED_ATTRIBUTES,
+    "a": ["href", "title", "rel"],
+    "img": ["src", "alt", "title"],
+    "th": ["align"],
+    "td": ["align"],
+}
 
 def render_markdown(file_path: str) -> dict:
+    if not os.path.exists(file_path):
+        return {"html": "", "metadata": {}}
+
     with open(file_path, "r", encoding="utf-8") as f:
         content = f.read()
+
+    # Parse YAML front matter if present
     if content.startswith('---'):
-        _, fm, md_content = content.split('---', 2)
-        metadata = yaml.safe_load(fm)
+        try:
+            _, fm, md_content = content.split('---', 2)
+            metadata = yaml.safe_load(fm)
+        except ValueError:
+            metadata = {}
+            md_content = content
     else:
         metadata = {}
         md_content = content
-    html_content = markdown.markdown(
-        md_content,
-        extensions=["extra", "toc", HTMXLinkExtension()]
+
+    # Initialize Markdown with desired extensions
+    md = markdown.Markdown(extensions=[
+        'extra',
+        'admonition',
+        TocExtension(baselevel=1),
+        FencedCodeExtension(),
+    ])
+
+    # Convert Markdown to HTML
+    html_content = md.convert(md_content)
+
+    # Sanitize the HTML to prevent XSS
+    clean_html = bleach.clean(
+        html_content,
+        tags=ALLOWED_TAGS,
+        attributes=ALLOWED_ATTRIBUTES,
+        strip=True
     )
-    return {"html": html_content, "metadata": metadata}
 
-def get_all_pages():
-    md_files = glob.glob("app/pages/*.md")
-    pages = [os.path.splitext(os.path.basename(f))[0] for f in md_files]
-    return pages
+    # Optionally, linkify URLs that were not turned into links
+    clean_html = bleach.linkify(clean_html)
 
-def get_change_history(page_name):
-    file_path = f"app/pages/{page_name}.md"
-    try:
-        # Get the last 5 commits for the file
-        logs = subprocess.check_output(
-            ["git", "log", "--pretty=format:%h - %s (%ad)", "--date=short", "-n", "5", file_path],
-            stderr=subprocess.STDOUT
-        )
-        return logs.decode("utf-8").split('\n')
-    except subprocess.CalledProcessError:
-        return []
+    return {"html": clean_html, "metadata": metadata}
+
+def get_content(content_type: str, limit=None):
+    files = glob.glob(f"app/content/{content_type}/*.md")
+    content = []
+    for file in files:
+        name = os.path.splitext(os.path.basename(file))[0]
+        file_content = render_markdown(file)
+        content.append({
+            "name": name,
+            "title": file_content["metadata"].get("title", name.replace('-', ' ').title()),
+            "metadata": file_content["metadata"]
+        })
+    if limit:
+        return content[:limit]
+    return content
 
 @app.get("/", response_class=HTMLResponse)
-async def read_root(request: Request):
-    logging.info("Rendering root page")
+async def read_home(request: Request):
     template = env.get_template("index.html")
-    content_data = render_markdown("app/pages/sample-page.md")
-    pages = get_all_pages()
-    all_tags = get_all_tags()
-    return template.render(
-        request=request,
-        content=content_data["html"],
-        metadata=content_data.get("metadata", {}),
-        pages=pages,
-        all_tags=all_tags
-    )
-
-@app.get("/pages/{page_name}", response_class=HTMLResponse)
-async def read_page(request: Request, page_name: str):
-    logging.info(f"Rendering page: {page_name}")
-    file_path = f"app/pages/{page_name}.md"
-    if not os.path.exists(file_path):
-        logging.warning(f"Page not found: {page_name}")
-        return HTMLResponse(content="Page not found.", status_code=404)
-    content_data = render_markdown(file_path)
-    change_history = get_change_history(page_name)
+    home_content = render_markdown("app/content/pages/home.md")
+    essays = get_content("essays")
+    notes = get_content("notes")
     return HTMLResponse(
-        content=env.get_template("partials/content.html").render(
-            content=content_data["html"],
-            metadata=content_data.get("metadata", {}),
-            change_history=change_history
+        content=template.render(
+            request=request,
+            content=home_content["html"],
+            metadata=home_content["metadata"],
+            essays=essays,
+            notes=notes
         )
     )
 
-@app.get("/modal-content", response_class=HTMLResponse)
-async def modal_content(request: Request):
-    return env.get_template("partials/modal_content.html").render()
+@app.get("/now", response_class=HTMLResponse)
+async def read_now(request: Request):
+    template = env.get_template("content_page.html")
+    now_content = render_markdown("app/content/pages/now.md")
+    recent_essays = get_content("essays", limit=5)
+    recent_notes = get_content("notes", limit=5)
+    return HTMLResponse(
+        content=template.render(
+            request=request,
+            content=now_content["html"],
+            metadata=now_content["metadata"],
+            recent_essays=recent_essays,
+            recent_notes=recent_notes
+        )
+    )
 
-def get_all_tags():
-    md_files = glob.glob("app/pages/*.md")
-    tags = set()
-    for file in md_files:
-        with open(file, "r", encoding="utf-8") as f:
-            content = f.read()
-            if content.startswith('---'):
-                _, fm, _ = content.split('---', 2)
-                metadata = yaml.safe_load(fm)
-                tags.update(metadata.get('tags', []))
-    return sorted(tags)
+@app.get("/{content_type}/{page_name}", response_class=HTMLResponse)
+async def read_content(request: Request, content_type: str, page_name: str):
+    file_path = f"app/content/{content_type}/{page_name}.md"
+    if not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail="Content not found")
+
+    content_data = render_markdown(file_path)
+    recent_essays = get_content("essays", limit=5)
+    recent_notes = get_content("notes", limit=5)
+
+    if request.headers.get("HX-Request") == "true":
+        # This is an HTMX request, return only the content partial
+        return HTMLResponse(
+            content=env.get_template("partials/content.html").render(
+                content=content_data["html"],
+                metadata=content_data["metadata"],
+                recent_essays=recent_essays,
+                recent_notes=recent_notes
+            )
+        )
+    else:
+        # This is a full page request, return the complete page
+        return HTMLResponse(
+            content=env.get_template("content_page.html").render(
+                request=request,
+                content=content_data["html"],
+                metadata=content_data["metadata"],
+                recent_essays=recent_essays,
+                recent_notes=recent_notes
+            )
+        )

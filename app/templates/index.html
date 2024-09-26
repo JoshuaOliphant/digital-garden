@@ -1,24 +1,71 @@
-<!-- app/templates/index.html -->
 {% extends "base.html" %} {% block content %}
-<div id="content-area">{% include "partials/content.html" %}</div>
-<nav class="mt-4">
-    <ul>
-        {% for page in pages %}
-        <li>
+<header class="py-8">
+    <p class="text-xl text-gray-600">
+        Joshua's notes and thoughts about programming, DevOps, and other odds
+        and ends.
+    </p>
+</header>
+
+<main>
+    <section id="essays" class="mb-12">
+        <h2 class="text-2xl font-semibold mb-4">Essays</h2>
+        <p class="mb-4">
+            Opinionated, longform narrative writing with an agenda
+        </p>
+        <ul>
+            {% for essay in essays %}
+            <li class="mb-2">
+                <a
+                    href="/essays/{{ essay.name }}"
+                    class="text-blue-500 hover:underline"
+                    hx-get="/essays/{{ essay.name }}"
+                    hx-target="#content-area"
+                    hx-swap="innerHTML"
+                    hx-push-url="true"
+                >
+                    {{ essay.title }}
+                </a>
+            </li>
+            {% endfor %}
+        </ul>
+    </section>
+
+    <section id="notes" class="mb-12">
+        <h2 class="text-2xl font-semibold mb-4">Notes</h2>
+        <p class="mb-4">
+            Loose, unopinionated notes on things I don't entirely understand
+            yet.
+        </p>
+        <ul>
+            {% for note in notes %}
+            <li class="mb-2">
+                <a
+                    href="/notes/{{ note.name }}"
+                    class="text-blue-500 hover:underline"
+                    hx-get="/notes/{{ note.name }}"
+                    hx-target="#content-area"
+                    hx-swap="innerHTML"
+                    hx-push-url="true"
+                >
+                    {{ note.title }}
+                </a>
+            </li>
+            {% endfor %}
+        </ul>
+    </section>
+
+    <section id="inspiration" class="mb-12">
+        <h2 class="text-2xl font-semibold mb-4">Inspiration</h2>
+        <p class="mb-4">
+            Based on Maggie Appleton's post on
             <a
-                href="/pages/{{ page }}"
-                hx-get="/pages/{{ page }}"
-                hx-target="#content-area"
-                hx-swap="innerHTML"
+                href="https://maggieappleton.com/garden-history"
                 class="text-blue-500 hover:underline"
+                target="_blank"
+                rel="noopener noreferrer"
+                >Digital Gardens</a
             >
-                {{ page.replace('-', ' ').title() }}
-            </a>
-        </li>
-        {% endfor %}
-    </ul>
-</nav>
-<div id="loading" class="hidden">
-    <p>Loading...</p>
-</div>
+        </p>
+    </section>
+</main>
 {% endblock %}

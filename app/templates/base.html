@@ -1,137 +1,48 @@
-<!-- app/templates/base.html -->
 <!doctype html>
-<html lang="en" class="dark">
+<html lang="en">
     <head>
         <meta charset="UTF-8" />
-        <title>Digital Garden</title>
-        <link href="/static/css/output.css" rel="stylesheet" />
-        <!-- Google Fonts -->
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link
-            href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Merriweather:wght@400;700&display=swap"
-            rel="stylesheet"
-        />
-        <!-- HTMX -->
-        <script src="https://unpkg.com/htmx.org@1.9.2"></script>
-        <!-- Mermaid.js for Diagrams -->
-        <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
-        <script>
-            mermaid.initialize({ startOnLoad: true });
-        </script>
-        <script>
-            // Loading Indicator Scripts
-            document.body.addEventListener("htmx:configRequest", (event) => {
-                const indicator = document.querySelector(
-                    event.detail.elt.getAttribute("hx-indicator"),
-                );
-                if (indicator) {
-                    indicator.classList.remove("hidden");
-                }
-            });
-
-            document.body.addEventListener("htmx:afterSwap", (event) => {
-                const indicator = document.querySelector(
-                    event.detail.elt.getAttribute("hx-indicator"),
-                );
-                if (indicator) {
-                    indicator.classList.add("hidden");
-                }
-
-                // Re-initialize Mermaid on new content
-                if (typeof mermaid !== "undefined") {
-                    mermaid.init(
-                        undefined,
-                        document.querySelectorAll(
-                            ".language-mermaid, .mermaid",
-                        ),
-                    );
-                }
-            });
-
-            document.body.addEventListener("htmx:error", (event) => {
-                const indicator = document.querySelector(
-                    event.detail.elt.getAttribute("hx-indicator"),
-                );
-                if (indicator) {
-                    indicator.classList.add("hidden");
-                }
-                alert("An error occurred while loading the content.");
-            });
-        </script>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>An Oliphant Never Forgets</title>
+        <!-- Include HTMX -->
+        <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+        <!-- Include Tailwind CSS -->
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link href="/static/css/styles.css" rel="stylesheet" />
     </head>
-    <body
-        class="bg-gray-100 text-gray-900 dark:bg-gray-900 dark:text-gray-100 flex flex-col min-h-screen"
-    >
-        <header
-            class="bg-green-500 text-white p-4 flex justify-between items-center"
-        >
-            <h1 class="text-3xl">My Digital Garden</h1>
-            <!-- Theme Toggle Button -->
-            <button
-                id="theme-toggle"
-                class="px-3 py-1 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded"
-                aria-label="Toggle Dark Mode"
-            >
-                Toggle Dark Mode
-            </button>
-        </header>
-        <main class="flex-grow p-6">{% block content %}{% endblock %}</main>
-        <footer class="bg-green-500 text-white p-4 text-center">
-            &copy; 2024 My Digital Garden
-        </footer>
-
-        <!-- Modal Structure -->
-        {% block modal %}
-        <div
-            id="modal"
-            class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 hidden"
-        >
+    <body class="bg-gray-100 text-gray-900">
+        <!-- Navigation -->
+        <nav class="bg-white shadow-sm">
             <div
-                class="bg-white dark:bg-gray-800 p-6 rounded shadow-lg relative"
+                class="container mx-auto px-4 py-3 flex justify-between items-center"
             >
-                <button
-                    id="close-modal"
-                    class="absolute top-2 right-2 text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100"
-                    aria-label="Close Modal"
-                >
-                    &times;
-                </button>
-                <div id="modal-content">
-                    <!-- Modal content will be loaded here -->
-                </div>
+                <a href="/" class="flex items-center">
+                    <img
+                        src="/static/images/logo.png"
+                        alt="J Logo"
+                        class="h-8 w-auto mr-2"
+                    />
+                    <span class="text-xl font-semibold"
+                        >An Oliphant Never Forgets</span
+                    >
+                </a>
+                <ul class="flex space-x-4">
+                    <li><a href="/" class="hover:underline">Home</a></li>
+                    <li><a href="/now" class="hover:underline">Now</a></li>
+                </ul>
             </div>
+        </nav>
+
+        <!-- Main Content Area with ID for HTMX Targeting -->
+        <div class="container mx-auto px-4 py-8" id="content-area">
+            {% block content %}{% endblock %}
         </div>
-        {% endblock %}
 
-        <script>
-            // Theme Toggle Script
-            const toggleButton = document.getElementById("theme-toggle");
-            toggleButton.addEventListener("click", () => {
-                document.documentElement.classList.toggle("dark");
-            });
-
-            // Modal Functionality
-            document.addEventListener("click", function (event) {
-                if (event.target.matches("[data-modal-open]")) {
-                    const modal = document.getElementById("modal");
-                    const modalContent =
-                        document.getElementById("modal-content");
-                    const url = event.target.getAttribute("data-modal-url");
-                    if (url) {
-                        fetch(url)
-                            .then((response) => response.text())
-                            .then((html) => {
-                                modalContent.innerHTML = html;
-                                modal.classList.remove("hidden");
-                            });
-                    }
-                }
-
-                if (event.target.matches("#close-modal")) {
-                    const modal = document.getElementById("modal");
-                    modal.classList.add("hidden");
-                }
-            });
-        </script>
+        <!-- Footer -->
+        <footer class="bg-white mt-12 py-6">
+            <div class="container mx-auto px-4 text-center">
+                <p>&copy; 2024 Joshua Oliphant. All rights reserved.</p>
+            </div>
+        </footer>
     </body>
 </html>
