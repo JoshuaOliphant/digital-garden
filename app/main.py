@@ -95,14 +95,14 @@ def get_content(content_type: str, limit=None):
 async def read_home(request: Request):
     template = env.get_template("index.html")
     home_content = render_markdown("app/content/pages/home.md")
-    essays = get_content("essays")
+    how_tos = get_content("how_to")
     notes = get_content("notes")
     return HTMLResponse(
         content=template.render(
             request=request,
             content=home_content["html"],
             metadata=home_content["metadata"],
-            essays=essays,
+            how_tos=how_tos,
             notes=notes
         )
     )
@@ -111,14 +111,14 @@ async def read_home(request: Request):
 async def read_now(request: Request):
     template = env.get_template("content_page.html")
     now_content = render_markdown("app/content/pages/now.md")
-    recent_essays = get_content("essays", limit=5)
+    recent_how_tos = get_content("how_to", limit=5)
     recent_notes = get_content("notes", limit=5)
     return HTMLResponse(
         content=template.render(
             request=request,
             content=now_content["html"],
             metadata=now_content["metadata"],
-            recent_essays=recent_essays,
+            recent_how_tos=recent_how_tos,
             recent_notes=recent_notes
         )
     )
@@ -130,7 +130,7 @@ async def read_content(request: Request, content_type: str, page_name: str):
         raise HTTPException(status_code=404, detail="Content not found")
 
     content_data = render_markdown(file_path)
-    recent_essays = get_content("essays", limit=5)
+    recent_how_tos = get_content("how_to", limit=5)
     recent_notes = get_content("notes", limit=5)
 
     if request.headers.get("HX-Request") == "true":
@@ -139,7 +139,7 @@ async def read_content(request: Request, content_type: str, page_name: str):
             content=env.get_template("partials/content.html").render(
                 content=content_data["html"],
                 metadata=content_data["metadata"],
-                recent_essays=recent_essays,
+                recent_how_tos=recent_how_tos,
                 recent_notes=recent_notes
             )
         )
@@ -150,7 +150,7 @@ async def read_content(request: Request, content_type: str, page_name: str):
                 request=request,
                 content=content_data["html"],
                 metadata=content_data["metadata"],
-                recent_essays=recent_essays,
+                recent_how_tos=recent_how_tos,
                 recent_notes=recent_notes
             )
         )

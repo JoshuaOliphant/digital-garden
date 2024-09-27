@@ -7,23 +7,23 @@
 </header>
 
 <main>
-    <section id="essays" class="mb-12">
-        <h2 class="text-2xl font-semibold mb-4">Essays</h2>
+    <section id="how_tos" class="mb-12">
+        <h2 class="text-2xl font-semibold mb-4">How_to's</h2>
         <p class="mb-4">
-            Opinionated, longform narrative writing with an agenda
+            Writeups on how I did things. Mostly for my own reference.
         </p>
         <ul>
-            {% for essay in essays %}
+            {% for how_to in how_tos %}
             <li class="mb-2">
                 <a
-                    href="/essays/{{ essay.name }}"
+                    href="/how_to/{{ how_to.name }}"
                     class="text-blue-500 hover:underline"
-                    hx-get="/essays/{{ essay.name }}"
+                    hx-get="/how_to/{{ how_to.name }}"
                     hx-target="#content-area"
                     hx-swap="innerHTML"
                     hx-push-url="true"
                 >
-                    {{ essay.title }}
+                    {{ how_to.title }}
                 </a>
             </li>
             {% endfor %}
@@ -33,8 +33,7 @@
     <section id="notes" class="mb-12">
         <h2 class="text-2xl font-semibold mb-4">Notes</h2>
         <p class="mb-4">
-            Loose, unopinionated notes on things I don't entirely understand
-            yet.
+            Notes, qoutes, links and other things I've collected.
         </p>
         <ul>
             {% for note in notes %}
