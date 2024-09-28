@@ -1,8 +1,8 @@
 ---
-title: Features as towel hooks
+title: Quoting Jason Fried - Features as towel hooks
 status: "Evergreen"
 created: "2024-03-04"
-updated: "2024-03-04"
+updated: "2024-09-27"
 tags: [features, product design, software development, user experience, innovation]
 ---
 

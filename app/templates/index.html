@@ -6,65 +6,78 @@
     </p>
 </header>
 
-<main>
-    <section id="how_tos" class="mb-12">
-        <h2 class="text-2xl font-semibold mb-4">How_to's</h2>
-        <p class="mb-4">
-            Writeups on how I did things. Mostly for my own reference.
-        </p>
-        <ul>
-            {% for how_to in how_tos %}
-            <li class="mb-2">
-                <a
-                    href="/how_to/{{ how_to.name }}"
-                    class="text-blue-500 hover:underline"
-                    hx-get="/how_to/{{ how_to.name }}"
-                    hx-target="#content-area"
-                    hx-swap="innerHTML"
-                    hx-push-url="true"
-                >
-                    {{ how_to.title }}
-                </a>
-            </li>
-            {% endfor %}
-        </ul>
-    </section>
+<div class="flex flex-col md:flex-row">
+    <main class="md:w-2/3 md:pr-8">
+        <section id="how_tos" class="mb-12">
+            <h2 class="text-2xl font-semibold mb-4">How_to's</h2>
+            <p class="mb-4">
+                Writeups on how I did things. Mostly for my own reference.
+            </p>
+            <ul>
+                {% for how_to in how_tos %}
+                <li class="mb-2">
+                    <a
+                        href="/how_to/{{ how_to.name }}"
+                        class="text-blue-500 hover:underline"
+                        hx-get="/how_to/{{ how_to.name }}"
+                        hx-target="#content-area"
+                        hx-swap="innerHTML"
+                        hx-push-url="true"
+                    >
+                        {{ how_to.title }}
+                    </a>
+                </li>
+                {% endfor %}
+            </ul>
+        </section>
 
-    <section id="notes" class="mb-12">
-        <h2 class="text-2xl font-semibold mb-4">Notes</h2>
-        <p class="mb-4">
-            Notes, quotes, links, and other things I've collected.
-        </p>
-        <ul>
-            {% for note in notes %}
-            <li class="mb-2">
-                <a
-                    href="/notes/{{ note.name }}"
-                    class="text-blue-500 hover:underline"
-                    hx-get="/notes/{{ note.name }}"
-                    hx-target="#content-area"
-                    hx-swap="innerHTML"
-                    hx-push-url="true"
-                >
-                    {{ note.title }}
-                </a>
-            </li>
-            {% endfor %}
-        </ul>
-    </section>
+        <section id="notes" class="mb-12">
+            <h2 class="text-2xl font-semibold mb-4">Notes</h2>
+            <p class="mb-4">
+                Notes, quotes, links, and other things I've collected.
+            </p>
+            <ul>
+                {% for note in notes %}
+                <li class="mb-2">
+                    <a
+                        href="/notes/{{ note.name }}"
+                        class="text-blue-500 hover:underline"
+                        hx-get="/notes/{{ note.name }}"
+                        hx-target="#content-area"
+                        hx-swap="innerHTML"
+                        hx-push-url="true"
+                    >
+                        {{ note.title }}
+                    </a>
+                </li>
+                {% endfor %}
+            </ul>
+        </section>
 
-    <section id="inspiration" class="mb-12">
-        <h2 class="text-2xl font-semibold mb-4">Inspiration</h2>
-        <p class="mb-4">
-            Based on Maggie Appleton's post on
-            <a
-                href="https://maggieappleton.com/garden-history"
-                class="text-blue-500 hover:underline"
-                target="_blank"
-                rel="noopener noreferrer"
-                >Digital Gardens</a
-            >
-        </p>
-    </section>
-</main>
+        <section id="inspiration" class="mb-12">
+            <h2 class="text-2xl font-semibold mb-4">Inspiration</h2>
+            <p class="mb-4">
+                Based on Maggie Appleton's post on
+                <a
+                    href="https://maggieappleton.com/garden-history"
+                    class="text-blue-500 hover:underline"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    >Digital Gardens</a
+                >
+            </p>
+        </section>
+    </main>
+    <aside class="md:w-1/3">
+        {% if random_quote %}
+        <div class="bg-gray-100 p-6 rounded-lg shadow-md sticky top-8">
+            <h2 class="text-2xl font-semibold mb-4">Random Quote</h2>
+            <h3 class="text-xl mb-2">{{ random_quote.title }}</h3>
+            <blockquote class="prose">
+                {{ random_quote.content | safe }}
+            </blockquote>
+        </div>
+        {% endif %}
+    </aside>
+</div>
 {% endblock %}

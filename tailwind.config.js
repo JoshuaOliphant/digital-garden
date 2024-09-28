@@ -1,5 +1,3 @@
-// tailwind.config.js
-
 module.exports = {
   darkMode: "class", // Enables class-based dark mode
   content: [
@@ -18,6 +16,19 @@ module.exports = {
       fontFamily: {
         sans: ["Inter", "sans-serif"],
         serif: ["Merriweather", "serif"],
+      },
+      typography: {
+        DEFAULT: {
+          css: {
+            blockquote: {
+              borderLeftWidth: "4px",
+              borderLeftColor: "#cccccc",
+              paddingLeft: "1rem",
+              fontStyle: "italic",
+              color: "#555555",
+            },
+          },
+        },
       },
       // Additional customizations like spacing, borders, etc.
     },

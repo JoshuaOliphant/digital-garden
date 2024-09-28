@@ -8,8 +8,10 @@ import os
 import yaml
 import glob
 import bleach
+import random
 from markdown.extensions.toc import TocExtension
 from markdown.extensions.fenced_code import FencedCodeExtension
+from bs4 import BeautifulSoup
 
 app = FastAPI()
 
@@ -97,13 +99,15 @@ async def read_home(request: Request):
     home_content = render_markdown("app/content/pages/home.md")
     how_tos = get_content("how_to")
     notes = get_content("notes")
+    random_quote = get_random_quote()
     return HTMLResponse(
         content=template.render(
             request=request,
             content=home_content["html"],
             metadata=home_content["metadata"],
             how_tos=how_tos,
-            notes=notes
+            notes=notes,
+            random_quote=random_quote
         )
     )
 
@@ -154,3 +158,21 @@ async def read_content(request: Request, content_type: str, page_name: str):
                 recent_notes=recent_notes
             )
         )
+
+def get_random_quote():
+    quote_files = glob.glob("app/content/notes/*quoting*.md")
+    if not quote_files:
+        return None
+
+    random_quote_file = random.choice(quote_files)
+    quote_content = render_markdown(random_quote_file)
+
+    # Extract the blockquote from the content
+    soup = BeautifulSoup(quote_content["html"], 'html.parser')
+    blockquote = soup.find('blockquote')
+    quote_text = blockquote.decode_contents() if blockquote else ""
+
+    return {
+        "title": quote_content["metadata"].get("title", ""),
+        "content": quote_text
+    }
