@@ -100,6 +100,7 @@ async def read_home(request: Request):
     how_tos = get_content("how_to")
     notes = get_content("notes")
     random_quote = get_random_quote()
+    recent_bookmarks = get_bookmarks(limit=10)
     return HTMLResponse(
         content=template.render(
             request=request,
@@ -107,7 +108,8 @@ async def read_home(request: Request):
             metadata=home_content["metadata"],
             how_tos=how_tos,
             notes=notes,
-            random_quote=random_quote
+            random_quote=random_quote,
+            recent_bookmarks=recent_bookmarks
         )
     )
 
@@ -176,3 +178,17 @@ def get_random_quote():
         "title": quote_content["metadata"].get("title", ""),
         "content": quote_text
     }
+
+def get_bookmarks(limit=10):
+    files = glob.glob("app/content/bookmarks/*.md")
+    bookmarks = []
+    for file in sorted(files, reverse=True)[:limit]:
+        name = os.path.splitext(os.path.basename(file))[0]
+        file_content = render_markdown(file)
+        bookmarks.append({
+            "name": name,
+            "title": file_content["metadata"].get("title", name.replace('-', ' ').title()),
+            "url": file_content["metadata"].get("url", ""),
+            "date": name[:10]  # Extract date from filename
+        })
+    return bookmarks
