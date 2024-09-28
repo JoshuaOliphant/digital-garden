@@ -2,7 +2,7 @@
 title: "Gitlab Flow vs. GitFlow"
 status: "Evergreen"
 created: "2023-10-10"
-updated: "2023-10-10"
+updated: "2024-10-10"
 tags: [git, gitflow, gitlab flow, branching strategies, continuous delivery]
 ---
 ## Introduction

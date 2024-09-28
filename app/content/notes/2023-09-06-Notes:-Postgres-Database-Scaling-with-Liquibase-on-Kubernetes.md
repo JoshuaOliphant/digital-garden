@@ -2,7 +2,7 @@
 title: "Scaling Postgres Databases with Liquibase on Kubernetes"
 status: "Evergreen"
 created: "2023-09-06"
-updated: "2023-09-06"
+updated: "2024-09-27"
 tags: [kubernetes, postgres, liquibase, database-migrations, high-availability]
 ---
 I recently dived into scaling stateful applications in Kubernetes, focusing particularly on Postgres databases. My current project also integrates Liquibase for database migrations, which led me to explore its impact on scaling. Here are the consolidated notes from my research.
@@ -16,7 +16,7 @@ We have been using the [Bitnami Postgres Chart](https://github.com/bitnami/chart
 - **Setting Replica Count**: Utilize the 'replicaCount' chart parameter to scale the cluster horizontally. This is the normal field for scaling in Kubernetes.
   - Ensure the replica count is an odd number.
   - To enable replication, use: '--set replication.enabled=true'.
-  - The default architecture is 'architecture=standalone'; switch to 'replication'.
+  - The default architecture is 'architecture=standalone'; switch to 'replication.'
   - The default update strategy is 'primary.updateStrategy.type=RollingUpdate'.
 
 ### Replication
@@ -24,8 +24,8 @@ We have been using the [Bitnami Postgres Chart](https://github.com/bitnami/chart
 Postgres doesn't inherently support multi-master clustering. Employ a single master node and complement it with multiple read replicas. If needed, the master node can fail over to the read replicas.
 
 - **Connection Pooling and Routing**: PGBouncer is a reliable option for connection pooling.
-- **Failover**: The Helm chart is designed to automatically manage failover if the primary node becomes unresponsive. Nonetheless, testing this behavior is essential.
-- **Node Anti-Affinity**: Adopt soft node anti-affinity to ensure that replicas are distributed across Kubernetes cluster nodes.
+- **Failover**: The Helm chart is designed to manage failover if the primary node becomes unresponsive automatically. Nonetheless, testing this behavior is essential.
+- **Node Anti-Affinity**: Adopt soft node anti-affinity to ensure replicas are distributed across Kubernetes cluster nodes.
 
 ### High Availability Version
 
@@ -34,7 +34,7 @@ I think we should switch to [Bitnami HA version](https://github.com/bitnami/char
 - **Replica Count**: By default, 'postgresql.replicaCount=3' (ensure it's an odd number). This configuration results in one write replica master node and two read replicas.
 - **Witness Nodes**: These can be configured to manage network partitions.
 - **Pgpool**: This tool manages read/write connections and offers features like read replica promotions, query parallelization, caching, connection limits, and failover mechanisms.
-- **Repmgr**: Simplifies the setup, provides failover support, monitoring, switchover functionality, WAL shipping, and integrates smoothly with other tools. It also facilitates timely notifications.
+- **Repmgr**: Simplifies the setup, provides failover support, monitoring, switchover functionality, and WAL shipping, and integrates smoothly with other tools. It also facilitates timely notifications.
 
 ## Liquibase
 
@@ -46,7 +46,7 @@ Using Liquibase, Spring Boot, and Kubernetes in tandem presents a challenge. The
    - Pros: Offers simplicity.
    - Cons: Might introduce interruptions, extended wait durations, and potential readiness challenges.
 2. **Lifecycle Hooks**:
-   - Pros: Guarantees lock release before any termination.
+   - Pros: Guarantees lock to release before any termination.
    - Cons: Reliability of the script is crucial, and there's a risk of applications getting stuck.
 3. **Separate Container (Job)**:
    - Pros: Minimizes the risk of probe-induced interruptions.
