@@ -1,0 +1,15 @@
+modules = ["web", "python-3.12", "nodejs-20"]
+run = "uvicorn app.main:app"
+
+hidden = [".pythonlibs"]
+
+[nix]
+channel = "stable-24_05"
+
+[deployment]
+run = ["python", "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0"]
+
+[[ports]]
+localPort = 8000
+externalPort = 80
+exposeLocalhost = true
