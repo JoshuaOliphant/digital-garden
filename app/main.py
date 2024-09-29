@@ -80,6 +80,8 @@ def render_markdown(file_path: str) -> dict:
 
 def get_content(content_type: str, limit=None):
     files = glob.glob(f"app/content/{content_type}/*.md")
+    # Sort files by modification time, newest first
+    files.sort(key=os.path.getmtime, reverse=True)
     content = []
     for file in files:
         name = os.path.splitext(os.path.basename(file))[0]
