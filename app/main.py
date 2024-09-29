@@ -4,6 +4,7 @@ from fastapi.staticfiles import StaticFiles
 from jinja2 import Environment, FileSystemLoader
 import markdown
 import os
+import re
 import yaml
 import glob
 import bleach
@@ -79,20 +80,22 @@ def render_markdown(file_path: str) -> dict:
 
 def get_content(content_type: str, limit=None):
     files = glob.glob(f"app/content/{content_type}/*.md")
-    # Sort files by modification time, newest first
-    files.sort(key=os.path.getmtime, reverse=True)
+
+    # Sort files based on the date in the filename
+    def get_date_from_filename(filename):
+        match = re.search(r'(\d{4}-\d{2}-\d{2})', os.path.basename(filename))
+        return match.group(1) if match else '0000-00-00'
+
+    files.sort(key=get_date_from_filename, reverse=True)
+
     content = []
     for file in files:
         name = os.path.splitext(os.path.basename(file))[0]
         file_content = render_markdown(file)
         content.append({
-            "name":
-            name,
-            "title":
-            file_content["metadata"].get("title",
-                                         name.replace('-', ' ').title()),
-            "metadata":
-            file_content["metadata"]
+            "name": name,
+            "title": file_content["metadata"].get("title", name.replace('-', ' ').title()),
+            "metadata": file_content["metadata"]
         })
     if limit:
         return content[:limit]
