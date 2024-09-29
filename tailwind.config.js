@@ -11,7 +11,6 @@ module.exports = {
         primary: "#1a202c",
         secondary: "#2d3748",
         accent: "#38b2ac",
-        // Additional custom colors can be added here
       },
       fontFamily: {
         sans: ["Inter", "sans-serif"],
@@ -30,11 +29,7 @@ module.exports = {
           },
         },
       },
-      // Additional customizations like spacing, borders, etc.
     },
   },
-  plugins: [
-    require("@tailwindcss/typography"),
-    // Add other plugins if needed
-  ],
+  plugins: [require("@tailwindcss/typography")],
 };
