@@ -4,6 +4,7 @@ status: "Evergreen"
 created: "2024-04-11"
 updated: "2024-04-11"
 tags: [zsh, shell history, atuin, configuration, productivity]
+url: "https://martinheinz.dev/blog/110"
 ---
 This is a [very good blog post](https://martinheinz.dev/blog/110) by Martin Heinz on how to configure zsh to take better advantage of your shell history.
 

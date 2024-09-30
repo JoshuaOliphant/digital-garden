@@ -187,14 +187,9 @@ def get_bookmarks(limit=10):
         name = os.path.splitext(os.path.basename(file))[0]
         file_content = render_markdown(file)
         bookmarks.append({
-            "name":
-            name,
-            "title":
-            file_content["metadata"].get("title",
-                                         name.replace('-', ' ').title()),
-            "url":
-            file_content["metadata"].get("url", ""),
-            "date":
-            name[:10]  # Extract date from filename
+            "name": name,
+            "title": file_content["metadata"].get("title", name.replace('-', ' ').title()),
+            "url": file_content["metadata"].get("url", ""),
+            "date": name[:10]  # Extract date from filename
         })
     return bookmarks

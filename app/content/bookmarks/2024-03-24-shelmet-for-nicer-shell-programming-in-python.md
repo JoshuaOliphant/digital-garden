@@ -4,5 +4,6 @@ status: "Evergreen"
 created: "2024-03-24"
 updated: "2024-03-24"
 tags: [shelmet, documentation, python, software, open-source]
+url: "https://shelmet.readthedocs.io/en/latest/"
 ---
 https://shelmet.readthedocs.io/en/latest/
