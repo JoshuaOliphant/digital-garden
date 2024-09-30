@@ -1,18 +1,15 @@
 ---
 title: "now"
 created: "2024-04-01"
-updated: "2024-09-10"
+updated: "2024-09-29"
 tags: ["now"]
 status: "Budding"
 ---
-This page is inspired by [Jamie Tanna's now page](https://www.jvt.me/now/),
-which was, in turn, inspired by others.
-
 **What am I up to now?**
 
+- I am currently working at ServiceNow as a Senior Systems Engineer, working on Mail and Messaging, since July 2024.
+- I just published my own self-written blog a few days ago (today is 2024-09-30). It feels create to be in full control of it, and it is going to be a fun project to continue to hack on. Heavily inspired by [Maggie Appleton's concept of a Digital Garden](https://maggieappleton.com/garden-history).
 - Automation, I'm trying to automate every little bit of my workflow, even if it takes longer to automate than actually do the task. Besides being fun, it has become a way to constantly put myself in the mindset of automating everything. Plus, ChatGPT makes most tasks that I wouldn't bother automating trivial.
-- Working on my blog, trying to make it a regular part of my routine (I even made a [Drafts action](https://directory.getdrafts.com/a/2QL), and looking at examples of other people's blogs that I like.
-- I was recently laid off at Nortal, where I worked as a Senior Engineer focused on SRE and DevOps. Creating Gitlab pipelines that deploy to Kubernetes, containerizing, and using Helm.
 - Taking care of the birds that live on my property.
 
 **What are my interests?**
@@ -26,7 +23,7 @@ which was, in turn, inspired by others.
 - Automation
 - DevOps
 
-My primary programming languages are Python and Java, and while I'm still better at Java than Python, I love Python much more than Java, and I'm working hard to switch over to Python.
+My primary programming languages are Python and Java, and while I'm still better at Java than Python, I love Python much more than Java, and I'm pushing for Python to be my primary language.
 
 Want to get in touch? Drop me an email at [joshua.oliphant@hey.com](mailto:joshua.oliphant@hey.com).
 
@@ -36,3 +33,6 @@ You can also find me on other platforms:
 - [GitHub](https://github.com/joshuaoliphant)
 - [LinkedIn](https://linkedin.com/in/joshuaoliphant)
 - [Mastodon](https://techhub.social/@oliphant)
+
+This page is inspired by [Jamie Tanna's now page](https://www.jvt.me/now/),
+which was, in turn, inspired by others.
