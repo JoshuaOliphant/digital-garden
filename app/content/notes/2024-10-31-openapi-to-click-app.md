@@ -3,7 +3,7 @@ title: "OpenAPI to Click App"
 status: "Budding"
 created: "2024-010-31"
 updated: "2024-010-31"
-tags: [camping, kayaking, baking, software development, job search]
+tags: [python, openapi, click, claude, ai]
 ---
 About 3 weeks ago, I had an idea to create an app that would take an OpenAPI spec and generate a Click app. I've been working on it in my free time and I've got a basic version working. Its the sort of project I never would have attempted in the past, but I had the help of Claude so it was pretty easy.
 
