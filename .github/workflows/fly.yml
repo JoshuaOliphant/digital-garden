@@ -26,16 +26,19 @@ jobs:
               auto_merge: false,
               description: 'Deployment to Fly.io'
             })
-            return result.data.id
+            console.log('Deployment ID:', result.data.id)
+            return result.data.id.toString()
 
       - name: Update deployment status (in progress)
         uses: actions/github-script@v7
         with:
           script: |
+            const deploymentId = ${{ steps.deployment.outputs.result }}
+            console.log('Using deployment ID:', deploymentId)
             await github.rest.repos.createDeploymentStatus({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              deployment_id: ${{ steps.deployment.outputs.result }},
+              deployment_id: deploymentId,
               state: 'in_progress'
             })
 
@@ -53,10 +56,11 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
+            const deploymentId = ${{ steps.deployment.outputs.result }}
             await github.rest.repos.createDeploymentStatus({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              deployment_id: ${{ steps.deployment.outputs.result }},
+              deployment_id: deploymentId,
               state: 'success',
               environment_url: 'https://an-oliphant-never-forgets.fly.dev'
             })
@@ -66,9 +70,10 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
+            const deploymentId = ${{ steps.deployment.outputs.result }}
             await github.rest.repos.createDeploymentStatus({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              deployment_id: ${{ steps.deployment.outputs.result }},
+              deployment_id: deploymentId,
               state: 'failure'
             })
