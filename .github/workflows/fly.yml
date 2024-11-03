@@ -15,6 +15,8 @@ jobs:
     environment: JoshuaOliphantBlog
 
     steps:
+      - uses: actions/checkout@v4 # Add this step to checkout your code
+
       - uses: actions/github-script@v7
         id: deployment
         with:
@@ -26,7 +28,7 @@ jobs:
               environment: 'JoshuaOliphantBlog',
               auto_merge: false,
               description: 'Deployment to Fly.io',
-              required_contexts: [] // Skip checking for required status checks
+              required_contexts: []
             });
             core.setOutput('id', result.data.id);
 
