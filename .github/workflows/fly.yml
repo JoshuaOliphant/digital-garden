@@ -62,7 +62,7 @@ jobs:
               deployment_id: ${{ steps.deployment.outputs.result }},
               state: 'success',
               environment_url: 'https://an-oliphant-never-forgets.fly.dev',
-              log_url: 'https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}'
+              log_url: `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
             });
 
       # Update deployment status to failure
@@ -76,5 +76,5 @@ jobs:
               repo: context.repo.repo,
               deployment_id: ${{ steps.deployment.outputs.result }},
               state: 'failure',
-              log_url: 'https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}'
+              log_url: `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
             });
