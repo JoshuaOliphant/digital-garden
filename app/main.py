@@ -193,3 +193,7 @@ def get_bookmarks(limit=10):
             "date": name[:10]  # Extract date from filename
         })
     return bookmarks
+
+@app.get("/health")
+async def health_check():
+    return {"status": "healthy"}
