@@ -1,7 +1,0 @@
----
-title: "I just realized that I can take all of the conversations that I have with Claude in Zed and use them for learning purposes. All of the conversations are stored in files in a directory on my computer. I could literally take them and ask Claude to do things such as distill the concepts into bullet points, or create Q/A flashcards, or extract commands."
-status: "Budding"
-created: "2024-11-03"
-updated: "2024-11-03"
-tags: [zed, ai, claude, professional]
----
