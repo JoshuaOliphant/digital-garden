@@ -12,6 +12,11 @@ import yaml
 import glob
 import bleach
 import random
+import httpx
+import time
+from datetime import datetime
+from typing import List, Optional, Dict, Any, TypeVar, Callable, Awaitable
+from functools import lru_cache, wraps
 
 # Constants
 CONTENT_DIR = "app/content"
@@ -32,10 +37,60 @@ ALLOWED_ATTRIBUTES = {
     "td": ["align"],
 }
 
+GITHUB_USERNAME = "JoshuaOliphant"
+T = TypeVar('T')
+
+http_client = httpx.AsyncClient(
+    timeout=10.0,
+    headers={
+        "Accept": "application/vnd.github.v3+json"
+    }
+)
+
 # Initialize FastAPI
 app = FastAPI()
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 env = Environment(loader=FileSystemLoader(TEMPLATE_DIR))
+
+class timed_lru_cache:
+    """
+    Decorator that adds time-based expiration to LRU cache
+    """
+    def __init__(self, maxsize: int = 128, ttl_seconds: int = 3600):
+        self.maxsize = maxsize
+        self.ttl_seconds = ttl_seconds
+        self.cache: Dict[str, Any] = {}
+        self.last_refresh: Dict[str, float] = {}
+
+    def __call__(self, func: Callable[..., Awaitable[T]]) -> Callable[..., Awaitable[T]]:
+        @wraps(func)
+        async def wrapped(*args: Any, **kwargs: Any) -> T:
+            key = str((args, sorted(kwargs.items())))
+
+            # Check if cache needs refresh
+            now = time.time()
+            if (key not in self.cache or
+                now - self.last_refresh.get(key, 0) > self.ttl_seconds):
+                self.cache[key] = await func(*args, **kwargs)
+                self.last_refresh[key] = now
+
+                # Implement LRU by removing oldest items if cache is too large
+                if len(self.cache) > self.maxsize:
+                    # Find the key with the oldest timestamp
+                    oldest_key = None
+                    oldest_time = float('inf')
+
+                    for k, timestamp in self.last_refresh.items():
+                        if timestamp < oldest_time:
+                            oldest_time = timestamp
+                            oldest_key = k
+
+                    if oldest_key is not None:
+                        del self.cache[oldest_key]
+                        del self.last_refresh[oldest_key]
+
+            return self.cache[key]
+        return wrapped
 
 class ContentManager:
     @staticmethod
@@ -122,10 +177,12 @@ class ContentManager:
         }
 
     @staticmethod
-    def get_bookmarks(limit=10):
+    def get_bookmarks(limit: Optional[int] = 10) -> List[dict]:
         files = glob.glob(f"{CONTENT_DIR}/bookmarks/*.md")
         bookmarks = []
-        for file in sorted(files, reverse=True)[:limit]:
+        files_to_process = files if limit is None else sorted(files, reverse=True)[:limit]
+
+        for file in files_to_process:
             name = os.path.splitext(os.path.basename(file))[0]
             file_content = ContentManager.render_markdown(file)
             bookmarks.append({
@@ -157,11 +214,104 @@ class ContentManager:
 
         return sorted(posts, key=lambda x: x["name"], reverse=True)
 
+    @staticmethod
+    @timed_lru_cache(maxsize=1, ttl_seconds=3600)
+    async def get_github_stars(page: int = 1, per_page: int = 30) -> dict:
+        """
+        Fetch starred GitHub repositories asynchronously with pagination.
+        Returns both the stars and pagination info.
+        Handles rate limiting gracefully.
+        """
+        try:
+            response = await http_client.get(
+                f"https://api.github.com/users/{GITHUB_USERNAME}/starred",
+                params={
+                    "page": page,
+                    "per_page": per_page
+                }
+            )
+
+            # Handle rate limiting
+            if response.status_code == 403 and 'X-RateLimit-Remaining' in response.headers:
+                remaining = int(response.headers['X-RateLimit-Remaining'])
+                reset_time = int(response.headers['X-RateLimit-Reset'])
+                if remaining == 0:
+                    reset_datetime = datetime.fromtimestamp(reset_time)
+                    print(f"Rate limit exceeded. Resets at {reset_datetime}")
+                    return {
+                        "stars": [],
+                        "next_page": None,
+                        "error": "Rate limit exceeded. Please try again later."
+                    }
+
+            if response.status_code != 200:
+                print(f"GitHub API error: {response.status_code} - {response.text}")
+                return {
+                    "stars": [],
+                    "next_page": None,
+                    "error": f"GitHub API error: {response.status_code}"
+                }
+
+            # Parse Link header for pagination info
+            link_header = response.headers.get("Link", "")
+            next_page = None
+            if link_header:
+                links = {}
+                for part in link_header.split(","):
+                    section = part.split(";")
+                    url = section[0].strip()[1:-1]
+                    for attr in section[1:]:
+                        if "rel=" in attr:
+                            rel = attr.split("=")[1].strip('"')
+                            links[rel] = url
+
+                if "next" in links:
+                    next_page = page + 1
+
+            stars = []
+            for repo in response.json():
+                stars.append({
+                    "name": repo["name"],
+                    "full_name": repo["full_name"],
+                    "description": repo["description"],
+                    "url": repo["html_url"],
+                    "language": repo["language"],
+                    "stars": repo["stargazers_count"],
+                    "starred_at": datetime.strptime(
+                        repo["updated_at"],
+                        "%Y-%m-%dT%H:%M:%SZ"
+                    ).strftime("%Y-%m-%d")
+                })
+
+            return {
+                "stars": stars,
+                "next_page": next_page,
+                "error": None
+            }
+
+        except httpx.RequestError as e:
+            print(f"Error fetching GitHub stars: {e}")
+            return {
+                "stars": [],
+                "next_page": None,
+                "error": "Failed to fetch GitHub stars"
+            }
+
+    @staticmethod
+    def ttl_hash(seconds=3600):
+        """Return the same value within `seconds` time period"""
+        return round(datetime.now().timestamp() / seconds)
+
+
 # Route handlers
 @app.get("/", response_class=HTMLResponse)
 async def read_home(request: Request):
     template = env.get_template("index.html")
     home_content = ContentManager.render_markdown(f"{CONTENT_DIR}/pages/home.md")
+
+    # Fetch GitHub stars asynchronously
+    stars_result = await ContentManager.get_github_stars(page=1, per_page=5)
+
     return HTMLResponse(
         content=template.render(
             request=request,
@@ -170,7 +320,9 @@ async def read_home(request: Request):
             how_tos=ContentManager.get_content("how_to"),
             notes=ContentManager.get_content("notes"),
             random_quote=ContentManager.get_random_quote(),
-            recent_bookmarks=ContentManager.get_bookmarks(limit=10)
+            recent_bookmarks=ContentManager.get_bookmarks(limit=10),
+            github_stars=stars_result["stars"],
+            github_error=stars_result["error"]
         )
     )
 
@@ -220,6 +372,59 @@ async def read_content(request: Request, content_type: str, page_name: str):
         )
     )
 
+@app.get("/bookmarks", response_class=HTMLResponse)
+async def read_bookmarks(request: Request):
+    template_name = "partials/bookmarks.html" if request.headers.get("HX-Request") == "true" else "bookmarks.html"
+    return HTMLResponse(
+        content=env.get_template(template_name).render(
+            request=request,
+            bookmarks=ContentManager.get_bookmarks(limit=9999),  # Using a large number instead of None
+            recent_how_tos=ContentManager.get_content("how_to", limit=5),
+            recent_notes=ContentManager.get_content("notes", limit=5)
+        )
+    )
+
+@app.get("/stars", response_class=HTMLResponse)
+async def read_stars(request: Request):
+    template_name = "partials/stars.html" if request.headers.get("HX-Request") == "true" else "stars.html"
+    result = await ContentManager.get_github_stars(page=1)
+    return HTMLResponse(
+        content=env.get_template(template_name).render(
+            request=request,
+            github_stars=result["stars"],
+            next_page=result["next_page"],
+            error=result["error"],
+            recent_how_tos=ContentManager.get_content("how_to", limit=5),
+            recent_notes=ContentManager.get_content("notes", limit=5)
+        )
+    )
+
+@app.get("/stars/page/{page}", response_class=HTMLResponse)
+async def read_stars_page(request: Request, page: int):
+    result = await ContentManager.get_github_stars(page=page)
+
+    # If there's an error, return it with appropriate styling
+    if result["error"]:
+        return HTMLResponse(
+            content=f'<div class="p-4 bg-red-100 text-red-700 rounded">{result["error"]}</div>',
+            headers={
+                "HX-Retarget": "#loading-indicator",
+                "HX-Reswap": "outerHTML"
+            }
+        )
+
+    return HTMLResponse(
+        content=env.get_template("partials/stars_page.html").render(
+            request=request,
+            github_stars=result["stars"],
+            next_page=result["next_page"]
+        )
+    )
+
 @app.get("/health")
 async def health_check():
     return {"status": "healthy"}
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    await http_client.aclose()

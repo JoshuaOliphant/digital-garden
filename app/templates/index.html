@@ -68,36 +68,103 @@
             </p>
         </section>
     </main>
-    <aside class="md:w-1/3">
-        {% if random_quote %}
-        <div class="bg-gray-100 p-6 rounded-lg shadow-md sticky top-8 mb-8">
-            <h2 class="text-2xl font-semibold mb-4">Random Quote</h2>
-            <h3 class="text-xl mb-2">{{ random_quote.title }}</h3>
-            <blockquote class="prose">
-                {{ random_quote.content | safe }}
-            </blockquote>
-        </div>
-        {% endif %}
 
-        <div class="bg-gray-100 p-6 rounded-lg shadow-md">
-            <h2 class="text-2xl font-semibold mb-4">Recent Bookmarks</h2>
-            <ul>
-                {% for bookmark in recent_bookmarks %}
-                <li class="mb-2">
+    <aside class="md:w-1/3 relative">
+        <!-- Wrapper div for fixed-position quote -->
+        <div class="absolute top-0 left-0 right-0">
+            {% if random_quote %}
+            <div class="random-quote bg-gray-100 p-6 rounded-lg shadow-md mb-8">
+                <h2 class="text-2xl font-semibold mb-4">Random Quote</h2>
+                <h3 class="text-xl mb-2">{{ random_quote.title }}</h3>
+                <blockquote class="prose">
+                    {{ random_quote.content | safe }}
+                </blockquote>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Wrapper for scrollable content with appropriate top margin -->
+        <div class="mt-[calc(var(--quote-height,300px)+2rem)]">
+            <div class="bg-gray-100 p-6 rounded-lg shadow-md mb-8">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-2xl font-semibold">Recent Bookmarks</h2>
                     <a
-                        href="{{ bookmark.url }}"
-                        class="text-blue-500 hover:underline"
-                        target="_blank"
-                        rel="noopener noreferrer"
+                        href="/bookmarks"
+                        class="text-blue-500 hover:underline text-sm"
+                        hx-get="/bookmarks"
+                        hx-target="#content-area"
+                        hx-swap="innerHTML"
+                        hx-push-url="true"
                     >
-                        {{ bookmark.title }}
+                        View all →
                     </a>
-                    <span class="text-sm text-gray-500 ml-2"
-                        >{{ bookmark.date }}</span
+                </div>
+                <ul>
+                    {% for bookmark in recent_bookmarks %}
+                    <li class="mb-2">
+                        <a
+                            href="{{ bookmark.url }}"
+                            class="text-blue-500 hover:underline"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                        >
+                            {{ bookmark.title }}
+                        </a>
+                        <span class="text-sm text-gray-500 ml-2">
+                            {{ bookmark.date }}
+                        </span>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+
+            <div class="bg-gray-100 p-6 rounded-lg shadow-md">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-2xl font-semibold">GitHub Stars</h2>
+                    <a
+                        href="/stars"
+                        class="text-blue-500 hover:underline text-sm"
+                        hx-get="/stars"
+                        hx-target="#content-area"
+                        hx-swap="innerHTML"
+                        hx-push-url="true"
                     >
-                </li>
-                {% endfor %}
-            </ul>
+                        View all →
+                    </a>
+                </div>
+                <ul>
+                    {% for star in github_stars %}
+                    <li class="mb-4">
+                        <a
+                            href="{{ star.url }}"
+                            class="text-blue-500 hover:underline block font-semibold"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                        >
+                            {{ star.full_name }}
+                        </a>
+                        {% if star.description %}
+                        <p class="text-sm text-gray-600 mt-1">
+                            {{ star.description }}
+                        </p>
+                        {% endif %}
+                        <div class="flex items-center mt-1 text-sm">
+                            {% if star.language %}
+                            <span class="text-gray-600 mr-4">
+                                {{ star.language }}
+                            </span>
+                            {% endif %}
+                            <span class="text-gray-600">
+                                ⭐ {{ star.stars }}
+                            </span>
+                            <span class="text-gray-500 ml-4">
+                                {{ star.starred_at }}
+                            </span>
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
         </div>
     </aside>
 </div>
