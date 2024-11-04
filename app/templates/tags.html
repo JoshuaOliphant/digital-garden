@@ -1,0 +1,40 @@
+{% extends "base.html" %} {% block content %}
+<div class="mb-8">
+    <h1 class="text-3xl font-bold mb-4">Posts tagged with #{{ tag }}</h1>
+
+    <div class="grid gap-6">
+        {% for post in posts %}
+        <div class="bg-white p-6 rounded-lg shadow">
+            <h2 class="text-xl font-semibold mb-2">
+                <a
+                    href="/{{ post.type }}/{{ post.name }}"
+                    class="text-blue-500 hover:underline"
+                    hx-get="/{{ post.type }}/{{ post.name }}"
+                    hx-target="#content-area"
+                    hx-swap="innerHTML"
+                    hx-push-url="true"
+                >
+                    {{ post.title }}
+                </a>
+            </h2>
+            {% if post.metadata.tags %}
+            <div class="flex gap-2">
+                {% for tag in post.metadata.tags %}
+                <a
+                    href="/tags/{{ tag }}"
+                    class="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-sm hover:bg-blue-200"
+                    hx-get="/tags/{{ tag }}"
+                    hx-target="#content-area"
+                    hx-swap="innerHTML"
+                    hx-push-url="true"
+                >
+                    #{{ tag }}
+                </a>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
