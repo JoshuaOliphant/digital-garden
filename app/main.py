@@ -463,30 +463,19 @@ def generate_rss_feed():
     # Get all content
     notes = ContentManager.get_content("notes")
     how_tos = ContentManager.get_content("how_to")
-    # Get TiL posts
     til_result = ContentManager.get_til_posts(page=1, per_page=9999)
     tils = til_result["tils"]
 
     # Combine all content
     all_content = []
-
-    # Add notes and how-tos (which have metadata in their structure)
     all_content.extend([(item, "notes") for item in notes])
     all_content.extend([(item, "how_to") for item in how_tos])
-
-    # Add TiLs (which have created date directly in the item)
     all_content.extend([(item, "til") for item in tils])
 
-    # Custom sort function to handle different structures
     def get_created_date(x):
         item = x[0]
-        # For TiLs
-        if "created" in item:
-            return item["created"]
-        # For notes and how-tos
-        return item.get("metadata", {}).get("created", "")
+        return item.get("created", "") if "created" in item else item.get("metadata", {}).get("created", "")
 
-    # Sort all content by date
     all_content.sort(key=get_created_date, reverse=True)
 
     # Generate RSS XML
@@ -496,12 +485,16 @@ def generate_rss_feed():
     rss += '<title>An Oliphant Never Forgets</title>\n'
     rss += '<link>https://anoliphantneverforgets.com</link>\n'
     rss += '<description>Latest content from An Oliphant Never Forgets</description>\n'
+    rss += '<language>en-us</language>\n'
+    rss += '<managingEditor>joshua.oliphant@gmail.com (Joshua Oliphant)</managingEditor>\n'
+    rss += '<webMaster>joshua.oliphant@gmail.com (Joshua Oliphant)</webMaster>\n'
     rss += '<atom:link href="https://anoliphantneverforgets.com/feed.xml" rel="self" type="application/rss+xml" />\n'
 
     for item, content_type in all_content:
         rss += '<item>\n'
         rss += f'<title>{item["title"]}</title>\n'
         rss += f'<link>https://anoliphantneverforgets.com/{content_type}/{item["name"]}</link>\n'
+        rss += '<author>joshua.oliphant@gmail.com (Joshua Oliphant)</author>\n'
 
         # Add description/excerpt if available
         if "excerpt" in item:
@@ -529,13 +522,13 @@ def generate_rss_feed():
         for tag in tags:
             rss += f'<category>{tag}</category>\n'
 
-        # Add guid
         rss += f'<guid>https://anoliphantneverforgets.com/{content_type}/{item["name"]}</guid>\n'
-
         rss += '</item>\n'
 
     rss += '</channel>\n'
     rss += '</rss>'
+
+    return rss
 
     return rss
 
