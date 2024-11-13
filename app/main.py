@@ -556,18 +556,23 @@ async def read_content(request: Request, content_type: str, page_name: str):
         raise HTTPException(status_code=404, detail="Content not found")
 
     content_data = ContentManager.render_markdown(file_path)
-    print(
-        f"Metadata for {page_name}: {content_data['metadata']}")  # Debug print
-    template_name = "partials/content.html" if request.headers.get(
-        "HX-Request") == "true" else "content_page.html"
+    is_htmx = request.headers.get("HX-Request") == "true"
+    template_name = "partials/content.html" if is_htmx else "content_page.html"
 
-    return HTMLResponse(content=env.get_template(template_name).render(
-        request=request,
-        content=content_data["html"],
-        metadata=content_data["metadata"],
-        content_type=content_type,
-        recent_how_tos=ContentManager.get_content("how_to", limit=5),
-        recent_notes=ContentManager.get_content("notes", limit=5)))
+    print(f"Template used: {template_name}")  # Debug print
+    print(f"Is HTMX request: {is_htmx}")     # Debug print
+    print(f"Metadata: {content_data['metadata']}")  # Debug print
+
+    return HTMLResponse(
+        content=env.get_template(template_name).render(
+            request=request,
+            content=content_data["html"],
+            metadata=content_data["metadata"],
+            content_type=content_type,
+            recent_how_tos=ContentManager.get_content("how_to", limit=5),
+            recent_notes=ContentManager.get_content("notes", limit=5)
+        )
+    )
 
 
 @app.get("/bookmarks", response_class=HTMLResponse)
