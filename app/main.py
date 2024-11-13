@@ -461,30 +461,77 @@ class ContentManager:
 
 def generate_rss_feed():
     # Get all content
-    notes = get_content("notes")
-    how_tos = get_content("how_to")
+    notes = ContentManager.get_content("notes")
+    how_tos = ContentManager.get_content("how_to")
+    # Get TiL posts
+    til_result = ContentManager.get_til_posts(page=1, per_page=9999)
+    tils = til_result["tils"]
 
-    # Combine and sort by date
-    all_content = [(item, "notes") for item in notes] + [(item, "how_to")
-                                                         for item in how_tos]
-    all_content.sort(key=lambda x: x[0]["metadata"].get("created", ""),
-                     reverse=True)
+    # Combine all content
+    all_content = []
+
+    # Add notes and how-tos (which have metadata in their structure)
+    all_content.extend([(item, "notes") for item in notes])
+    all_content.extend([(item, "how_to") for item in how_tos])
+
+    # Add TiLs (which have created date directly in the item)
+    all_content.extend([(item, "til") for item in tils])
+
+    # Custom sort function to handle different structures
+    def get_created_date(x):
+        item = x[0]
+        # For TiLs
+        if "created" in item:
+            return item["created"]
+        # For notes and how-tos
+        return item.get("metadata", {}).get("created", "")
+
+    # Sort all content by date
+    all_content.sort(key=get_created_date, reverse=True)
 
     # Generate RSS XML
     rss = '<?xml version="1.0" encoding="UTF-8" ?>\n'
-    rss += '<rss version="2.0">\n'
+    rss += '<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">\n'
     rss += '<channel>\n'
     rss += '<title>An Oliphant Never Forgets</title>\n'
     rss += '<link>https://anoliphantneverforgets.com</link>\n'
     rss += '<description>Latest content from An Oliphant Never Forgets</description>\n'
+    rss += '<atom:link href="https://anoliphantneverforgets.com/feed.xml" rel="self" type="application/rss+xml" />\n'
 
     for item, content_type in all_content:
         rss += '<item>\n'
         rss += f'<title>{item["title"]}</title>\n'
         rss += f'<link>https://anoliphantneverforgets.com/{content_type}/{item["name"]}</link>\n'
-        if "created" in item["metadata"]:
-            date = datetime.strptime(item["metadata"]["created"], "%Y-%m-%d")
+
+        # Add description/excerpt if available
+        if "excerpt" in item:
+            rss += f'<description><![CDATA[{item["excerpt"]}]]></description>\n'
+
+        # Handle different date structures
+        created_date = None
+        if content_type in ["notes", "how_to"]:
+            if "created" in item.get("metadata", {}):
+                created_date = item["metadata"]["created"]
+        else:  # TiL
+            if "created" in item:
+                created_date = item["created"]
+
+        if created_date:
+            date = datetime.strptime(created_date, "%Y-%m-%d")
             rss += f'<pubDate>{format_datetime(date)}</pubDate>\n'
+
+        # Add categories/tags
+        if content_type in ["notes", "how_to"]:
+            tags = item.get("metadata", {}).get("tags", [])
+        else:  # TiL
+            tags = item.get("tags", [])
+
+        for tag in tags:
+            rss += f'<category>{tag}</category>\n'
+
+        # Add guid
+        rss += f'<guid>https://anoliphantneverforgets.com/{content_type}/{item["name"]}</guid>\n'
+
         rss += '</item>\n'
 
     rss += '</channel>\n'
@@ -494,6 +541,7 @@ def generate_rss_feed():
 
 
 @app.get("/feed.xml")
+@app.get("/feed")
 async def rss_feed():
     rss_content = generate_rss_feed()
     return Response(content=rss_content, media_type="application/xml")
