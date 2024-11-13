@@ -1,0 +1,40 @@
+{% for til in tils %}
+<article class="bg-white p-6 rounded-lg shadow">
+    <div class="flex justify-between items-start mb-2">
+        <a
+            href="{{ til.url }}"
+            class="text-xl font-semibold text-blue-500 hover:underline"
+        >
+            {{ til.title }}
+        </a>
+        <span class="text-sm text-gray-500">{{ til.created }}</span>
+    </div>
+
+    <div class="text-gray-600 mb-3">{{ til.excerpt }}</div>
+
+    <div class="flex items-center text-sm">
+        <span class="text-gray-600">
+            <a
+                href="/til/tag/{{ til.tags[0] }}"
+                class="text-blue-500 hover:underline"
+            >
+                {{ til.tags[0] }}
+            </a>
+        </span>
+        {% if til.updated != til.created %}
+        <span class="text-gray-500 ml-4"> Updated: {{ til.updated }} </span>
+        {% endif %}
+    </div>
+</article>
+{% endfor %} {% if next_page %}
+<div
+    hx-get="/til/page/{{ next_page }}"
+    hx-trigger="intersect once"
+    hx-swap="afterend"
+    class="bg-white p-6 rounded-lg shadow text-center"
+>
+    <div
+        class="animate-spin inline-block w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full"
+    ></div>
+</div>
+{% endif %}

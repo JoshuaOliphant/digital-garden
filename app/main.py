@@ -5,6 +5,7 @@ from jinja2 import Environment, FileSystemLoader
 from markdown.extensions.toc import TocExtension
 from markdown.extensions.fenced_code import FencedCodeExtension
 from bs4 import BeautifulSoup
+from contextlib import asynccontextmanager
 import markdown
 import os
 import re
@@ -47,8 +48,15 @@ http_client = httpx.AsyncClient(
     }
 )
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup: nothing to do here
+    yield
+    # Shutdown: close the HTTP client
+    await http_client.aclose()
+
 # Initialize FastAPI
-app = FastAPI()
+app = FastAPI(lifespan=lifespan)
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 env = Environment(loader=FileSystemLoader(TEMPLATE_DIR))
 
@@ -194,9 +202,11 @@ class ContentManager:
         return bookmarks
 
     @staticmethod
-    def get_posts_by_tag(tag: str):
+    def get_posts_by_tag(tag: str, content_types: List[str] = None):
         posts = []
-        content_types = ["notes", "how_to"]  # Add other content types if needed
+        # If no content types specified, use all
+        if content_types is None:
+            content_types = ["notes", "how_to", "til"]
 
         for content_type in content_types:
             files = glob.glob(f"{CONTENT_DIR}/{content_type}/*.md")
@@ -205,14 +215,23 @@ class ContentManager:
                 file_content = ContentManager.render_markdown(file)
 
                 if "tags" in file_content["metadata"] and tag in file_content["metadata"]["tags"]:
+                    # Get excerpt for TiL posts
+                    excerpt = ""
+                    if content_type == "til":
+                        soup = BeautifulSoup(file_content["html"], 'html.parser')
+                        first_p = soup.find('p')
+                        excerpt = first_p.get_text() if first_p else ""
+
                     posts.append({
                         "type": content_type,
                         "name": name,
                         "title": file_content["metadata"].get("title", name.replace('-', ' ').title()),
-                        "metadata": file_content["metadata"]
+                        "metadata": file_content["metadata"],
+                        "excerpt": excerpt if content_type == "til" else "",
+                        "url": f"/{content_type}/{name}"
                     })
 
-        return sorted(posts, key=lambda x: x["name"], reverse=True)
+        return sorted(posts, key=lambda x: x["metadata"].get("created", ""), reverse=True)
 
     @staticmethod
     @timed_lru_cache(maxsize=1, ttl_seconds=3600)
@@ -302,6 +321,78 @@ class ContentManager:
         """Return the same value within `seconds` time period"""
         return round(datetime.now().timestamp() / seconds)
 
+    @staticmethod
+    def get_til_posts(page: int = 1, per_page: int = 30) -> dict:
+        """Get TiL posts with pagination"""
+        files = glob.glob(f"{CONTENT_DIR}/til/*.md")
+        files.sort(key=ContentManager._get_date_from_filename, reverse=True)
+
+        # Calculate pagination
+        start_idx = (page - 1) * per_page
+        end_idx = start_idx + per_page
+        page_files = files[start_idx:end_idx]
+
+        tils = []
+        til_tags = {}
+
+        for file in page_files:
+            name = os.path.splitext(os.path.basename(file))[0]
+            file_content = ContentManager.render_markdown(file)
+            metadata = file_content["metadata"]
+
+            # Get first paragraph for excerpt
+            soup = BeautifulSoup(file_content["html"], 'html.parser')
+            first_p = soup.find('p')
+            excerpt = first_p.get_text() if first_p else ""
+
+            # Update tag counts
+            for tag in metadata.get("tags", []):
+                til_tags[tag] = til_tags.get(tag, 0) + 1
+
+            tils.append({
+                "name": name,
+                "title": metadata.get("title", name.replace('-', ' ').title()),
+                "created": metadata.get("created", ""),
+                "updated": metadata.get("updated", ""),
+                "tags": metadata.get("tags", []),
+                "excerpt": excerpt,
+                "url": f"/til/{name}"
+            })
+
+        return {
+            "tils": tils,
+            "til_tags": til_tags,
+            "next_page": page + 1 if end_idx < len(files) else None
+        }
+
+    @staticmethod
+    def get_til_posts_by_tag(tag: str) -> List[dict]:
+        """Get TiL posts filtered by tag"""
+        files = glob.glob(f"{CONTENT_DIR}/til/*.md")
+        tils = []
+
+        for file in files:
+            name = os.path.splitext(os.path.basename(file))[0]
+            file_content = ContentManager.render_markdown(file)
+            metadata = file_content["metadata"]
+
+            if tag in metadata.get("tags", []):
+                soup = BeautifulSoup(file_content["html"], 'html.parser')
+                first_p = soup.find('p')
+                excerpt = first_p.get_text() if first_p else ""
+
+                tils.append({
+                    "name": name,
+                    "title": metadata.get("title", name.replace('-', ' ').title()),
+                    "created": metadata.get("created", ""),
+                    "updated": metadata.get("updated", ""),
+                    "tags": metadata.get("tags", []),
+                    "excerpt": excerpt,
+                    "url": f"/til/{name}"
+                })
+
+        return sorted(tils, key=lambda x: x["created"], reverse=True)
+
 
 # Route handlers
 @app.get("/", response_class=HTMLResponse)
@@ -341,15 +432,21 @@ async def read_now(request: Request):
     )
 
 @app.get("/tags/{tag}", response_class=HTMLResponse)
+@app.get("/tags/{tag}", response_class=HTMLResponse)
 async def read_tag(request: Request, tag: str):
-    posts = ContentManager.get_posts_by_tag(tag)
+    # Get content type from query parameter, default to all
+    content_type = request.query_params.get("type")
+    content_types = [content_type] if content_type else None
+
+    posts = ContentManager.get_posts_by_tag(tag, content_types=content_types)
     template_name = "partials/tags.html" if request.headers.get("HX-Request") == "true" else "tags.html"
 
     return HTMLResponse(
         content=env.get_template(template_name).render(
             request=request,
             tag=tag,
-            posts=posts
+            posts=posts,
+            content_type=content_type
         )
     )
 
@@ -421,10 +518,72 @@ async def read_stars_page(request: Request, page: int):
         )
     )
 
+@app.get("/til", response_class=HTMLResponse)
+async def read_til(request: Request):
+    template_name = "partials/til.html" if request.headers.get("HX-Request") == "true" else "til.html"
+    result = ContentManager.get_til_posts(page=1)
+
+    return HTMLResponse(
+        content=env.get_template(template_name).render(
+            request=request,
+            tils=result["tils"],
+            til_tags=result["til_tags"],
+            next_page=result["next_page"],
+            recent_how_tos=ContentManager.get_content("how_to", limit=5),
+            recent_notes=ContentManager.get_content("notes", limit=5)
+        )
+    )
+
+@app.get("/til/tag/{tag}", response_class=HTMLResponse)
+async def read_til_tag(request: Request, tag: str):
+    template_name = "partials/til.html" if request.headers.get("HX-Request") == "true" else "til.html"
+    tils = ContentManager.get_til_posts_by_tag(tag)
+
+    # Get all tags for the sidebar
+    all_tils = ContentManager.get_til_posts(page=1)
+
+    return HTMLResponse(
+        content=env.get_template(template_name).render(
+            request=request,
+            tils=tils,
+            til_tags=all_tils["til_tags"],
+            next_page=None,  # No pagination for tag views
+            recent_how_tos=ContentManager.get_content("how_to", limit=5),
+            recent_notes=ContentManager.get_content("notes", limit=5)
+        )
+    )
+
+@app.get("/til/page/{page}", response_class=HTMLResponse)
+async def read_til_page(request: Request, page: int):
+    result = ContentManager.get_til_posts(page=page)
+
+    return HTMLResponse(
+        content=env.get_template("partials/til_page.html").render(
+            request=request,
+            tils=result["tils"],
+            next_page=result["next_page"]
+        )
+    )
+
+@app.get("/til/{til_name}", response_class=HTMLResponse)
+async def read_til_post(request: Request, til_name: str):
+    file_path = f"{CONTENT_DIR}/til/{til_name}.md"
+    if not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail="TIL post not found")
+
+    content_data = ContentManager.render_markdown(file_path)
+    template_name = "content_page.html"
+
+    return HTMLResponse(
+        content=env.get_template(template_name).render(
+            request=request,
+            content=content_data["html"],
+            metadata=content_data["metadata"],
+            recent_how_tos=ContentManager.get_content("how_to", limit=5),
+            recent_notes=ContentManager.get_content("notes", limit=5)
+        )
+    )
+
 @app.get("/health")
 async def health_check():
     return {"status": "healthy"}
-
-@app.on_event("shutdown")
-async def shutdown_event():
-    await http_client.aclose()

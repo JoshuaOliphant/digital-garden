@@ -15,17 +15,13 @@
         </span>
     </div>
     {% endif %} {% if metadata.tags %}
-    <div class="mb-4 flex gap-2">
+    <div class="flex flex-wrap gap-2 mt-4">
         {% for tag in metadata.tags %}
         <a
-            href="/tags/{{ tag }}"
-            class="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-sm hover:bg-blue-200"
-            hx-get="/tags/{{ tag }}"
-            hx-target="#content-area"
-            hx-swap="innerHTML"
-            hx-push-url="true"
+            href="/tags/{{ tag }}{% if content_type %}?type={{ content_type }}{% endif %}"
+            class="px-3 py-1 bg-gray-200 text-gray-700 rounded-full text-sm hover:bg-gray-300 transition-colors"
         >
-            #{{ tag }}
+            {{ tag }}
         </a>
         {% endfor %}
     </div>
