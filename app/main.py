@@ -17,7 +17,9 @@ import httpx
 import time
 from datetime import datetime
 from typing import List, Optional, Dict, Any, TypeVar, Callable, Awaitable
-from functools import lru_cache, wraps
+from functools import wraps
+from fastapi.responses import Response
+from email.utils import format_datetime
 
 # Constants
 CONTENT_DIR = "app/content"
@@ -25,9 +27,9 @@ TEMPLATE_DIR = "app/templates"
 STATIC_DIR = "app/static"
 
 ALLOWED_TAGS = list(bleach.sanitizer.ALLOWED_TAGS) + [
-    "p", "pre", "code", "h1", "h2", "h3", "h4", "h5", "h6", "blockquote",
-    "ul", "ol", "li", "strong", "em", "a", "img", "table", "thead", "tbody",
-    "tr", "th", "td"
+    "p", "pre", "code", "h1", "h2", "h3", "h4", "h5", "h6", "blockquote", "ul",
+    "ol", "li", "strong", "em", "a", "img", "table", "thead", "tbody", "tr",
+    "th", "td"
 ]
 
 ALLOWED_ATTRIBUTES = {
@@ -42,11 +44,8 @@ GITHUB_USERNAME = "JoshuaOliphant"
 T = TypeVar('T')
 
 http_client = httpx.AsyncClient(
-    timeout=10.0,
-    headers={
-        "Accept": "application/vnd.github.v3+json"
-    }
-)
+    timeout=10.0, headers={"Accept": "application/vnd.github.v3+json"})
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -55,30 +54,36 @@ async def lifespan(app: FastAPI):
     # Shutdown: close the HTTP client
     await http_client.aclose()
 
+
 # Initialize FastAPI
 app = FastAPI(lifespan=lifespan)
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 env = Environment(loader=FileSystemLoader(TEMPLATE_DIR))
 
+
 class timed_lru_cache:
     """
     Decorator that adds time-based expiration to LRU cache
     """
+
     def __init__(self, maxsize: int = 128, ttl_seconds: int = 3600):
         self.maxsize = maxsize
         self.ttl_seconds = ttl_seconds
         self.cache: Dict[str, Any] = {}
         self.last_refresh: Dict[str, float] = {}
 
-    def __call__(self, func: Callable[..., Awaitable[T]]) -> Callable[..., Awaitable[T]]:
+    def __call__(
+            self, func: Callable[...,
+                                 Awaitable[T]]) -> Callable[..., Awaitable[T]]:
+
         @wraps(func)
         async def wrapped(*args: Any, **kwargs: Any) -> T:
             key = str((args, sorted(kwargs.items())))
 
             # Check if cache needs refresh
             now = time.time()
-            if (key not in self.cache or
-                now - self.last_refresh.get(key, 0) > self.ttl_seconds):
+            if (key not in self.cache
+                    or now - self.last_refresh.get(key, 0) > self.ttl_seconds):
                 self.cache[key] = await func(*args, **kwargs)
                 self.last_refresh[key] = now
 
@@ -98,9 +103,12 @@ class timed_lru_cache:
                         del self.last_refresh[oldest_key]
 
             return self.cache[key]
+
         return wrapped
 
+
 class ContentManager:
+
     @staticmethod
     def render_markdown(file_path: str) -> dict:
         if not os.path.exists(file_path):
@@ -136,12 +144,10 @@ class ContentManager:
             FencedCodeExtension(),
         ])
         html_content = md.convert(content)
-        clean_html = bleach.clean(
-            html_content,
-            tags=ALLOWED_TAGS,
-            attributes=ALLOWED_ATTRIBUTES,
-            strip=True
-        )
+        clean_html = bleach.clean(html_content,
+                                  tags=ALLOWED_TAGS,
+                                  attributes=ALLOWED_ATTRIBUTES,
+                                  strip=True)
         return bleach.linkify(clean_html)
 
     @staticmethod
@@ -161,13 +167,21 @@ class ContentManager:
             excerpt = first_p.get_text() if first_p else ""
 
             content.append({
-                "name": name,
-                "title": metadata.get("title", name.replace('-', ' ').title()),
-                "created": metadata.get("created", ""),
-                "updated": metadata.get("updated", ""),
-                "metadata": metadata,
-                "excerpt": excerpt,
-                "url": f"/{content_type}/{name}"
+                "name":
+                name,
+                "title":
+                metadata.get("title",
+                             name.replace('-', ' ').title()),
+                "created":
+                metadata.get("created", ""),
+                "updated":
+                metadata.get("updated", ""),
+                "metadata":
+                metadata,
+                "excerpt":
+                excerpt,
+                "url":
+                f"/{content_type}/{name}"
             })
         return content[:limit] if limit else content
 
@@ -199,7 +213,8 @@ class ContentManager:
     def get_bookmarks(limit: Optional[int] = 10) -> List[dict]:
         files = glob.glob(f"{CONTENT_DIR}/bookmarks/*.md")
         bookmarks = []
-        files_to_process = files if limit is None else sorted(files, reverse=True)[:limit]
+        files_to_process = files if limit is None else sorted(
+            files, reverse=True)[:limit]
 
         for file in files_to_process:
             name = os.path.splitext(os.path.basename(file))[0]
@@ -207,12 +222,19 @@ class ContentManager:
             metadata = file_content["metadata"]
 
             bookmarks.append({
-                "name": name,
-                "title": metadata.get("title", name.replace('-', ' ').title()),
-                "url": metadata.get("url", ""),
-                "created": metadata.get("created", ""),
-                "updated": metadata.get("updated", ""),
-                "date": name[:10]  # Keep this for backwards compatibility if needed
+                "name":
+                name,
+                "title":
+                metadata.get("title",
+                             name.replace('-', ' ').title()),
+                "url":
+                metadata.get("url", ""),
+                "created":
+                metadata.get("created", ""),
+                "updated":
+                metadata.get("updated", ""),
+                "date":
+                name[:10]  # Keep this for backwards compatibility if needed
             })
         return bookmarks
 
@@ -236,14 +258,23 @@ class ContentManager:
                     excerpt = first_p.get_text() if first_p else ""
 
                     posts.append({
-                        "type": content_type,
-                        "name": name,
-                        "title": metadata.get("title", name.replace('-', ' ').title()),
-                        "created": metadata.get("created", ""),
-                        "updated": metadata.get("updated", ""),
-                        "metadata": metadata,
-                        "excerpt": excerpt,
-                        "url": f"/{content_type}/{name}"
+                        "type":
+                        content_type,
+                        "name":
+                        name,
+                        "title":
+                        metadata.get("title",
+                                     name.replace('-', ' ').title()),
+                        "created":
+                        metadata.get("created", ""),
+                        "updated":
+                        metadata.get("updated", ""),
+                        "metadata":
+                        metadata,
+                        "excerpt":
+                        excerpt,
+                        "url":
+                        f"/{content_type}/{name}"
                     })
 
         return sorted(posts, key=lambda x: x.get("created", ""), reverse=True)
@@ -262,8 +293,7 @@ class ContentManager:
                 params={
                     "page": page,
                     "per_page": per_page
-                }
-            )
+                })
 
             # Handle rate limiting
             if response.status_code == 403 and 'X-RateLimit-Remaining' in response.headers:
@@ -279,7 +309,9 @@ class ContentManager:
                     }
 
             if response.status_code != 200:
-                print(f"GitHub API error: {response.status_code} - {response.text}")
+                print(
+                    f"GitHub API error: {response.status_code} - {response.text}"
+                )
                 return {
                     "stars": [],
                     "next_page": None,
@@ -305,23 +337,25 @@ class ContentManager:
             stars = []
             for repo in response.json():
                 stars.append({
-                    "name": repo["name"],
-                    "full_name": repo["full_name"],
-                    "description": repo["description"],
-                    "url": repo["html_url"],
-                    "language": repo["language"],
-                    "stars": repo["stargazers_count"],
-                    "starred_at": datetime.strptime(
+                    "name":
+                    repo["name"],
+                    "full_name":
+                    repo["full_name"],
+                    "description":
+                    repo["description"],
+                    "url":
+                    repo["html_url"],
+                    "language":
+                    repo["language"],
+                    "stars":
+                    repo["stargazers_count"],
+                    "starred_at":
+                    datetime.strptime(
                         repo["updated_at"],
-                        "%Y-%m-%dT%H:%M:%SZ"
-                    ).strftime("%Y-%m-%d")
+                        "%Y-%m-%dT%H:%M:%SZ").strftime("%Y-%m-%d")
                 })
 
-            return {
-                "stars": stars,
-                "next_page": next_page,
-                "error": None
-            }
+            return {"stars": stars, "next_page": next_page, "error": None}
 
         except httpx.RequestError as e:
             print(f"Error fetching GitHub stars: {e}")
@@ -365,13 +399,21 @@ class ContentManager:
                 til_tags[tag] = til_tags.get(tag, 0) + 1
 
             tils.append({
-                "name": name,
-                "title": metadata.get("title", name.replace('-', ' ').title()),
-                "created": metadata.get("created", ""),
-                "updated": metadata.get("updated", ""),
-                "tags": metadata.get("tags", []),
-                "excerpt": excerpt,
-                "url": f"/til/{name}"
+                "name":
+                name,
+                "title":
+                metadata.get("title",
+                             name.replace('-', ' ').title()),
+                "created":
+                metadata.get("created", ""),
+                "updated":
+                metadata.get("updated", ""),
+                "tags":
+                metadata.get("tags", []),
+                "excerpt":
+                excerpt,
+                "url":
+                f"/til/{name}"
             })
 
         return {
@@ -397,54 +439,100 @@ class ContentManager:
                 excerpt = first_p.get_text() if first_p else ""
 
                 tils.append({
-                    "name": name,
-                    "title": metadata.get("title", name.replace('-', ' ').title()),
-                    "created": metadata.get("created", ""),
-                    "updated": metadata.get("updated", ""),
-                    "tags": metadata.get("tags", []),
-                    "excerpt": excerpt,
-                    "url": f"/til/{name}"
+                    "name":
+                    name,
+                    "title":
+                    metadata.get("title",
+                                 name.replace('-', ' ').title()),
+                    "created":
+                    metadata.get("created", ""),
+                    "updated":
+                    metadata.get("updated", ""),
+                    "tags":
+                    metadata.get("tags", []),
+                    "excerpt":
+                    excerpt,
+                    "url":
+                    f"/til/{name}"
                 })
 
         return sorted(tils, key=lambda x: x["created"], reverse=True)
+
+
+def generate_rss_feed():
+    # Get all content
+    notes = get_content("notes")
+    how_tos = get_content("how_to")
+
+    # Combine and sort by date
+    all_content = [(item, "notes") for item in notes] + [(item, "how_to")
+                                                         for item in how_tos]
+    all_content.sort(key=lambda x: x[0]["metadata"].get("created", ""),
+                     reverse=True)
+
+    # Generate RSS XML
+    rss = '<?xml version="1.0" encoding="UTF-8" ?>\n'
+    rss += '<rss version="2.0">\n'
+    rss += '<channel>\n'
+    rss += '<title>An Oliphant Never Forgets</title>\n'
+    rss += '<link>https://anoliphantneverforgets.com</link>\n'
+    rss += '<description>Latest content from An Oliphant Never Forgets</description>\n'
+
+    for item, content_type in all_content:
+        rss += '<item>\n'
+        rss += f'<title>{item["title"]}</title>\n'
+        rss += f'<link>https://anoliphantneverforgets.com/{content_type}/{item["name"]}</link>\n'
+        if "created" in item["metadata"]:
+            date = datetime.strptime(item["metadata"]["created"], "%Y-%m-%d")
+            rss += f'<pubDate>{format_datetime(date)}</pubDate>\n'
+        rss += '</item>\n'
+
+    rss += '</channel>\n'
+    rss += '</rss>'
+
+    return rss
+
+
+@app.get("/feed.xml")
+async def rss_feed():
+    rss_content = generate_rss_feed()
+    return Response(content=rss_content, media_type="application/xml")
 
 
 # Route handlers
 @app.get("/", response_class=HTMLResponse)
 async def read_home(request: Request):
     template = env.get_template("index.html")
-    home_content = ContentManager.render_markdown(f"{CONTENT_DIR}/pages/home.md")
+    home_content = ContentManager.render_markdown(
+        f"{CONTENT_DIR}/pages/home.md")
 
     # Fetch GitHub stars asynchronously
     stars_result = await ContentManager.get_github_stars(page=1, per_page=5)
 
     return HTMLResponse(
-        content=template.render(
-            request=request,
-            content=home_content["html"],
-            metadata=home_content["metadata"],
-            how_tos=ContentManager.get_content("how_to"),
-            notes=ContentManager.get_content("notes"),
-            random_quote=ContentManager.get_random_quote(),
-            recent_bookmarks=ContentManager.get_bookmarks(limit=10),
-            github_stars=stars_result["stars"],
-            github_error=stars_result["error"]
-        )
-    )
+        content=template.render(request=request,
+                                content=home_content["html"],
+                                metadata=home_content["metadata"],
+                                how_tos=ContentManager.get_content("how_to"),
+                                notes=ContentManager.get_content("notes"),
+                                random_quote=ContentManager.get_random_quote(),
+                                recent_bookmarks=ContentManager.get_bookmarks(
+                                    limit=10),
+                                github_stars=stars_result["stars"],
+                                github_error=stars_result["error"]))
+
 
 @app.get("/now", response_class=HTMLResponse)
 async def read_now(request: Request):
     template = env.get_template("content_page.html")
     now_content = ContentManager.render_markdown(f"{CONTENT_DIR}/pages/now.md")
-    return HTMLResponse(
-        content=template.render(
-            request=request,
-            content=now_content["html"],
-            metadata=now_content["metadata"],
-            recent_how_tos=ContentManager.get_content("how_to", limit=5),
-            recent_notes=ContentManager.get_content("notes", limit=5)
-        )
-    )
+    return HTMLResponse(content=template.render(
+        request=request,
+        content=now_content["html"],
+        metadata=now_content["metadata"],
+        recent_how_tos=ContentManager.get_content("how_to", limit=5),
+        recent_notes=ContentManager.get_content("notes", limit=5)))
+
 
 @app.get("/tags/{tag}", response_class=HTMLResponse)
 @app.get("/tags/{tag}", response_class=HTMLResponse)
@@ -454,16 +542,12 @@ async def read_tag(request: Request, tag: str):
     content_types = [content_type] if content_type else None
 
     posts = ContentManager.get_posts_by_tag(tag, content_types=content_types)
-    template_name = "partials/tags.html" if request.headers.get("HX-Request") == "true" else "tags.html"
+    template_name = "partials/tags.html" if request.headers.get(
+        "HX-Request") == "true" else "tags.html"
 
-    return HTMLResponse(
-        content=env.get_template(template_name).render(
-            request=request,
-            tag=tag,
-            posts=posts,
-            content_type=content_type
-        )
-    )
+    return HTMLResponse(content=env.get_template(template_name).render(
+        request=request, tag=tag, posts=posts, content_type=content_type))
+
 
 @app.get("/{content_type}/{page_name}", response_class=HTMLResponse)
 async def read_content(request: Request, content_type: str, page_name: str):
@@ -472,46 +556,45 @@ async def read_content(request: Request, content_type: str, page_name: str):
         raise HTTPException(status_code=404, detail="Content not found")
 
     content_data = ContentManager.render_markdown(file_path)
-    print(f"Metadata for {page_name}: {content_data['metadata']}")  # Debug print
-    template_name = "partials/content.html" if request.headers.get("HX-Request") == "true" else "content_page.html"
+    print(
+        f"Metadata for {page_name}: {content_data['metadata']}")  # Debug print
+    template_name = "partials/content.html" if request.headers.get(
+        "HX-Request") == "true" else "content_page.html"
 
-    return HTMLResponse(
-        content=env.get_template(template_name).render(
-            request=request,
-            content=content_data["html"],
-            metadata=content_data["metadata"],
-            content_type=content_type,
-            recent_how_tos=ContentManager.get_content("how_to", limit=5),
-            recent_notes=ContentManager.get_content("notes", limit=5)
-        )
-    )
+    return HTMLResponse(content=env.get_template(template_name).render(
+        request=request,
+        content=content_data["html"],
+        metadata=content_data["metadata"],
+        content_type=content_type,
+        recent_how_tos=ContentManager.get_content("how_to", limit=5),
+        recent_notes=ContentManager.get_content("notes", limit=5)))
+
 
 @app.get("/bookmarks", response_class=HTMLResponse)
 async def read_bookmarks(request: Request):
-    template_name = "partials/bookmarks.html" if request.headers.get("HX-Request") == "true" else "bookmarks.html"
-    return HTMLResponse(
-        content=env.get_template(template_name).render(
-            request=request,
-            bookmarks=ContentManager.get_bookmarks(limit=9999),  # Using a large number instead of None
-            recent_how_tos=ContentManager.get_content("how_to", limit=5),
-            recent_notes=ContentManager.get_content("notes", limit=5)
-        )
-    )
+    template_name = "partials/bookmarks.html" if request.headers.get(
+        "HX-Request") == "true" else "bookmarks.html"
+    return HTMLResponse(content=env.get_template(template_name).render(
+        request=request,
+        bookmarks=ContentManager.get_bookmarks(
+            limit=9999),  # Using a large number instead of None
+        recent_how_tos=ContentManager.get_content("how_to", limit=5),
+        recent_notes=ContentManager.get_content("notes", limit=5)))
+
 
 @app.get("/stars", response_class=HTMLResponse)
 async def read_stars(request: Request):
-    template_name = "partials/stars.html" if request.headers.get("HX-Request") == "true" else "stars.html"
+    template_name = "partials/stars.html" if request.headers.get(
+        "HX-Request") == "true" else "stars.html"
     result = await ContentManager.get_github_stars(page=1)
-    return HTMLResponse(
-        content=env.get_template(template_name).render(
-            request=request,
-            github_stars=result["stars"],
-            next_page=result["next_page"],
-            error=result["error"],
-            recent_how_tos=ContentManager.get_content("how_to", limit=5),
-            recent_notes=ContentManager.get_content("notes", limit=5)
-        )
-    )
+    return HTMLResponse(content=env.get_template(template_name).render(
+        request=request,
+        github_stars=result["stars"],
+        next_page=result["next_page"],
+        error=result["error"],
+        recent_how_tos=ContentManager.get_content("how_to", limit=5),
+        recent_notes=ContentManager.get_content("notes", limit=5)))
+
 
 @app.get("/stars/page/{page}", response_class=HTMLResponse)
 async def read_stars_page(request: Request, page: int):
@@ -520,67 +603,61 @@ async def read_stars_page(request: Request, page: int):
     # If there's an error, return it with appropriate styling
     if result["error"]:
         return HTMLResponse(
-            content=f'<div class="p-4 bg-red-100 text-red-700 rounded">{result["error"]}</div>',
+            content=
+            f'<div class="p-4 bg-red-100 text-red-700 rounded">{result["error"]}</div>',
             headers={
                 "HX-Retarget": "#loading-indicator",
                 "HX-Reswap": "outerHTML"
-            }
-        )
+            })
 
-    return HTMLResponse(
-        content=env.get_template("partials/stars_page.html").render(
-            request=request,
-            github_stars=result["stars"],
-            next_page=result["next_page"]
-        )
-    )
+    return HTMLResponse(content=env.get_template(
+        "partials/stars_page.html").render(request=request,
+                                           github_stars=result["stars"],
+                                           next_page=result["next_page"]))
+
 
 @app.get("/til", response_class=HTMLResponse)
 async def read_til(request: Request):
-    template_name = "partials/til.html" if request.headers.get("HX-Request") == "true" else "til.html"
+    template_name = "partials/til.html" if request.headers.get(
+        "HX-Request") == "true" else "til.html"
     result = ContentManager.get_til_posts(page=1)
 
-    return HTMLResponse(
-        content=env.get_template(template_name).render(
-            request=request,
-            tils=result["tils"],
-            til_tags=result["til_tags"],
-            next_page=result["next_page"],
-            recent_how_tos=ContentManager.get_content("how_to", limit=5),
-            recent_notes=ContentManager.get_content("notes", limit=5)
-        )
-    )
+    return HTMLResponse(content=env.get_template(template_name).render(
+        request=request,
+        tils=result["tils"],
+        til_tags=result["til_tags"],
+        next_page=result["next_page"],
+        recent_how_tos=ContentManager.get_content("how_to", limit=5),
+        recent_notes=ContentManager.get_content("notes", limit=5)))
+
 
 @app.get("/til/tag/{tag}", response_class=HTMLResponse)
 async def read_til_tag(request: Request, tag: str):
-    template_name = "partials/til.html" if request.headers.get("HX-Request") == "true" else "til.html"
+    template_name = "partials/til.html" if request.headers.get(
+        "HX-Request") == "true" else "til.html"
     tils = ContentManager.get_til_posts_by_tag(tag)
 
     # Get all tags for the sidebar
     all_tils = ContentManager.get_til_posts(page=1)
 
-    return HTMLResponse(
-        content=env.get_template(template_name).render(
-            request=request,
-            tils=tils,
-            til_tags=all_tils["til_tags"],
-            next_page=None,  # No pagination for tag views
-            recent_how_tos=ContentManager.get_content("how_to", limit=5),
-            recent_notes=ContentManager.get_content("notes", limit=5)
-        )
-    )
+    return HTMLResponse(content=env.get_template(template_name).render(
+        request=request,
+        tils=tils,
+        til_tags=all_tils["til_tags"],
+        next_page=None,  # No pagination for tag views
+        recent_how_tos=ContentManager.get_content("how_to", limit=5),
+        recent_notes=ContentManager.get_content("notes", limit=5)))
+
 
 @app.get("/til/page/{page}", response_class=HTMLResponse)
 async def read_til_page(request: Request, page: int):
     result = ContentManager.get_til_posts(page=page)
 
-    return HTMLResponse(
-        content=env.get_template("partials/til_page.html").render(
-            request=request,
-            tils=result["tils"],
-            next_page=result["next_page"]
-        )
-    )
+    return HTMLResponse(content=env.get_template(
+        "partials/til_page.html").render(request=request,
+                                         tils=result["tils"],
+                                         next_page=result["next_page"]))
+
 
 @app.get("/til/{til_name}", response_class=HTMLResponse)
 async def read_til_post(request: Request, til_name: str):
@@ -591,15 +668,13 @@ async def read_til_post(request: Request, til_name: str):
     content_data = ContentManager.render_markdown(file_path)
     template_name = "content_page.html"
 
-    return HTMLResponse(
-        content=env.get_template(template_name).render(
-            request=request,
-            content=content_data["html"],
-            metadata=content_data["metadata"],
-            recent_how_tos=ContentManager.get_content("how_to", limit=5),
-            recent_notes=ContentManager.get_content("notes", limit=5)
-        )
-    )
+    return HTMLResponse(content=env.get_template(template_name).render(
+        request=request,
+        content=content_data["html"],
+        metadata=content_data["metadata"],
+        recent_how_tos=ContentManager.get_content("how_to", limit=5),
+        recent_notes=ContentManager.get_content("notes", limit=5)))
+
 
 @app.get("/health")
 async def health_check():
