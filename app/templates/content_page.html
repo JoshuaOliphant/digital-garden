@@ -14,7 +14,18 @@
             {{ metadata.status }}
         </span>
     </div>
-    {% endif %} {% if metadata.tags %}
+    {% endif %}
+
+    <!-- Single dates section, outside of any other conditionals -->
+    <div class="text-sm text-gray-600 mb-4">
+        {% if metadata.created %}
+        <span>Created: {{ metadata.created }}</span>
+        {% endif %} {% if metadata.updated %}
+        <span class="ml-4">Updated: {{ metadata.updated }}</span>
+        {% endif %}
+    </div>
+
+    {% if metadata.tags %}
     <div class="flex flex-wrap gap-2 mt-4">
         {% for tag in metadata.tags %}
         <a

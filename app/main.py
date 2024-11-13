@@ -153,10 +153,21 @@ class ContentManager:
         for file in files:
             name = os.path.splitext(os.path.basename(file))[0]
             file_content = ContentManager.render_markdown(file)
+            metadata = file_content["metadata"]
+
+            # Get excerpt
+            soup = BeautifulSoup(file_content["html"], 'html.parser')
+            first_p = soup.find('p')
+            excerpt = first_p.get_text() if first_p else ""
+
             content.append({
                 "name": name,
-                "title": file_content["metadata"].get("title", name.replace('-', ' ').title()),
-                "metadata": file_content["metadata"]
+                "title": metadata.get("title", name.replace('-', ' ').title()),
+                "created": metadata.get("created", ""),
+                "updated": metadata.get("updated", ""),
+                "metadata": metadata,
+                "excerpt": excerpt,
+                "url": f"/{content_type}/{name}"
             })
         return content[:limit] if limit else content
 
@@ -193,18 +204,21 @@ class ContentManager:
         for file in files_to_process:
             name = os.path.splitext(os.path.basename(file))[0]
             file_content = ContentManager.render_markdown(file)
+            metadata = file_content["metadata"]
+
             bookmarks.append({
                 "name": name,
-                "title": file_content["metadata"].get("title", name.replace('-', ' ').title()),
-                "url": file_content["metadata"].get("url", ""),
-                "date": name[:10]
+                "title": metadata.get("title", name.replace('-', ' ').title()),
+                "url": metadata.get("url", ""),
+                "created": metadata.get("created", ""),
+                "updated": metadata.get("updated", ""),
+                "date": name[:10]  # Keep this for backwards compatibility if needed
             })
         return bookmarks
 
     @staticmethod
     def get_posts_by_tag(tag: str, content_types: List[str] = None):
         posts = []
-        # If no content types specified, use all
         if content_types is None:
             content_types = ["notes", "how_to", "til"]
 
@@ -213,25 +227,26 @@ class ContentManager:
             for file in files:
                 name = os.path.splitext(os.path.basename(file))[0]
                 file_content = ContentManager.render_markdown(file)
+                metadata = file_content["metadata"]
 
-                if "tags" in file_content["metadata"] and tag in file_content["metadata"]["tags"]:
-                    # Get excerpt for TiL posts
-                    excerpt = ""
-                    if content_type == "til":
-                        soup = BeautifulSoup(file_content["html"], 'html.parser')
-                        first_p = soup.find('p')
-                        excerpt = first_p.get_text() if first_p else ""
+                if "tags" in metadata and tag in metadata["tags"]:
+                    # Get excerpt for all post types
+                    soup = BeautifulSoup(file_content["html"], 'html.parser')
+                    first_p = soup.find('p')
+                    excerpt = first_p.get_text() if first_p else ""
 
                     posts.append({
                         "type": content_type,
                         "name": name,
-                        "title": file_content["metadata"].get("title", name.replace('-', ' ').title()),
-                        "metadata": file_content["metadata"],
-                        "excerpt": excerpt if content_type == "til" else "",
+                        "title": metadata.get("title", name.replace('-', ' ').title()),
+                        "created": metadata.get("created", ""),
+                        "updated": metadata.get("updated", ""),
+                        "metadata": metadata,
+                        "excerpt": excerpt,
                         "url": f"/{content_type}/{name}"
                     })
 
-        return sorted(posts, key=lambda x: x["metadata"].get("created", ""), reverse=True)
+        return sorted(posts, key=lambda x: x.get("created", ""), reverse=True)
 
     @staticmethod
     @timed_lru_cache(maxsize=1, ttl_seconds=3600)
@@ -457,6 +472,7 @@ async def read_content(request: Request, content_type: str, page_name: str):
         raise HTTPException(status_code=404, detail="Content not found")
 
     content_data = ContentManager.render_markdown(file_path)
+    print(f"Metadata for {page_name}: {content_data['metadata']}")  # Debug print
     template_name = "partials/content.html" if request.headers.get("HX-Request") == "true" else "content_page.html"
 
     return HTMLResponse(
@@ -464,6 +480,7 @@ async def read_content(request: Request, content_type: str, page_name: str):
             request=request,
             content=content_data["html"],
             metadata=content_data["metadata"],
+            content_type=content_type,
             recent_how_tos=ContentManager.get_content("how_to", limit=5),
             recent_notes=ContentManager.get_content("notes", limit=5)
         )

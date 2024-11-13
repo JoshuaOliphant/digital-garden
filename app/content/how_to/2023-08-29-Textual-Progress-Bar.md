@@ -19,7 +19,7 @@ async def add_collections(self):
     for collection_data in collection_data_list:
         collection = Collection(id=collection_data['_id'],
             title=collection_data['title'],
-            description=collection_data["description"], 
+            description=collection_data["description"],
             count=collection_data['count'], created=datetime.strptime(collection_data['created'], "%Y-%m-%dT%H:%M:%S.%fZ"), last_update=datetime.strptime(collection_data['lastUpdate'], "%Y-%m-%dT%H:%M:%S.%fZ"))
 
         session.add(collection)
@@ -53,7 +53,7 @@ def add_collection(self, collection_data):
     collection = Collection(id=collection_data['_id'],
                             title=collection_data['title'], description=collection_data["description"], count=collection_data['count'], created=datetime.strptime(collection_data['created'], "%Y-%m-%dT%H:%M:%S.%fZ"), last_update=datetime.strptime(collection_data['lastUpdate'], "%Y-%m-%dT%H:%M:%S.%fZ"))
 
-     session.add(collection)        
+     session.add(collection)
      session.commit()
 
 def add_raindrops(self, raindrop_data_list, collection_id):

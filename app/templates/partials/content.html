@@ -29,6 +29,13 @@
     </div>
     {% endif %}
 
+    <div class="text-sm text-gray-600 mb-4">
+        <span>Created: {{ metadata.created }}</span>
+        {% if metadata.updated and metadata.updated != metadata.created %}
+        <span class="ml-4">Updated: {{ metadata.updated }}</span>
+        {% endif %}
+    </div>
+
     <div>{{ content | safe }}</div>
 </article>
 
