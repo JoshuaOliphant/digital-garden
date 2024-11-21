@@ -722,6 +722,18 @@ async def read_til_post(request: Request, til_name: str):
         recent_notes=ContentManager.get_content("notes", limit=5)))
 
 
+@app.get("/projects", response_class=HTMLResponse)
+async def read_projects(request: Request):
+    template = env.get_template("content_page.html")
+    projects_content = ContentManager.render_markdown(f"{CONTENT_DIR}/pages/projects.md")
+    return HTMLResponse(content=template.render(
+        request=request,
+        content=projects_content["html"],
+        metadata=projects_content["metadata"],
+        recent_how_tos=ContentManager.get_content("how_to", limit=5),
+        recent_notes=ContentManager.get_content("notes", limit=5)))
+
+
 @app.get("/health")
 async def health_check():
     return {"status": "healthy"}
