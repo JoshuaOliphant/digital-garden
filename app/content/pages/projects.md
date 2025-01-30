@@ -20,3 +20,12 @@ The idea came from my use of Notebook LLM, because often I want to add a source 
 
 - [Try it out](https://link-content-scraper.anoliphantneverforgets.com)
 - [Github repo](https://github.com/JoshuaOliphant/Link-Content-Scraper)
+
+## Entiendo
+
+My wife gave me this idea, which is to build a tool to help interpret complicated documents. Her idea more specifically was an AI app to scan contracts and go through each paragraph and explain it in Layman's terms. I thought it could be a more general-purpose tool, so I decided to go ahead and build it.
+
+It uses the new citations API that Anthropic recently added. Plus, while I was digging around in their documentation I found that they also handle PDFs, so I am using Anthropic for that as well.
+
+- [Try it out](https://entiendo.anoliphantneverforgets.com)
+- [Github repo](https://github.com/JoshuaOliphant/entiendo)
