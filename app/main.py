@@ -530,7 +530,95 @@ def generate_rss_feed():
 
     return rss
 
-    return rss
+
+def generate_sitemap() -> str:
+    """Generate XML sitemap for the site"""
+    # Base URL for the site
+    base_url = "https://anoliphantneverforgets.com"
+    
+    # Start XML sitemap
+    sitemap = '<?xml version="1.0" encoding="UTF-8"?>\n'
+    sitemap += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+    
+    # Add static pages
+    static_pages = [
+        "",  # Home page
+        "/now",
+        "/til",
+        "/projects",
+        "/bookmarks"  # Keep bookmarks, remove stars
+    ]
+    
+    for page in static_pages:
+        sitemap += '  <url>\n'
+        sitemap += f'    <loc>{base_url}{page}</loc>\n'
+        sitemap += '    <changefreq>weekly</changefreq>\n'
+        sitemap += '    <priority>0.8</priority>\n'
+        sitemap += '  </url>\n'
+    
+    # Add notes
+    notes = ContentManager.get_content("notes")
+    for note in notes:
+        metadata = note.get("metadata", {})
+        # Only include content with appropriate status
+        if metadata.get("status") in ["Evergreen", "Budding"]:
+            sitemap += '  <url>\n'
+            sitemap += f'    <loc>{base_url}/notes/{note["name"]}</loc>\n'
+            if metadata.get("updated"):
+                sitemap += f'    <lastmod>{metadata["updated"]}</lastmod>\n'
+            elif metadata.get("created"):
+                sitemap += f'    <lastmod>{metadata["created"]}</lastmod>\n'
+            sitemap += '    <changefreq>monthly</changefreq>\n'
+            sitemap += '    <priority>0.6</priority>\n'
+            sitemap += '  </url>\n'
+    
+    # Add how-tos
+    how_tos = ContentManager.get_content("how_to")
+    for how_to in how_tos:
+        metadata = how_to.get("metadata", {})
+        # Only include content with appropriate status
+        if metadata.get("status") in ["Evergreen", "Budding"]:
+            sitemap += '  <url>\n'
+            sitemap += f'    <loc>{base_url}/how_to/{how_to["name"]}</loc>\n'
+            if metadata.get("updated"):
+                sitemap += f'    <lastmod>{metadata["updated"]}</lastmod>\n'
+            elif metadata.get("created"):
+                sitemap += f'    <lastmod>{metadata["created"]}</lastmod>\n'
+            sitemap += '    <changefreq>monthly</changefreq>\n'
+            sitemap += '    <priority>0.6</priority>\n'
+            sitemap += '  </url>\n'
+    
+    # Add TIL posts
+    til_result = ContentManager.get_til_posts(page=1, per_page=9999)
+    for til in til_result["tils"]:
+        # Only include content with appropriate status
+        if til.get("status") in ["Evergreen", "Budding"]:
+            sitemap += '  <url>\n'
+            sitemap += f'    <loc>{base_url}/til/{til["name"]}</loc>\n'
+            if til.get("updated"):
+                sitemap += f'    <lastmod>{til["updated"]}</lastmod>\n'
+            elif til.get("created"):
+                sitemap += f'    <lastmod>{til["created"]}</lastmod>\n'
+            sitemap += '    <changefreq>monthly</changefreq>\n'
+            sitemap += '    <priority>0.6</priority>\n'
+            sitemap += '  </url>\n'
+    
+    # Add bookmarks
+    bookmarks = ContentManager.get_bookmarks()
+    for bookmark in bookmarks:
+        sitemap += '  <url>\n'
+        sitemap += f'    <loc>{base_url}/bookmarks/{bookmark["name"]}</loc>\n'
+        if bookmark.get("updated"):
+            sitemap += f'    <lastmod>{bookmark["updated"]}</lastmod>\n'
+        elif bookmark.get("created"):
+            sitemap += f'    <lastmod>{bookmark["created"]}</lastmod>\n'
+        sitemap += '    <changefreq>monthly</changefreq>\n'
+        sitemap += '    <priority>0.4</priority>\n'  # Lower priority for bookmarks
+        sitemap += '  </url>\n'
+    
+    # Close sitemap
+    sitemap += '</urlset>'
+    return sitemap
 
 
 @app.get("/feed.xml")
@@ -538,6 +626,26 @@ def generate_rss_feed():
 async def rss_feed():
     rss_content = generate_rss_feed()
     return Response(content=rss_content, media_type="application/xml")
+
+
+@app.get("/sitemap.xml")
+async def sitemap():
+    """Serve the XML sitemap"""
+    sitemap_content = generate_sitemap()
+    return Response(
+        content=sitemap_content,
+        media_type="application/xml"
+    )
+
+
+@app.get("/robots.txt")
+async def robots():
+    return Response(
+        content="""User-agent: *
+Allow: /
+Sitemap: https://anoliphantneverforgets.com/sitemap.xml""",
+        media_type="text/plain"
+    )
 
 
 # Route handlers
