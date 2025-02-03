@@ -29,15 +29,17 @@ STATIC_DIR = "app/static"
 ALLOWED_TAGS = list(bleach.sanitizer.ALLOWED_TAGS) + [
     "p", "pre", "code", "h1", "h2", "h3", "h4", "h5", "h6", "blockquote", "ul",
     "ol", "li", "strong", "em", "a", "img", "table", "thead", "tbody", "tr",
-    "th", "td"
+    "th", "td", "span"
 ]
 
 ALLOWED_ATTRIBUTES = {
     **bleach.sanitizer.ALLOWED_ATTRIBUTES,
-    "a": ["href", "title", "rel"],
+    "a": ["href", "title", "rel", "class"],
     "img": ["src", "alt", "title"],
     "th": ["align"],
     "td": ["align"],
+    "code": ["class"],
+    "span": ["class"]
 }
 
 GITHUB_USERNAME = "JoshuaOliphant"
@@ -137,18 +139,79 @@ class ContentManager:
 
     @staticmethod
     def _convert_markdown(content: str) -> str:
+        # Create a custom extension to wrap inline code in spans
+        class InlineCodeExtension(markdown.Extension):
+            def extendMarkdown(self, md):
+                # Override the inline code pattern
+                md.inlinePatterns.register(InlineCodePattern(r'(?<!\\)(`+)(.+?)(?<!`)\1(?!`)', md), 'backtick', 175)
+        
+        class InlineCodePattern(markdown.inlinepatterns.Pattern):
+            def handleMatch(self, m):
+                el = markdown.util.etree.Element('span')
+                el.set('class', 'inline-code')
+                code = markdown.util.etree.SubElement(el, 'code')
+                code.text = markdown.util.AtomicString(m.group(2))
+                return el
+
+        # Custom FencedCode extension to preserve link styling
+        class CustomFencedCodeExtension(FencedCodeExtension):
+            def extendMarkdown(self, md):
+                """ Add FencedBlockPreprocessor to the Markdown instance. """
+                md.registerExtension(self)
+                config = self.getConfigs()
+                processor = markdown.extensions.fenced_code.FencedBlockPreprocessor(md, config)
+                processor.run = lambda lines: self.custom_run(processor, lines)  # Override the run method
+                md.preprocessors.register(processor, 'fenced_code_block', 25)
+
+            def custom_run(self, processor, lines):
+                """ Custom run method to preserve link styling within code blocks """
+                new_lines = []
+                for line in lines:
+                    if line.strip().startswith('```'):
+                        new_lines.append(line)
+                    else:
+                        # Replace markdown links with HTML links that have our styling
+                        line = re.sub(
+                            r'\[(.*?)\]\((.*?)\)',
+                            r'<a href="\2" class="text-emerald-600 hover:text-emerald-500 hover:underline">\1</a>',
+                            line
+                        )
+                        new_lines.append(line)
+                return processor.__class__.run(processor, new_lines)
+
         md = markdown.Markdown(extensions=[
             'extra',
             'admonition',
             TocExtension(baselevel=1),
-            FencedCodeExtension(),
+            CustomFencedCodeExtension(),
+            InlineCodeExtension()
         ])
+        
         html_content = md.convert(content)
-        clean_html = bleach.clean(html_content,
-                                  tags=ALLOWED_TAGS,
-                                  attributes=ALLOWED_ATTRIBUTES,
-                                  strip=True)
-        return bleach.linkify(clean_html)
+        
+        # Use BeautifulSoup to modify link styles
+        soup = BeautifulSoup(html_content, 'html.parser')
+        for link in soup.find_all('a'):
+            existing_classes = link.get('class', [])
+            if isinstance(existing_classes, str):
+                existing_classes = existing_classes.split()
+            new_classes = existing_classes + ['text-emerald-600', 'hover:text-emerald-500', 'hover:underline']
+            link['class'] = ' '.join(new_classes)
+        
+        # Update ALLOWED_ATTRIBUTES to ensure classes survive sanitization
+        allowed_attrs = {
+            **ALLOWED_ATTRIBUTES,
+            'a': ['href', 'title', 'rel', 'class', 'target'],
+        }
+        
+        clean_html = bleach.clean(
+            str(soup),
+            tags=ALLOWED_TAGS,
+            attributes=allowed_attrs,
+            strip=True
+        )
+        
+        return clean_html
 
     @staticmethod
     def get_content(content_type: str, limit=None):

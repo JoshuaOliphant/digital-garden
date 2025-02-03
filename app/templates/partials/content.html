@@ -37,5 +37,7 @@
     </div>
     {% endif %}
 
-    <div>{{ content | safe }}</div>
+    <div class="prose prose-code:bg-gray-100 prose-code:text-gray-800 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:before:content-[''] prose-code:after:content-[''] prose-a:text-emerald-600 prose-a:hover:text-emerald-500 prose-a:hover:underline prose-code:prose-a:text-emerald-600 prose-code:prose-a:hover:text-emerald-500">
+        {{ content | safe }}
+    </div>
 </article>

@@ -1,5 +1,5 @@
 {% extends "base.html" %} {% block content %}
-<article class="prose max-w-none">
+<article class="prose max-w-none prose-code:bg-gray-100 prose-code:text-gray-800 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:before:content-[''] prose-code:after:content-[''] prose-code:prose-a:text-emerald-400 prose-code:prose-a:hover:text-emerald-300">
     <h1 class="text-4xl font-bold mb-4">{{ metadata.title }}</h1>
 
     {% if metadata.status %}
@@ -47,7 +47,7 @@
                 <li class="mb-2">
                     <a
                         href="/how_to/{{ how_to.name }}"
-                        class="text-blue-500 hover:underline"
+                        class="text-emerald-500 hover:underline"
                         hx-get="/how_to/{{ how_to.name }}"
                         hx-target="#content-area"
                         hx-swap="innerHTML"
@@ -66,7 +66,7 @@
                 <li class="mb-2">
                     <a
                         href="/notes/{{ note.name }}"
-                        class="text-blue-500 hover:underline"
+                        class="text-emerald-500 hover:underline"
                         hx-get="/notes/{{ note.name }}"
                         hx-target="#content-area"
                         hx-swap="innerHTML"
