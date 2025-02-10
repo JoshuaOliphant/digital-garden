@@ -38,9 +38,9 @@
      related_content: Optional[List[str]] = None
      visibility: str = "public"
      ```
-   - [ ] Update main.py to use these models when parsing content
-   - [ ] Add error handling for invalid content structure
-   - [ ] Add tests for model validation
+   - [x] Update main.py to use these models when parsing content
+   - [x] Add error handling for invalid content structure
+   - [x] Add tests for model validation
 
 1a. **Content Migration Plan**
    - [ ] Create content analysis script:

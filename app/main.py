@@ -16,10 +16,13 @@ import random
 import httpx
 import time
 from datetime import datetime
-from typing import List, Optional, Dict, Any, TypeVar, Callable, Awaitable
+from typing import List, Optional, Dict, Any, TypeVar, Callable, Awaitable, Union
 from functools import wraps
 from fastapi.responses import Response
 from email.utils import format_datetime
+from pydantic import ValidationError
+
+from .models import BaseContent, Bookmark, TIL, Note, ContentMetadata
 
 # Constants
 CONTENT_DIR = "app/content"
@@ -110,32 +113,67 @@ class timed_lru_cache:
 
 
 class ContentManager:
+    CONTENT_TYPE_MAP = {
+        'bookmarks': Bookmark,
+        'til': TIL,
+        'notes': Note,
+        'how_to': Note,  # Using Note model for how-to guides
+        'pages': Note,   # Using Note model for pages
+    }
 
     @staticmethod
     def render_markdown(file_path: str) -> dict:
         if not os.path.exists(file_path):
-            return {"html": "", "metadata": {}}
+            return {"html": "", "metadata": {}, "errors": ["File not found"]}
 
         with open(file_path, "r", encoding="utf-8") as f:
             content = f.read()
 
-        # Parse YAML front matter
-        metadata, md_content = ContentManager._parse_front_matter(content)
+        # Parse YAML front matter and validate with Pydantic
+        metadata, md_content, errors = ContentManager._parse_front_matter(content, file_path)
 
         # Convert and sanitize markdown
         html_content = ContentManager._convert_markdown(md_content)
-        return {"html": html_content, "metadata": metadata}
+        return {"html": html_content, "metadata": metadata, "errors": errors}
 
     @staticmethod
-    def _parse_front_matter(content: str) -> tuple:
+    def _parse_front_matter(content: str, file_path: str) -> tuple:
+        errors = []
         if content.startswith('---'):
             try:
                 _, fm, md_content = content.split('---', 2)
-                metadata = yaml.safe_load(fm)
-                return metadata, md_content
+                raw_metadata = yaml.safe_load(fm)
+                
+                # Determine content type from file path
+                path_parts = file_path.split(os.sep)
+                content_type = path_parts[-2] if len(path_parts) > 1 else 'notes'
+                
+                # Get the appropriate model
+                model_class = ContentManager.CONTENT_TYPE_MAP.get(content_type, BaseContent)
+                
+                try:
+                    # Convert string dates to datetime objects
+                    if isinstance(raw_metadata.get('created'), str):
+                        raw_metadata['created'] = datetime.strptime(raw_metadata['created'], '%Y-%m-%d')
+                    if isinstance(raw_metadata.get('updated'), str):
+                        raw_metadata['updated'] = datetime.strptime(raw_metadata['updated'], '%Y-%m-%d')
+                    
+                    # Validate with Pydantic model
+                    validated_metadata = model_class(**raw_metadata)
+                    return validated_metadata.model_dump(), md_content, errors
+                except ValidationError as e:
+                    errors.extend([f"{err['loc']}: {err['msg']}" for err in e.errors()])
+                    return raw_metadata, md_content, errors
+                
             except ValueError:
-                return {}, content
-        return {}, content
+                errors.append("Invalid front matter format")
+                return {}, content, errors
+            except yaml.YAMLError as e:
+                errors.append(f"YAML parsing error: {str(e)}")
+                return {}, content, errors
+        
+        errors.append("No front matter found")
+        return {}, content, errors
 
     @staticmethod
     def _convert_markdown(content: str) -> str:
@@ -219,33 +257,48 @@ class ContentManager:
         files.sort(key=ContentManager._get_date_from_filename, reverse=True)
 
         content = []
+        validation_errors = {}
+        
         for file in files:
             name = os.path.splitext(os.path.basename(file))[0]
             file_content = ContentManager.render_markdown(file)
             metadata = file_content["metadata"]
+            errors = file_content.get("errors", [])
+
+            if errors:
+                validation_errors[file] = errors
+                # Skip invalid content in production, include with errors in development
+                if os.getenv("ENVIRONMENT") == "production":
+                    continue
 
             # Get excerpt
             soup = BeautifulSoup(file_content["html"], 'html.parser')
             first_p = soup.find('p')
             excerpt = first_p.get_text() if first_p else ""
 
-            content.append({
-                "name":
-                name,
-                "title":
-                metadata.get("title",
-                             name.replace('-', ' ').title()),
-                "created":
-                metadata.get("created", ""),
-                "updated":
-                metadata.get("updated", ""),
-                "metadata":
-                metadata,
-                "excerpt":
-                excerpt,
-                "url":
-                f"/{content_type}/{name}"
-            })
+            content_item = {
+                "name": name,
+                "title": metadata.get("title", name.replace('-', ' ').title()),
+                "created": metadata.get("created", ""),
+                "updated": metadata.get("updated", ""),
+                "metadata": metadata,
+                "excerpt": excerpt,
+                "url": f"/{content_type}/{name}"
+            }
+            
+            if errors and os.getenv("ENVIRONMENT") != "production":
+                content_item["validation_errors"] = errors
+
+            content.append(content_item)
+
+        # Log validation errors
+        if validation_errors:
+            print(f"Content validation errors in {content_type}:")
+            for file, errors in validation_errors.items():
+                print(f"{file}:")
+                for error in errors:
+                    print(f"  - {error}")
+
         return content[:limit] if limit else content
 
     @staticmethod
