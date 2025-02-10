@@ -3,18 +3,18 @@
 ## 1. Migrate to Anthropic Claude and Enhance AI Features
 
 1. **Update Dependencies and Configuration**
-   - [ ] Add Anthropic Python client to `pyproject.toml`:
+   - [x] Add Anthropic Python client to `pyproject.toml`:
      ```toml
      anthropic = "^0.15.0"  # Latest stable version
      ```
-   - [ ] Create configuration for Anthropic API:
+   - [x] Create configuration for Anthropic API:
      ```python
      from anthropic import Anthropic
      
      anthropic = Anthropic()  # Uses ANTHROPIC_API_KEY from env
      ```
-   - [ ] Update environment setup documentation
-   - [ ] Add Claude model configuration settings
+   - [x] Update environment setup documentation
+   - [x] Add Claude model configuration settings
 
 2. **Enhance Content Analysis with Claude**
    - [ ] Update `analyze_content.py`:
