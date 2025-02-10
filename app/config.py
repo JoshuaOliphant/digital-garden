@@ -11,7 +11,7 @@ class AIConfig(BaseSettings):
     openai_api_key: str = os.getenv("OPENAI_API_KEY", "")
     
     # Claude model configuration
-    claude_model: str = "claude-3-sonnet-20240229"  # Latest stable model
+    claude_model: str = "claude-3-5-sonnet-latest"  # Latest stable model
     claude_max_tokens: int = 4096
     claude_temperature: float = 0.7
     

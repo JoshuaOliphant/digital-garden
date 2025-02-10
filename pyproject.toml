@@ -20,8 +20,14 @@ dependencies = [
     "requests>=2.32.3",
     "uvicorn>=0.30.6",
     "networkx>=3.2.1",
-    "rich>=13.7.0"
+    "rich>=13.7.0",
+    "textstat>=0.7.3",
+    "pydantic-settings>=2.7.1",
+    "pytest>=8.3.4",
 ]
+
+[tool.hatch.build.targets.wheel]
+packages = ["app", "scripts"]
 
 [tool.pyright]
 venvPath = "."

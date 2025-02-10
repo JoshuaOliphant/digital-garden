@@ -38,7 +38,7 @@ A digital garden for organizing and sharing knowledge, powered by FastAPI and AI
 
    # Optional settings
    ENVIRONMENT=development  # or production
-   CLAUDE_MODEL=claude-3-sonnet-20240229  # or other model version
+   CLAUDE_MODEL=claude-3-5-sonnet-latest  # or other model version
    CLAUDE_MAX_TOKENS=4096
    CLAUDE_TEMPERATURE=0.7
    ```

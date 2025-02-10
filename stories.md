@@ -30,7 +30,7 @@
    - [x] Add automated content organization recommendations
 
 3. **Improve Metadata Generation**
-   - [ ] Update `generate_metadata.py` to use Claude:
+   - [x] Update `generate_metadata.py` to use Claude:
      ```python
      # Enhanced metadata generation:
      # - More accurate tag suggestions
@@ -39,9 +39,9 @@
      # - Reading time estimation
      # - Content summarization
      ```
-   - [ ] Add content classification capabilities
-   - [ ] Implement automated series detection
-   - [ ] Add content difficulty estimation
+   - [x] Add content classification capabilities
+   - [x] Implement automated series detection
+   - [x] Add content difficulty estimation
 
 4. **Enhanced Content Validation**
    - [ ] Update `validate_frontmatter.py` with Claude:

@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import List, Optional
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 class BaseContent(BaseModel):
     # Required fields
@@ -17,8 +17,7 @@ class BaseContent(BaseModel):
     related_content: Optional[List[str]] = None
     visibility: str = "public"
     
-    class Config:
-        extra = "allow"
+    model_config = ConfigDict(extra="allow")
 
 class Bookmark(BaseContent):
     url: str
