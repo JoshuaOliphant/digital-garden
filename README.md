@@ -20,13 +20,13 @@ A digital garden for organizing and sharing knowledge, powered by FastAPI and AI
 
 2. Create a Python virtual environment (Python 3.12+ required):
    ```bash
-   python -m venv .venv
+   uv venv
    source .venv/bin/activate  # On Windows: .venv\Scripts\activate
    ```
 
 3. Install dependencies:
    ```bash
-   pip install -r requirements.txt
+   uv sync
    ```
 
 4. Set up environment variables:
@@ -34,7 +34,6 @@ A digital garden for organizing and sharing knowledge, powered by FastAPI and AI
    ```env
    # Required API keys
    ANTHROPIC_API_KEY=your_anthropic_api_key
-   OPENAI_API_KEY=your_openai_api_key
 
    # Optional settings
    ENVIRONMENT=development  # or production
