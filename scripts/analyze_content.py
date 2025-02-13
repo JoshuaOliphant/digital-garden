@@ -8,7 +8,7 @@ import logging
 from collections import defaultdict
 from typing import Dict, Set, List, Optional
 from datetime import datetime
-from anthropic import Anthropic
+from anthropic import AsyncAnthropic
 from bs4 import BeautifulSoup
 import markdown
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -31,8 +31,14 @@ logging.basicConfig(
     ]
 )
 
+class DateTimeEncoder(json.JSONEncoder):
+    """Custom JSON encoder that handles datetime objects."""
+    def default(self, obj):
+        if isinstance(obj, datetime):
+            return obj.isoformat()
+        return super().default(obj)
+
 console = Console()
-client = Anthropic(api_key=ai_config.anthropic_api_key)
 
 class ContentAnalyzer:
     def __init__(self):
@@ -45,6 +51,7 @@ class ContentAnalyzer:
         self.md = markdown.Markdown(extensions=['extra'])
         self.content_clusters = {}
         self.quality_metrics = defaultdict(dict)
+        self.client = AsyncAnthropic(api_key=ai_config.anthropic_api_key)
         
     def _extract_text_content(self, content: str) -> str:
         """Extract plain text from markdown content."""
@@ -75,7 +82,7 @@ class ContentAnalyzer:
         Return the analysis as a JSON object.
         """
         
-        response = await client.messages.create(
+        response = await self.client.messages.create(
             model=ai_config.claude_model,
             max_tokens=ai_config.claude_max_tokens,
             temperature=ai_config.claude_temperature,
@@ -87,6 +94,9 @@ class ContentAnalyzer:
     
     async def _get_seo_suggestions(self, text: str, metadata: Dict) -> Dict:
         """Get SEO optimization suggestions using Claude."""
+        # Convert metadata to JSON-serializable format
+        metadata_json = json.loads(json.dumps(metadata, cls=DateTimeEncoder))
+        
         prompt = f"""
         Analyze this content and metadata for SEO optimization:
         
@@ -94,7 +104,7 @@ class ContentAnalyzer:
         {text[:1500]}
         
         Metadata:
-        {json.dumps(metadata, indent=2)}
+        {json.dumps(metadata_json, indent=2)}
         
         Please provide:
         1. Keyword analysis
@@ -106,7 +116,7 @@ class ContentAnalyzer:
         Return suggestions as a JSON object.
         """
         
-        response = await client.messages.create(
+        response = await self.client.messages.create(
             model=ai_config.claude_model,
             max_tokens=ai_config.claude_max_tokens,
             temperature=ai_config.claude_temperature,
@@ -118,6 +128,9 @@ class ContentAnalyzer:
     
     async def _predict_engagement(self, text: str, metadata: Dict) -> Dict:
         """Predict content engagement potential using Claude."""
+        # Convert metadata to JSON-serializable format
+        metadata_json = json.loads(json.dumps(metadata, cls=DateTimeEncoder))
+        
         prompt = f"""
         Analyze this content and metadata to predict engagement potential:
         
@@ -125,7 +138,7 @@ class ContentAnalyzer:
         {text[:1500]}
         
         Metadata:
-        {json.dumps(metadata, indent=2)}
+        {json.dumps(metadata_json, indent=2)}
         
         Please predict:
         1. Target audience engagement level (0-100)
@@ -142,7 +155,7 @@ class ContentAnalyzer:
         Return predictions and suggestions as a JSON object.
         """
         
-        response = await client.messages.create(
+        response = await self.client.messages.create(
             model=ai_config.claude_model,
             max_tokens=ai_config.claude_max_tokens,
             temperature=ai_config.claude_temperature,
@@ -414,7 +427,7 @@ class ContentAnalyzer:
         }
         
         with open('content_analysis_report.json', 'w', encoding='utf-8') as f:
-            json.dump(report, f, indent=2, default=str)
+            json.dump(report, f, indent=2, cls=DateTimeEncoder)
         
         console.print(f"\n[green]Detailed report saved to content_analysis_report.json[/green]")
 
