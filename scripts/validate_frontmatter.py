@@ -14,15 +14,14 @@ import markdown
 import html2text
 
 from app.models import BaseContent, Bookmark, TIL, Note, ContentMetadata
-from app.config import get_settings
+from app.config import ai_config
 
 CONTENT_DIR = "app/content"
 
 class ContentValidator:
     """Validates content quality, links, and accessibility using Claude."""
     def __init__(self):
-        settings = get_settings()
-        self.client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
+        self.client = anthropic.Anthropic(api_key=ai_config.anthropic_api_key)
     
     def check_writing_style(self, content: str) -> Dict[str, any]:
         """Analyze writing style consistency and quality."""
@@ -44,9 +43,10 @@ class ContentValidator:
         """
         
         response = self.client.messages.create(
-            model="claude-3-5-sonnet-latest",
-            max_tokens=1000,
-            temperature=0,
+            model=ai_config.claude_model,
+            max_tokens=ai_config.claude_max_tokens,
+            temperature=ai_config.claude_temperature,
+            system=ai_config.system_prompts["analysis"],
             messages=[{"role": "user", "content": prompt}]
         )
         
