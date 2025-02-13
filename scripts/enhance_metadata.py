@@ -8,7 +8,7 @@ import logging
 from datetime import datetime, timedelta
 from typing import Dict, List, Set
 from collections import defaultdict
-from openai import OpenAI
+from anthropic import AsyncAnthropic
 from bs4 import BeautifulSoup
 import markdown
 import networkx as nx
@@ -17,6 +17,7 @@ from rich.progress import Progress, SpinnerColumn, TextColumn
 
 from app.models import BaseContent, Bookmark, TIL, Note
 from scripts.generate_metadata import MetadataGenerator
+from app.config import ai_config
 
 # Set up logging
 logging.basicConfig(
@@ -31,7 +32,7 @@ logging.basicConfig(
 CONTENT_DIR = "app/content"
 CACHE_FILE = "metadata_cache.json"
 console = Console()
-client = OpenAI()
+client = AsyncAnthropic(api_key=ai_config.anthropic_api_key)
 
 class MetadataEnhancer:
     def __init__(self):
@@ -163,16 +164,15 @@ class MetadataEnhancer:
             Return suggestions as a JSON object.
             """
             
-            response = await client.chat.completions.create(
-                model="gpt-4-turbo-preview",
-                messages=[
-                    {"role": "system", "content": "You are a metadata specialist helping to organize technical content."},
-                    {"role": "user", "content": prompt}
-                ],
-                response_format={"type": "json_object"}
+            response = await client.messages.create(
+                model=ai_config.claude_model,
+                max_tokens=ai_config.claude_max_tokens,
+                temperature=ai_config.claude_temperature,
+                system=ai_config.system_prompts["analysis"],
+                messages=[{"role": "user", "content": prompt}]
             )
             
-            suggestions = json.loads(response.choices[0].message.content)
+            suggestions = json.loads(response.content[0].text)
             
             # Merge suggestions with current metadata
             enhanced_metadata = {
