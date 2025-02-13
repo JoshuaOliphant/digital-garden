@@ -116,6 +116,42 @@ class ContentAnalyzer:
         
         return json.loads(response.content[0].text)
     
+    async def _predict_engagement(self, text: str, metadata: Dict) -> Dict:
+        """Predict content engagement potential using Claude."""
+        prompt = f"""
+        Analyze this content and metadata to predict engagement potential:
+        
+        Content:
+        {text[:1500]}
+        
+        Metadata:
+        {json.dumps(metadata, indent=2)}
+        
+        Please predict:
+        1. Target audience engagement level (0-100)
+        2. Social sharing potential (0-100)
+        3. Discussion/comment potential (0-100)
+        4. Content longevity (0-100)
+        5. Factors affecting engagement
+        
+        Also suggest:
+        1. Ways to increase engagement
+        2. Best platforms/channels for sharing
+        3. Potential discussion topics
+        
+        Return predictions and suggestions as a JSON object.
+        """
+        
+        response = await client.messages.create(
+            model=ai_config.claude_model,
+            max_tokens=ai_config.claude_max_tokens,
+            temperature=ai_config.claude_temperature,
+            system=ai_config.system_prompts["analysis"],
+            messages=[{"role": "user", "content": prompt}]
+        )
+        
+        return json.loads(response.content[0].text)
+    
     def _cluster_content(self):
         """Cluster content based on similarity."""
         # Collect all content texts
@@ -203,12 +239,14 @@ class ContentAnalyzer:
                 quality_metrics = await self._analyze_content_quality(text_content)
                 seo_suggestions = await self._get_seo_suggestions(text_content, metadata)
                 readability_metrics = self._calculate_readability(text_content)
+                engagement_predictions = await self._predict_engagement(text_content, metadata)
                 
                 # Store analysis results
                 self.quality_metrics[file_path] = {
                     "quality": quality_metrics,
                     "seo": seo_suggestions,
                     "readability": readability_metrics,
+                    "engagement": engagement_predictions,
                     "cluster": self.content_clusters.get(file_path)
                 }
                 
@@ -248,62 +286,142 @@ class ContentAnalyzer:
     
     def print_report(self):
         """Print analysis report."""
-        print("\n=== Content Analysis Report ===\n")
+        console.print("\n[bold]Content Analysis Report[/bold]\n")
         
-        # Print basic stats
-        for content_type in sorted(self.total_files.keys()):
-            print(f"\n## {content_type.upper()} ({self.total_files[content_type]} files)")
+        # Content Type Statistics
+        console.print("[bold]Content Type Statistics:[/bold]")
+        stats_table = Table(show_header=True, header_style="bold")
+        stats_table.add_column("Content Type")
+        stats_table.add_column("Total Files")
+        stats_table.add_column("Valid Files")
+        stats_table.add_column("Invalid Files")
+        
+        for content_type, total in self.total_files.items():
+            invalid = len(self.missing_required[content_type].get('front_matter', [])) + \
+                     len(self.missing_required[content_type].get('invalid_front_matter', [])) + \
+                     len(self.missing_required[content_type].get('invalid_yaml', []))
+            valid = total - invalid
+            stats_table.add_row(content_type, str(total), str(valid), str(invalid))
+        
+        console.print(stats_table)
+        console.print()
+        
+        # Field Usage Statistics
+        console.print("[bold]Field Usage Statistics:[/bold]")
+        for content_type, fields in self.field_usage.items():
+            console.print(f"\n[bold]{content_type}:[/bold]")
+            field_table = Table(show_header=True, header_style="bold")
+            field_table.add_column("Field")
+            field_table.add_column("Usage Count")
+            field_table.add_column("Types")
             
-            print("\nField Usage:")
-            for field, count in sorted(self.field_usage[content_type].items()):
-                percentage = (count / self.total_files[content_type]) * 100
-                types = ", ".join(sorted(self.field_types[content_type][field]))
-                print(f"  - {field}: {count} ({percentage:.1f}%) [{types}]")
+            for field, count in fields.items():
+                types = ", ".join(self.field_types[content_type][field])
+                field_table.add_row(field, str(count), types)
             
-            print("\nMissing Required Fields:")
-            for field, files in sorted(self.missing_required[content_type].items()):
-                if files:
-                    print(f"  - {field}: {len(files)} files")
-                    for file in files[:3]:
-                        print(f"    - {os.path.basename(file)}")
-                    if len(files) > 3:
-                        print(f"    - ... and {len(files) - 3} more")
+            console.print(field_table)
         
-        # Print quality metrics summary
-        print("\n## Content Quality Metrics")
-        table = Table(title="Quality Metrics Summary")
-        table.add_column("File")
-        table.add_column("Quality Score")
-        table.add_column("SEO Score")
-        table.add_column("Readability")
-        table.add_column("Cluster")
+        # Quality Metrics Summary
+        console.print("\n[bold]Quality Metrics Summary:[/bold]")
+        quality_table = Table(show_header=True, header_style="bold")
+        quality_table.add_column("Metric")
+        quality_table.add_column("Average Score")
+        quality_table.add_column("Files Below Threshold")
         
-        for file_path, metrics in self.quality_metrics.items():
-            table.add_row(
-                os.path.basename(file_path),
-                str(metrics["quality"].get("overall_score", "N/A")),
-                str(metrics["seo"].get("overall_score", "N/A")),
-                str(metrics["readability"]["flesch_reading_ease"]),
-                str(metrics["cluster"])
-            )
+        metrics = {
+            "Writing Quality": ("quality.style_score", 70),
+            "Technical Accuracy": ("quality.technical_score", 80),
+            "SEO Score": ("seo.overall_score", 75),
+            "Readability": ("readability.flesch_reading_ease", 60),
+            "Engagement Potential": ("engagement.target_audience_engagement", 70)
+        }
         
-        console.print(table)
+        for metric_name, (metric_path, threshold) in metrics.items():
+            total_score = 0
+            below_threshold = 0
+            count = 0
+            
+            for file_metrics in self.quality_metrics.values():
+                try:
+                    score = self._get_nested_value(file_metrics, metric_path)
+                    if score is not None:
+                        total_score += score
+                        count += 1
+                        if score < threshold:
+                            below_threshold += 1
+                except (KeyError, TypeError):
+                    continue
+            
+            if count > 0:
+                avg_score = round(total_score / count, 2)
+                quality_table.add_row(
+                    metric_name,
+                    str(avg_score),
+                    str(below_threshold)
+                )
+        
+        console.print(quality_table)
+        
+        # Content Clusters
+        console.print("\n[bold]Content Clusters:[/bold]")
+        cluster_counts = defaultdict(int)
+        for cluster_id in self.content_clusters.values():
+            cluster_counts[cluster_id] += 1
+        
+        cluster_table = Table(show_header=True, header_style="bold")
+        cluster_table.add_column("Cluster ID")
+        cluster_table.add_column("Number of Files")
+        
+        for cluster_id, count in sorted(cluster_counts.items()):
+            cluster_table.add_row(str(cluster_id), str(count))
+        
+        console.print(cluster_table)
+        
+        # Missing Required Fields
+        if any(self.missing_required.values()):
+            console.print("\n[bold]Missing Required Fields:[/bold]")
+            for content_type, missing in self.missing_required.items():
+                if missing:
+                    console.print(f"\n[bold]{content_type}:[/bold]")
+                    for field, files in missing.items():
+                        if files:
+                            console.print(f"  {field}: {len(files)} files")
         
         # Save detailed report
-        report_path = "content_analysis_report.json"
-        with open(report_path, 'w', encoding='utf-8') as f:
-            json.dump({
-                "field_usage": dict(self.field_usage),
-                "missing_required": dict(self.missing_required),
-                "quality_metrics": self.quality_metrics
-            }, f, indent=2)
+        self._save_detailed_report()
+    
+    def _get_nested_value(self, d: Dict, path: str) -> Optional[float]:
+        """Get value from nested dictionary using dot notation path."""
+        try:
+            value = d
+            for key in path.split('.'):
+                value = value[key]
+            return float(value)
+        except (KeyError, TypeError, ValueError):
+            return None
+    
+    def _save_detailed_report(self):
+        """Save detailed analysis results to a JSON file."""
+        report = {
+            "timestamp": datetime.now().isoformat(),
+            "total_files": dict(self.total_files),
+            "field_usage": dict(self.field_usage),
+            "field_types": {k: {f: list(t) for f, t in v.items()} 
+                          for k, v in self.field_types.items()},
+            "missing_required": dict(self.missing_required),
+            "content_clusters": self.content_clusters,
+            "quality_metrics": self.quality_metrics
+        }
         
-        print(f"\nDetailed report saved to {report_path}")
+        with open('content_analysis_report.json', 'w', encoding='utf-8') as f:
+            json.dump(report, f, indent=2, default=str)
+        
+        console.print(f"\n[green]Detailed report saved to content_analysis_report.json[/green]")
 
 async def main():
     import argparse
-    parser = argparse.ArgumentParser(description='Analyze content files')
-    parser.add_argument('--file', help='Process a specific file')
+    parser = argparse.ArgumentParser(description='Analyze content quality and structure')
+    parser.add_argument('--file', help='Analyze a specific file')
     args = parser.parse_args()
     
     analyzer = ContentAnalyzer()
