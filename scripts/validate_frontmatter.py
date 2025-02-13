@@ -2,13 +2,118 @@
 import os
 import yaml
 import glob
+import re
 from datetime import datetime
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Optional
 from pydantic import ValidationError
+import anthropic
+from urllib.parse import urlparse
+import requests
+from bs4 import BeautifulSoup
+import markdown
+import html2text
 
 from app.models import BaseContent, Bookmark, TIL, Note, ContentMetadata
+from app.config import get_settings
 
 CONTENT_DIR = "app/content"
+
+class ContentValidator:
+    """Validates content quality, links, and accessibility using Claude."""
+    def __init__(self):
+        settings = get_settings()
+        self.client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
+    
+    def check_writing_style(self, content: str) -> Dict[str, any]:
+        """Analyze writing style consistency and quality."""
+        prompt = f"""Analyze this content for writing style and quality. Focus on:
+        1. Tone consistency
+        2. Technical accuracy
+        3. Clarity and readability
+        4. Grammar and spelling
+        
+        Content: {content[:1000]}  # Limit content length
+        
+        Respond with a JSON object containing:
+        {{
+            "style_score": 1-10 rating,
+            "tone": "formal|casual|mixed",
+            "improvements": ["suggestion1", "suggestion2"],
+            "grammar_issues": ["issue1", "issue2"]
+        }}
+        """
+        
+        response = self.client.messages.create(
+            model="claude-3-5-sonnet-latest",
+            max_tokens=1000,
+            temperature=0,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        
+        return yaml.safe_load(response.content[0].text)
+
+    def validate_links(self, content: str) -> List[Dict[str, any]]:
+        """Check if links are valid and accessible."""
+        links = re.findall(r'\[([^\]]+)\]\(([^\)]+)\)', content)
+        results = []
+        
+        for text, url in links:
+            try:
+                parsed = urlparse(url)
+                if not parsed.scheme:
+                    results.append({
+                        "text": text,
+                        "url": url,
+                        "valid": False,
+                        "error": "Missing URL scheme (http/https)"
+                    })
+                    continue
+                
+                response = requests.head(url, allow_redirects=True, timeout=5)
+                results.append({
+                    "text": text,
+                    "url": url,
+                    "valid": 200 <= response.status_code < 400,
+                    "status_code": response.status_code
+                })
+            except Exception as e:
+                results.append({
+                    "text": text,
+                    "url": url,
+                    "valid": False,
+                    "error": str(e)
+                })
+        
+        return results
+
+    def check_accessibility(self, content: str) -> Dict[str, any]:
+        """Check content for accessibility issues."""
+        html = markdown.markdown(content)
+        soup = BeautifulSoup(html, 'html.parser')
+        
+        issues = []
+        
+        # Check image alt text
+        images = soup.find_all('img')
+        for img in images:
+            if not img.get('alt'):
+                issues.append(f"Missing alt text for image: {img.get('src', 'unknown')}")
+        
+        # Check heading hierarchy
+        headings = soup.find_all(['h1', 'h2', 'h3', 'h4', 'h5', 'h6'])
+        prev_level = 0
+        for h in headings:
+            level = int(h.name[1])
+            if level - prev_level > 1:
+                issues.append(f"Skipped heading level: {h.name} after h{prev_level}")
+            prev_level = level
+        
+        return {
+            "issues": issues,
+            "images_total": len(images),
+            "images_with_alt": len([img for img in images if img.get('alt')]),
+            "headings_total": len(headings)
+        }
 
 class FrontMatterValidator:
     def __init__(self):
@@ -21,6 +126,7 @@ class FrontMatterValidator:
         }
         self.errors = []
         self.fixes_applied = []
+        self.content_validator = ContentValidator()
     
     def _parse_date(self, date_str: str) -> datetime:
         """Parse date string into datetime object."""
@@ -57,7 +163,7 @@ class FrontMatterValidator:
         return fixed
 
     def validate_file(self, file_path: str, content_type: str, fix: bool = False) -> Tuple[bool, List[str]]:
-        """Validate front matter in a file."""
+        """Validate front matter and content in a file."""
         try:
             with open(file_path, 'r', encoding='utf-8') as f:
                 content = f.read()
@@ -79,6 +185,30 @@ class FrontMatterValidator:
                     # Validate with model
                     validated = model_class(**metadata)
                     
+                    # Perform enhanced validation
+                    validation_results = {
+                        "writing_style": self.content_validator.check_writing_style(md_content),
+                        "links": self.content_validator.validate_links(md_content),
+                        "accessibility": self.content_validator.check_accessibility(md_content)
+                    }
+                    
+                    # Collect validation issues
+                    issues = []
+                    
+                    # Writing style issues
+                    if validation_results["writing_style"]["style_score"] < 7:
+                        issues.extend(validation_results["writing_style"]["improvements"])
+                    
+                    # Link issues
+                    invalid_links = [l for l in validation_results["links"] if not l["valid"]]
+                    if invalid_links:
+                        issues.extend([f"Invalid link: {l['url']} - {l.get('error', l.get('status_code'))}" 
+                                    for l in invalid_links])
+                    
+                    # Accessibility issues
+                    if validation_results["accessibility"]["issues"]:
+                        issues.extend(validation_results["accessibility"]["issues"])
+                    
                     if fix and metadata != validated.model_dump():
                         # Write fixed content back to file
                         fixed_content = f"---\n{yaml.dump(validated.model_dump(), default_flow_style=False)}---{md_content}"
@@ -88,7 +218,7 @@ class FrontMatterValidator:
                             f.write(fixed_content)
                         self.fixes_applied.append(f"Fixed and validated {file_path}")
                     
-                    return True, []
+                    return len(issues) == 0, issues
                     
                 except ValidationError as e:
                     return False, [f"{err['loc']}: {err['msg']}" for err in e.errors()]
@@ -136,7 +266,7 @@ class FrontMatterValidator:
 
 def main():
     import argparse
-    parser = argparse.ArgumentParser(description='Validate front matter in content files')
+    parser = argparse.ArgumentParser(description='Validate front matter and content in files')
     parser.add_argument('--fix', action='store_true', help='Try to fix common issues')
     args = parser.parse_args()
     
