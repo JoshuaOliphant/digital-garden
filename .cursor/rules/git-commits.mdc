@@ -1,6 +1,0 @@
----
-description: git commit after major code changes
-globs: 
----
-- Update git with `git add . && git commit -m "..."`. Don't push.
-- Before commiting, make sure all unit tests pass by running `uv run pytest`

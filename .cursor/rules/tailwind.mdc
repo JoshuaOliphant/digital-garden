@@ -1,6 +1,0 @@
----
-description: Tailwind usageG
-globs: app/static/*, app/templates/*
----
-Use Tailwind for UI styling
-- Use Tailwind (mobile-first, dark mode with dark:(class))

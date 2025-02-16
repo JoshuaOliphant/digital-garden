@@ -1,8 +1,0 @@
----
-description: Unit test rules
-globs: 
----
-# Unit test rules
-
-- Always use pytest for writing unit tests
-- For router tests, use the FastAPI TestClient
