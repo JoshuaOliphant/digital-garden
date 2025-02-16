@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Request, HTTPException
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from jinja2 import Environment, FileSystemLoader
 from markdown.extensions.toc import TocExtension
@@ -16,10 +16,14 @@ import random
 import httpx
 import time
 from datetime import datetime
-from typing import List, Optional, Dict, Any, TypeVar, Callable, Awaitable
+from typing import List, Optional, Dict, Any, TypeVar, Callable, Awaitable, Union
 from functools import wraps
 from fastapi.responses import Response
 from email.utils import format_datetime
+from pydantic import ValidationError
+import logfire
+
+from .models import BaseContent, Bookmark, TIL, Note, ContentMetadata
 
 # Constants
 CONTENT_DIR = "app/content"
@@ -45,9 +49,7 @@ ALLOWED_ATTRIBUTES = {
 GITHUB_USERNAME = "JoshuaOliphant"
 T = TypeVar('T')
 
-http_client = httpx.AsyncClient(
-    timeout=10.0, headers={"Accept": "application/vnd.github.v3+json"})
-
+logfire.configure(console=logfire.ConsoleOptions(min_log_level='debug'))
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -61,6 +63,13 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 env = Environment(loader=FileSystemLoader(TEMPLATE_DIR))
+
+logfire.instrument_fastapi(app)
+logfire.instrument_httpx()
+logfire.instrument_pydantic()
+
+http_client = httpx.AsyncClient(
+    timeout=10.0, headers={"Accept": "application/vnd.github.v3+json"})
 
 
 class timed_lru_cache:
@@ -110,32 +119,67 @@ class timed_lru_cache:
 
 
 class ContentManager:
+    CONTENT_TYPE_MAP = {
+        'bookmarks': Bookmark,
+        'til': TIL,
+        'notes': Note,
+        'how_to': Note,  # Using Note model for how-to guides
+        'pages': Note,   # Using Note model for pages
+    }
 
     @staticmethod
     def render_markdown(file_path: str) -> dict:
         if not os.path.exists(file_path):
-            return {"html": "", "metadata": {}}
+            return {"html": "", "metadata": {}, "errors": ["File not found"]}
 
         with open(file_path, "r", encoding="utf-8") as f:
             content = f.read()
 
-        # Parse YAML front matter
-        metadata, md_content = ContentManager._parse_front_matter(content)
+        # Parse YAML front matter and validate with Pydantic
+        metadata, md_content, errors = ContentManager._parse_front_matter(content, file_path)
 
         # Convert and sanitize markdown
         html_content = ContentManager._convert_markdown(md_content)
-        return {"html": html_content, "metadata": metadata}
+        return {"html": html_content, "metadata": metadata, "errors": errors}
 
     @staticmethod
-    def _parse_front_matter(content: str) -> tuple:
+    def _parse_front_matter(content: str, file_path: str) -> tuple:
+        errors = []
         if content.startswith('---'):
             try:
                 _, fm, md_content = content.split('---', 2)
-                metadata = yaml.safe_load(fm)
-                return metadata, md_content
+                raw_metadata = yaml.safe_load(fm)
+                
+                # Determine content type from file path
+                path_parts = file_path.split(os.sep)
+                content_type = path_parts[-2] if len(path_parts) > 1 else 'notes'
+                
+                # Get the appropriate model
+                model_class = ContentManager.CONTENT_TYPE_MAP.get(content_type, BaseContent)
+                
+                try:
+                    # Convert string dates to datetime objects
+                    if isinstance(raw_metadata.get('created'), str):
+                        raw_metadata['created'] = datetime.strptime(raw_metadata['created'], '%Y-%m-%d')
+                    if isinstance(raw_metadata.get('updated'), str):
+                        raw_metadata['updated'] = datetime.strptime(raw_metadata['updated'], '%Y-%m-%d')
+                    
+                    # Validate with Pydantic model
+                    validated_metadata = model_class(**raw_metadata)
+                    return validated_metadata.model_dump(), md_content, errors
+                except ValidationError as e:
+                    errors.extend([f"{err['loc']}: {err['msg']}" for err in e.errors()])
+                    return raw_metadata, md_content, errors
+                
             except ValueError:
-                return {}, content
-        return {}, content
+                errors.append("Invalid front matter format")
+                return {}, content, errors
+            except yaml.YAMLError as e:
+                errors.append(f"YAML parsing error: {str(e)}")
+                return {}, content, errors
+        
+        errors.append("No front matter found")
+        return {}, content, errors
 
     @staticmethod
     def _convert_markdown(content: str) -> str:
@@ -215,38 +259,65 @@ class ContentManager:
 
     @staticmethod
     def get_content(content_type: str, limit=None):
+        """Get content of a specific type with consistent format"""
         files = glob.glob(f"{CONTENT_DIR}/{content_type}/*.md")
         files.sort(key=ContentManager._get_date_from_filename, reverse=True)
 
         content = []
+        validation_errors = {}
+        
         for file in files:
             name = os.path.splitext(os.path.basename(file))[0]
             file_content = ContentManager.render_markdown(file)
             metadata = file_content["metadata"]
+            errors = file_content.get("errors", [])
+
+            if errors:
+                validation_errors[file] = errors
+                # Skip invalid content in production, include with errors in development
+                if os.getenv("ENVIRONMENT") == "production":
+                    continue
 
             # Get excerpt
             soup = BeautifulSoup(file_content["html"], 'html.parser')
             first_p = soup.find('p')
             excerpt = first_p.get_text() if first_p else ""
 
-            content.append({
-                "name":
-                name,
-                "title":
-                metadata.get("title",
-                             name.replace('-', ' ').title()),
-                "created":
-                metadata.get("created", ""),
-                "updated":
-                metadata.get("updated", ""),
-                "metadata":
-                metadata,
-                "excerpt":
-                excerpt,
-                "url":
-                f"/{content_type}/{name}"
-            })
-        return content[:limit] if limit else content
+            # Create consistent content item structure
+            content_item = {
+                "name": name,
+                "title": metadata.get("title", name.replace('-', ' ').title()),
+                "created": metadata.get("created", ""),
+                "updated": metadata.get("updated", ""),
+                "metadata": metadata,
+                "excerpt": excerpt,
+                "url": f"/{content_type}/{name}",
+                "content_type": content_type,
+                "type_indicator": {
+                    "notes": "Note",
+                    "how_to": "How To",
+                    "bookmarks": "Bookmark",
+                    "til": "TIL"
+                }.get(content_type, ""),
+                "html": file_content["html"]
+            }
+            
+            if errors and os.getenv("ENVIRONMENT") != "production":
+                content_item["validation_errors"] = errors
+
+            content.append(content_item)
+
+        # Log validation errors
+        if validation_errors:
+            logfire.warning('content_validation_errors', 
+                          content_type=content_type, 
+                          errors=validation_errors)
+
+        return {
+            "content": content[:limit] if limit else content,
+            "total": len(content),
+            "type": content_type
+        }
 
     @staticmethod
     def _get_date_from_filename(filename: str) -> str:
@@ -274,7 +345,9 @@ class ContentManager:
 
     @staticmethod
     def get_bookmarks(limit: Optional[int] = 10) -> List[dict]:
+        """Get bookmarks with pagination"""
         files = glob.glob(f"{CONTENT_DIR}/bookmarks/*.md")
+        files.sort(key=ContentManager._get_date_from_filename, reverse=True)
         bookmarks = []
         files_to_process = files if limit is None else sorted(
             files, reverse=True)[:limit]
@@ -284,21 +357,30 @@ class ContentManager:
             file_content = ContentManager.render_markdown(file)
             metadata = file_content["metadata"]
 
-            bookmarks.append({
-                "name":
-                name,
-                "title":
-                metadata.get("title",
-                             name.replace('-', ' ').title()),
-                "url":
-                metadata.get("url", ""),
-                "created":
-                metadata.get("created", ""),
-                "updated":
-                metadata.get("updated", ""),
-                "date":
-                name[:10]  # Keep this for backwards compatibility if needed
-            })
+            # Convert the metadata to a Bookmark model for validation
+            try:
+                bookmark = Bookmark(**metadata)
+                bookmarks.append({
+                    "name": name,
+                    "title": bookmark.title,
+                    "url": bookmark.url,
+                    "created": bookmark.created,
+                    "updated": bookmark.updated,
+                    "tags": bookmark.tags,
+                    "description": bookmark.description,
+                    "via_url": bookmark.via_url,
+                    "via_title": bookmark.via_title,
+                    "commentary": bookmark.commentary,
+                    "screenshot_path": bookmark.screenshot_path,
+                    "author": bookmark.author,
+                    "source": bookmark.source
+                })
+            except ValidationError as e:
+                logfire.error('bookmark_validation_error', 
+                            bookmark_name=name, 
+                            error=str(e))
+                continue
+
         return bookmarks
 
     @staticmethod
@@ -364,7 +446,8 @@ class ContentManager:
                 reset_time = int(response.headers['X-RateLimit-Reset'])
                 if remaining == 0:
                     reset_datetime = datetime.fromtimestamp(reset_time)
-                    print(f"Rate limit exceeded. Resets at {reset_datetime}")
+                    logfire.warning('github_rate_limit_exceeded', 
+                                  reset_time=reset_datetime.isoformat())
                     return {
                         "stars": [],
                         "next_page": None,
@@ -372,9 +455,9 @@ class ContentManager:
                     }
 
             if response.status_code != 200:
-                print(
-                    f"GitHub API error: {response.status_code} - {response.text}"
-                )
+                logfire.error('github_api_error', 
+                            status_code=response.status_code, 
+                            response_text=response.text)
                 return {
                     "stars": [],
                     "next_page": None,
@@ -421,7 +504,7 @@ class ContentManager:
             return {"stars": stars, "next_page": next_page, "error": None}
 
         except httpx.RequestError as e:
-            print(f"Error fetching GitHub stars: {e}")
+            logfire.error('github_request_error', error=str(e))
             return {
                 "stars": [],
                 "next_page": None,
@@ -520,6 +603,131 @@ class ContentManager:
                 })
 
         return sorted(tils, key=lambda x: x["created"], reverse=True)
+
+    @staticmethod
+    @timed_lru_cache(maxsize=10, ttl_seconds=300)  # Cache for 5 minutes
+    async def get_mixed_content(page: int = 1, per_page: int = 10) -> dict:
+        """Get mixed content (notes, how-tos, bookmarks, TILs) sorted by date"""
+        try:
+            all_content = []
+            errors = []
+            
+            # Get content from different sections
+            try:
+                notes = ContentManager.get_content("notes")["content"]
+            except Exception as e:
+                errors.append(f"Error fetching notes: {str(e)}")
+                notes = []
+            
+            try:
+                how_tos = ContentManager.get_content("how_to")["content"]
+            except Exception as e:
+                errors.append(f"Error fetching how-tos: {str(e)}")
+                how_tos = []
+            
+            try:
+                bookmarks = ContentManager.get_bookmarks()
+            except Exception as e:
+                errors.append(f"Error fetching bookmarks: {str(e)}")
+                bookmarks = []
+            
+            try:
+                til_result = ContentManager.get_til_posts(page=1, per_page=9999)
+                tils = til_result["tils"]
+            except Exception as e:
+                errors.append(f"Error fetching TILs: {str(e)}")
+                tils = []
+
+            # Process and normalize content
+            def process_content(items, content_type):
+                for item in items:
+                    try:
+                        # Ensure consistent metadata structure
+                        if "metadata" not in item and content_type in ["bookmarks", "til"]:
+                            item["metadata"] = {
+                                "title": item.get("title", ""),
+                                "created": item.get("created", ""),
+                                "updated": item.get("updated", ""),
+                                "tags": item.get("tags", [])
+                            }
+                        
+                        # Generate excerpt if not present
+                        if "excerpt" not in item and "html" in item:
+                            soup = BeautifulSoup(item["html"], 'html.parser')
+                            first_p = soup.find('p')
+                            item["excerpt"] = first_p.get_text() if first_p else ""
+                        
+                        # Add content type and normalize URL
+                        item["content_type"] = content_type
+                        if "url" not in item:
+                            item["url"] = f"/{content_type}/{item['name']}"
+                        
+                        # Add type indicator for display
+                        item["type_indicator"] = {
+                            "notes": "Note",
+                            "how_to": "How To",
+                            "bookmarks": "Bookmark",
+                            "til": "TIL"
+                        }.get(content_type, "")
+                        
+                        all_content.append(item)
+                    except Exception as e:
+                        errors.append(f"Error processing {content_type} item: {str(e)}")
+
+            # Process each content type
+            process_content(notes, "notes")
+            process_content(how_tos, "how_to")
+            process_content(bookmarks, "bookmarks")
+            process_content(tils, "til")
+
+            # Sort all content by date
+            def get_date(item):
+                # Try different date locations
+                date = item.get("created", None)
+                if not date:
+                    date = item.get("metadata", {}).get("created", None)
+                
+                if isinstance(date, str):
+                    try:
+                        return datetime.strptime(date, "%Y-%m-%d")
+                    except ValueError:
+                        return datetime.min
+                return date or datetime.min
+                
+            all_content.sort(key=get_date, reverse=True)
+            
+            # Calculate pagination
+            if page < 1:
+                raise ValueError("Page number must be greater than 0")
+            if per_page < 1:
+                raise ValueError("Items per page must be greater than 0")
+                
+            start_idx = (page - 1) * per_page
+            end_idx = start_idx + per_page
+            
+            if start_idx >= len(all_content):
+                return {
+                    "content": [],
+                    "next_page": None,
+                    "total": len(all_content),
+                    "current_page": page,
+                    "total_pages": (len(all_content) + per_page - 1) // per_page,
+                    "errors": errors
+                }
+            
+            has_more = end_idx < len(all_content)
+            
+            return {
+                "content": all_content[start_idx:end_idx],
+                "next_page": page + 1 if has_more else None,
+                "total": len(all_content),
+                "current_page": page,
+                "total_pages": (len(all_content) + per_page - 1) // per_page,
+                "errors": errors
+            }
+            
+        except Exception as e:
+            raise ValueError(f"Error retrieving mixed content: {str(e)}")
 
 
 def generate_rss_feed():
@@ -718,20 +926,24 @@ async def read_home(request: Request):
     home_content = ContentManager.render_markdown(
         f"{CONTENT_DIR}/pages/home.md")
 
+    # Get mixed content for the home page
+    mixed_content = await ContentManager.get_mixed_content(page=1, per_page=10)
+
     # Fetch GitHub stars asynchronously
     stars_result = await ContentManager.get_github_stars(page=1, per_page=5)
 
     return HTMLResponse(
-        content=template.render(request=request,
-                                content=home_content["html"],
-                                metadata=home_content["metadata"],
-                                how_tos=ContentManager.get_content("how_to"),
-                                notes=ContentManager.get_content("notes"),
-                                random_quote=ContentManager.get_random_quote(),
-                                recent_bookmarks=ContentManager.get_bookmarks(
-                                    limit=10),
-                                github_stars=stars_result["stars"],
-                                github_error=stars_result["error"]))
+        content=template.render(
+            request=request,
+            content=home_content["html"],
+            metadata=home_content["metadata"],
+            mixed_content=mixed_content["content"],
+            has_more=mixed_content["next_page"] is not None,
+            random_quote=ContentManager.get_random_quote(),
+            github_stars=stars_result["stars"],
+            github_error=stars_result["error"]
+        )
+    )
 
 
 @app.get("/now", response_class=HTMLResponse)
@@ -761,6 +973,48 @@ async def read_tag(request: Request, tag: str):
         request=request, tag=tag, posts=posts, content_type=content_type))
 
 
+@app.get("/api/mixed-content", response_class=HTMLResponse)
+async def get_mixed_content_api(
+    request: Request,
+    page: int = 1,
+    per_page: int = 10,
+    content_types: Optional[List[str]] = None
+):
+    """API endpoint for retrieving mixed content with pagination"""
+    with logfire.span('mixed_content_api', page=page, per_page=per_page):
+        try:
+            if page < 1:
+                raise HTTPException(status_code=400, detail="Page number must be greater than 0")
+            if per_page < 1:
+                raise HTTPException(status_code=400, detail="Items per page must be greater than 0")
+            if per_page > 100:
+                raise HTTPException(status_code=400, detail="Items per page cannot exceed 100")
+                
+            with logfire.span('fetching_mixed_content'):
+                result = await ContentManager.get_mixed_content(page=page, per_page=per_page)
+                logfire.debug('mixed_content_result', 
+                            next_page=result['next_page'], 
+                            content_length=len(result['content']),
+                            total=result['total'])
+            
+            with logfire.span('rendering_template'):
+                template = env.get_template("partials/mixed_content_page.html")
+                html_content = template.render(
+                    content=result["content"],
+                    next_page=result["next_page"]
+                )
+                logfire.debug('template_rendered', html_length=len(html_content))
+            
+            return HTMLResponse(content=html_content)
+            
+        except ValueError as e:
+            logfire.error('value_error', error=str(e))
+            raise HTTPException(status_code=400, detail=str(e))
+        except Exception as e:
+            logfire.error('unexpected_error', error=str(e))
+            raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.get("/{content_type}/{page_name}", response_class=HTMLResponse)
 async def read_content(request: Request, content_type: str, page_name: str):
     file_path = f"{CONTENT_DIR}/{content_type}/{page_name}.md"
@@ -771,9 +1025,11 @@ async def read_content(request: Request, content_type: str, page_name: str):
     is_htmx = request.headers.get("HX-Request") == "true"
     template_name = "partials/content.html" if is_htmx else "content_page.html"
 
-    print(f"Template used: {template_name}")  # Debug print
-    print(f"Is HTMX request: {is_htmx}")     # Debug print
-    print(f"Metadata: {content_data['metadata']}")  # Debug print
+    logfire.debug('rendering_content', 
+                 template=template_name, 
+                 is_htmx=is_htmx, 
+                 content_type=content_type,
+                 page_name=page_name)
 
     return HTMLResponse(
         content=env.get_template(template_name).render(

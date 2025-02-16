@@ -8,6 +8,24 @@
         <script src="https://unpkg.com/htmx.org@1.9.10"></script>
         <!-- Include Tailwind CSS -->
         <script src="https://cdn.tailwindcss.com"></script>
+        <script>
+            tailwind.config = {
+                theme: {
+                    extend: {
+                        gridTemplateColumns: {
+                            'main': 'minmax(0, 2fr) minmax(300px, 1fr)',
+                        },
+                        typography: {
+                            DEFAULT: {
+                                css: {
+                                    maxWidth: 'none',
+                                },
+                            },
+                        },
+                    },
+                },
+            }
+        </script>
         <link href="/static/css/styles.css" rel="stylesheet" />
         <link
             rel="alternate"
@@ -16,43 +34,56 @@
             href="/feed.xml"
         />
     </head>
-    <body class="bg-gray-100 text-gray-900">
+    <body class="bg-gray-50 text-gray-900 min-h-screen flex flex-col">
         <!-- Navigation -->
-        <nav class="bg-white shadow-sm">
-            <div
-                class="container mx-auto px-4 py-3 flex justify-between items-center"
-            >
+        <nav class="bg-white shadow-sm sticky top-0 z-50">
+            <div class="container mx-auto px-4 py-3 flex justify-between items-center">
                 <a href="/" class="flex items-center">
                     <img
                         src="/static/images/joshua_oliphant.jpeg"
                         alt="Joshua Oliphant Logo"
-                        class="h-8 w-auto mr-2"
+                        class="h-8 w-8 rounded-full mr-2"
                     />
-                    <span class="text-xl font-semibold"
-                        >An Oliphant Never Forgets</span
-                    >
+                    <span class="text-xl font-semibold">An Oliphant Never Forgets</span>
                 </a>
-                <ul class="flex space-x-4">
-                    <li><a href="/" class="hover:underline">Home</a></li>
-                    <li><a href="/now" class="hover:underline">Now</a></li>
-                    <li><a href="/til" class="hover:underline">TIL</a></li>
-                    <li>
-                        <a href="/projects" class="hover:underline">Projects</a>
-                    </li>
+                <ul class="flex space-x-6">
+                    <li><a href="/" class="hover:text-emerald-600 transition-colors">Home</a></li>
+                    <li><a href="/now" class="hover:text-emerald-600 transition-colors">Now</a></li>
+                    <li><a href="/til" class="hover:text-emerald-600 transition-colors">TIL</a></li>
+                    <li><a href="/projects" class="hover:text-emerald-600 transition-colors">Projects</a></li>
                 </ul>
             </div>
         </nav>
 
         <!-- Main Content Area with ID for HTMX Targeting -->
-        <div class="container mx-auto px-4 py-8" id="content-area">
+        <main class="flex-grow container mx-auto px-4 py-8" id="content-area">
             {% block content %}{% endblock %}
-        </div>
+        </main>
 
         <!-- Footer -->
-        <footer class="bg-white mt-12 py-6">
-            <div class="container mx-auto px-4 text-center">
+        <footer class="bg-white py-6 mt-auto border-t border-gray-200">
+            <div class="container mx-auto px-4 text-center text-gray-600">
                 <p>&copy; 2024 Joshua Oliphant. All rights reserved.</p>
             </div>
         </footer>
+
+        <!-- Loading Indicator for HTMX -->
+        <div id="loading-indicator" 
+             class="fixed top-0 left-0 w-full h-1 bg-emerald-500 transform scale-x-0 transition-transform duration-300"
+             style="display: none;">
+        </div>
+        <script>
+            document.body.addEventListener('htmx:beforeRequest', function() {
+                document.getElementById('loading-indicator').style.display = 'block';
+                document.getElementById('loading-indicator').style.transform = 'scaleX(0.3)';
+            });
+            document.body.addEventListener('htmx:afterRequest', function() {
+                document.getElementById('loading-indicator').style.transform = 'scaleX(1)';
+                setTimeout(function() {
+                    document.getElementById('loading-indicator').style.display = 'none';
+                    document.getElementById('loading-indicator').style.transform = 'scaleX(0)';
+                }, 300);
+            });
+        </script>
     </body>
 </html>

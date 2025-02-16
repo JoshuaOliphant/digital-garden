@@ -2,3 +2,8 @@ __pycache__
 .venv
 node_modules
 **/.DS_Store
+stories.md
+content_analysis_report.json
+content_analysis.log
+.cursor/*
+blog_update.md

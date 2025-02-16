@@ -1,9 +1,22 @@
 ---
-title: "Scaling Postgres Databases with Liquibase on Kubernetes"
-status: "Evergreen"
-created: "2023-09-06"
-updated: "2024-09-27"
-tags: [kubernetes, postgres, liquibase, database-migrations, high-availability]
+created: 2025-02-12 19:43:37.092840
+difficulty: intermediate
+prerequisites: null
+readability_score: '26.57'
+reading_time: '3'
+related_content: null
+series: null
+status: Evergreen
+tags:
+- notes
+- scaling
+- postgres
+- databases
+- liquibase
+- kubernetes
+title: Scaling Postgres Databases with Liquibase on Kubernetes
+updated: 2025-02-12 19:43:37.092847
+visibility: public
 ---
 I recently dived into scaling stateful applications in Kubernetes, focusing particularly on Postgres databases. My current project also integrates Liquibase for database migrations, which led me to explore its impact on scaling. Here are the consolidated notes from my research.
 
@@ -43,17 +56,17 @@ Using Liquibase, Spring Boot, and Kubernetes in tandem presents a challenge. The
 ### Options
 
 1. **Extend Probe Deadlines**:
-   - Pros: Offers simplicity.
-   - Cons: Might introduce interruptions, extended wait durations, and potential readiness challenges.
+      - Pros: Offers simplicity.
+      - Cons: Might introduce interruptions, extended wait durations, and potential readiness challenges.
 2. **Lifecycle Hooks**:
-   - Pros: Guarantees lock to release before any termination.
-   - Cons: Reliability of the script is crucial, and there's a risk of applications getting stuck.
+      - Pros: Guarantees lock to release before any termination.
+      - Cons: Reliability of the script is crucial, and there's a risk of applications getting stuck.
 3. **Separate Container (Job)**:
-   - Pros: Minimizes the risk of probe-induced interruptions.
-   - Cons: Needs coordination within the pipeline and appropriate resource allocation.
+      - Pros: Minimizes the risk of probe-induced interruptions.
+      - Cons: Needs coordination within the pipeline and appropriate resource allocation.
 4. **Use Init Container**:
-   - Pros: Unaffected by probes and avoids additional pods or coordination overhead.
-   - Cons: The migration process remains closely tied to the application.
+      - Pros: Unaffected by probes and avoids additional pods or coordination overhead.
+      - Cons: The migration process remains closely tied to the application.
 
 ### Recommended Migration Approach
 
@@ -67,11 +80,11 @@ Using Liquibase, Spring Boot, and Kubernetes in tandem presents a challenge. The
 #### Steps
 
 1. **Preparation**:
-   - Secure a backup of the primary database.
-   - Test in a staging environment.
-   - Implement monitoring and alerts.
+      - Secure a backup of the primary database.
+      - Test in a staging environment.
+      - Implement monitoring and alerts.
 2. **Handling Replicas**:
-   - Pause or manage replication while the migration is ongoing.
+      - Pause or manage replication while the migration is ongoing.
 3. **Migration Execution**:
-   - Opt for a maintenance window during low-traffic periods.
-   - Remain cognizant of Liquibase's locking
+      - Opt for a maintenance window during low-traffic periods.
+      - Remain cognizant of Liquibase's locking
