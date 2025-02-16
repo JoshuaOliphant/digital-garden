@@ -12,7 +12,9 @@ RUN uv venv
 
 # Install dependencies first (this layer will be cached)
 COPY pyproject.toml uv.lock ./
+# Hash of dependency files ensures cache invalidation when dependencies change
 RUN --mount=type=cache,target=/root/.cache/uv \
+    echo "Dependencies hash: $(sha256sum pyproject.toml uv.lock)" && \
     uv sync --frozen --no-install-project
 
 # Now copy the project code
