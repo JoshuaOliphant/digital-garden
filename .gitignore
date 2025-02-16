@@ -5,5 +5,4 @@ node_modules
 stories.md
 content_analysis_report.json
 content_analysis.log
-uv-rules.mdc
-anthropic-claude-ai-rules.mdc
+.cursor/
