@@ -253,6 +253,7 @@ class ContentManager:
 
     @staticmethod
     def get_content(content_type: str, limit=None):
+        """Get content of a specific type with consistent format"""
         files = glob.glob(f"{CONTENT_DIR}/{content_type}/*.md")
         files.sort(key=ContentManager._get_date_from_filename, reverse=True)
 
@@ -276,6 +277,7 @@ class ContentManager:
             first_p = soup.find('p')
             excerpt = first_p.get_text() if first_p else ""
 
+            # Create consistent content item structure
             content_item = {
                 "name": name,
                 "title": metadata.get("title", name.replace('-', ' ').title()),
@@ -283,7 +285,15 @@ class ContentManager:
                 "updated": metadata.get("updated", ""),
                 "metadata": metadata,
                 "excerpt": excerpt,
-                "url": f"/{content_type}/{name}"
+                "url": f"/{content_type}/{name}",
+                "content_type": content_type,
+                "type_indicator": {
+                    "notes": "Note",
+                    "how_to": "How To",
+                    "bookmarks": "Bookmark",
+                    "til": "TIL"
+                }.get(content_type, ""),
+                "html": file_content["html"]
             }
             
             if errors and os.getenv("ENVIRONMENT") != "production":
@@ -299,7 +309,11 @@ class ContentManager:
                 for error in errors:
                     print(f"  - {error}")
 
-        return content[:limit] if limit else content
+        return {
+            "content": content[:limit] if limit else content,
+            "total": len(content),
+            "type": content_type
+        }
 
     @staticmethod
     def _get_date_from_filename(filename: str) -> str:
@@ -327,7 +341,9 @@ class ContentManager:
 
     @staticmethod
     def get_bookmarks(limit: Optional[int] = 10) -> List[dict]:
+        """Get bookmarks with pagination"""
         files = glob.glob(f"{CONTENT_DIR}/bookmarks/*.md")
+        files.sort(key=ContentManager._get_date_from_filename, reverse=True)
         bookmarks = []
         files_to_process = files if limit is None else sorted(
             files, reverse=True)[:limit]
@@ -337,21 +353,28 @@ class ContentManager:
             file_content = ContentManager.render_markdown(file)
             metadata = file_content["metadata"]
 
-            bookmarks.append({
-                "name":
-                name,
-                "title":
-                metadata.get("title",
-                             name.replace('-', ' ').title()),
-                "url":
-                metadata.get("url", ""),
-                "created":
-                metadata.get("created", ""),
-                "updated":
-                metadata.get("updated", ""),
-                "date":
-                name[:10]  # Keep this for backwards compatibility if needed
-            })
+            # Convert the metadata to a Bookmark model for validation
+            try:
+                bookmark = Bookmark(**metadata)
+                bookmarks.append({
+                    "name": name,
+                    "title": bookmark.title,
+                    "url": bookmark.url,
+                    "created": bookmark.created,
+                    "updated": bookmark.updated,
+                    "tags": bookmark.tags,
+                    "description": bookmark.description,
+                    "via_url": bookmark.via_url,
+                    "via_title": bookmark.via_title,
+                    "commentary": bookmark.commentary,
+                    "screenshot_path": bookmark.screenshot_path,
+                    "author": bookmark.author,
+                    "source": bookmark.source
+                })
+            except ValidationError as e:
+                print(f"Error processing bookmark {name}: {e}")
+                continue
+
         return bookmarks
 
     @staticmethod
@@ -574,6 +597,131 @@ class ContentManager:
 
         return sorted(tils, key=lambda x: x["created"], reverse=True)
 
+    @staticmethod
+    @timed_lru_cache(maxsize=10, ttl_seconds=300)  # Cache for 5 minutes
+    def get_mixed_content(page: int = 1, per_page: int = 10) -> dict:
+        """Get mixed content (notes, how-tos, bookmarks, TILs) sorted by date"""
+        try:
+            all_content = []
+            errors = []
+            
+            # Get content from different sections
+            try:
+                notes = ContentManager.get_content("notes")["content"]
+            except Exception as e:
+                errors.append(f"Error fetching notes: {str(e)}")
+                notes = []
+            
+            try:
+                how_tos = ContentManager.get_content("how_to")["content"]
+            except Exception as e:
+                errors.append(f"Error fetching how-tos: {str(e)}")
+                how_tos = []
+            
+            try:
+                bookmarks = ContentManager.get_bookmarks()
+            except Exception as e:
+                errors.append(f"Error fetching bookmarks: {str(e)}")
+                bookmarks = []
+            
+            try:
+                til_result = ContentManager.get_til_posts(page=1, per_page=9999)
+                tils = til_result["tils"]
+            except Exception as e:
+                errors.append(f"Error fetching TILs: {str(e)}")
+                tils = []
+
+            # Process and normalize content
+            def process_content(items, content_type):
+                for item in items:
+                    try:
+                        # Ensure consistent metadata structure
+                        if "metadata" not in item and content_type in ["bookmarks", "til"]:
+                            item["metadata"] = {
+                                "title": item.get("title", ""),
+                                "created": item.get("created", ""),
+                                "updated": item.get("updated", ""),
+                                "tags": item.get("tags", [])
+                            }
+                        
+                        # Generate excerpt if not present
+                        if "excerpt" not in item and "html" in item:
+                            soup = BeautifulSoup(item["html"], 'html.parser')
+                            first_p = soup.find('p')
+                            item["excerpt"] = first_p.get_text() if first_p else ""
+                        
+                        # Add content type and normalize URL
+                        item["content_type"] = content_type
+                        if "url" not in item:
+                            item["url"] = f"/{content_type}/{item['name']}"
+                        
+                        # Add type indicator for display
+                        item["type_indicator"] = {
+                            "notes": "Note",
+                            "how_to": "How To",
+                            "bookmarks": "Bookmark",
+                            "til": "TIL"
+                        }.get(content_type, "")
+                        
+                        all_content.append(item)
+                    except Exception as e:
+                        errors.append(f"Error processing {content_type} item: {str(e)}")
+
+            # Process each content type
+            process_content(notes, "notes")
+            process_content(how_tos, "how_to")
+            process_content(bookmarks, "bookmarks")
+            process_content(tils, "til")
+
+            # Sort all content by date
+            def get_date(item):
+                # Try different date locations
+                date = item.get("created", None)
+                if not date:
+                    date = item.get("metadata", {}).get("created", None)
+                
+                if isinstance(date, str):
+                    try:
+                        return datetime.strptime(date, "%Y-%m-%d")
+                    except ValueError:
+                        return datetime.min
+                return date or datetime.min
+                
+            all_content.sort(key=get_date, reverse=True)
+            
+            # Calculate pagination
+            if page < 1:
+                raise ValueError("Page number must be greater than 0")
+            if per_page < 1:
+                raise ValueError("Items per page must be greater than 0")
+                
+            start_idx = (page - 1) * per_page
+            end_idx = start_idx + per_page
+            
+            if start_idx >= len(all_content):
+                return {
+                    "content": [],
+                    "next_page": None,
+                    "total": len(all_content),
+                    "current_page": page,
+                    "total_pages": (len(all_content) + per_page - 1) // per_page,
+                    "errors": errors
+                }
+            
+            has_more = end_idx < len(all_content)
+            
+            return {
+                "content": all_content[start_idx:end_idx],
+                "next_page": page + 1 if has_more else None,
+                "total": len(all_content),
+                "current_page": page,
+                "total_pages": (len(all_content) + per_page - 1) // per_page,
+                "errors": errors
+            }
+            
+        except Exception as e:
+            raise ValueError(f"Error retrieving mixed content: {str(e)}")
+
 
 def generate_rss_feed():
     # Get all content
@@ -771,20 +919,24 @@ async def read_home(request: Request):
     home_content = ContentManager.render_markdown(
         f"{CONTENT_DIR}/pages/home.md")
 
+    # Get mixed content for the home page
+    mixed_content = ContentManager.get_mixed_content(page=1, per_page=10)
+
     # Fetch GitHub stars asynchronously
     stars_result = await ContentManager.get_github_stars(page=1, per_page=5)
 
     return HTMLResponse(
-        content=template.render(request=request,
-                                content=home_content["html"],
-                                metadata=home_content["metadata"],
-                                how_tos=ContentManager.get_content("how_to"),
-                                notes=ContentManager.get_content("notes"),
-                                random_quote=ContentManager.get_random_quote(),
-                                recent_bookmarks=ContentManager.get_bookmarks(
-                                    limit=10),
-                                github_stars=stars_result["stars"],
-                                github_error=stars_result["error"]))
+        content=template.render(
+            request=request,
+            content=home_content["html"],
+            metadata=home_content["metadata"],
+            mixed_content=mixed_content["content"],
+            has_more=mixed_content["next_page"] is not None,
+            random_quote=ContentManager.get_random_quote(),
+            github_stars=stars_result["stars"],
+            github_error=stars_result["error"]
+        )
+    )
 
 
 @app.get("/now", response_class=HTMLResponse)
@@ -961,3 +1113,36 @@ async def read_projects(request: Request):
 @app.get("/health")
 async def health_check():
     return {"status": "healthy"}
+
+
+@app.get("/api/mixed-content")
+async def get_mixed_content_api(
+    request: Request,
+    page: int = 1,
+    per_page: int = 10,
+    content_types: Optional[List[str]] = None
+):
+    """API endpoint for retrieving mixed content with pagination"""
+    try:
+        if page < 1:
+            raise HTTPException(status_code=400, detail="Page number must be greater than 0")
+        if per_page < 1:
+            raise HTTPException(status_code=400, detail="Items per page must be greater than 0")
+        if per_page > 100:
+            raise HTTPException(status_code=400, detail="Items per page cannot exceed 100")
+            
+        result = ContentManager.get_mixed_content(page=page, per_page=per_page)
+        
+        # If there are errors but we still have content, include them in the response
+        if result.get("errors"):
+            return {
+                **result,
+                "warning": "Some content could not be retrieved. See errors for details."
+            }
+            
+        return result
+        
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
