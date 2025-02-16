@@ -49,6 +49,22 @@ ALLOWED_ATTRIBUTES = {
 GITHUB_USERNAME = "JoshuaOliphant"
 T = TypeVar('T')
 
+# Initialize HTTP client first since it's used in lifespan
+http_client = httpx.AsyncClient(
+    timeout=10.0, headers={"Accept": "application/vnd.github.v3+json"})
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup: nothing to do here
+    yield
+    # Shutdown: close the HTTP client
+    await http_client.aclose()
+
+# Initialize FastAPI
+app = FastAPI(lifespan=lifespan)
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+env = Environment(loader=FileSystemLoader(TEMPLATE_DIR))
+
 # Configure Logfire with proper token validation
 logfire_token = os.getenv('LOGFIRE_TOKEN')
 if not logfire_token:
@@ -80,23 +96,6 @@ else:
         if os.getenv('ENVIRONMENT') == 'production':
             raise RuntimeError(f"Failed to configure Logfire in production: {e}")
         print(f"Warning: Failed to configure Logfire: {e}. Running without logging in development mode.")
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    # Startup: nothing to do here
-    yield
-    # Shutdown: close the HTTP client
-    await http_client.aclose()
-
-
-# Initialize FastAPI
-app = FastAPI(lifespan=lifespan)
-app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
-env = Environment(loader=FileSystemLoader(TEMPLATE_DIR))
-
-http_client = httpx.AsyncClient(
-    timeout=10.0, headers={"Accept": "application/vnd.github.v3+json"})
-
 
 class timed_lru_cache:
     """
