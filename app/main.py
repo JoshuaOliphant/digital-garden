@@ -1163,4 +1163,24 @@ async def read_projects(request: Request):
 
 @app.get("/health")
 async def health_check():
-    return {"status": "healthy"}
+    """Health check endpoint for monitoring application status"""
+    try:
+        # Basic application health check
+        return JSONResponse(
+            content={
+                "status": "healthy",
+                "timestamp": datetime.now().isoformat(),
+                "version": os.getenv("APP_VERSION", "1.0.0"),
+                "environment": os.getenv("ENVIRONMENT", "production")
+            },
+            status_code=200
+        )
+    except Exception as e:
+        return JSONResponse(
+            content={
+                "status": "unhealthy",
+                "error": str(e),
+                "timestamp": datetime.now().isoformat()
+            },
+            status_code=500
+        )

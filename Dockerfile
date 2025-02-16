@@ -7,6 +7,12 @@ ADD . /app
 # Sync the project into a new environment, using the frozen lockfile
 WORKDIR /app
 RUN uv sync --frozen
+
+# Set environment variables
+ENV PORT=8080
+ENV HOST=0.0.0.0
+
 EXPOSE 8080
 
-CMD ["uv", "run", "python", "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8080"]
+# Use exec form of CMD to ensure proper signal handling
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8080", "--proxy-headers"]
