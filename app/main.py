@@ -49,14 +49,37 @@ ALLOWED_ATTRIBUTES = {
 GITHUB_USERNAME = "JoshuaOliphant"
 T = TypeVar('T')
 
-# Configure Logfire with environment-based token
-try:
-    logfire.configure(
-        console=logfire.ConsoleOptions(min_log_level='debug'),
-        token=os.getenv('LOGFIRE_TOKEN')
-    )
-except Exception as e:
-    print(f"Warning: Failed to configure Logfire: {e}")
+# Configure Logfire with proper token validation
+logfire_token = os.getenv('LOGFIRE_TOKEN')
+if not logfire_token:
+    if os.getenv('ENVIRONMENT') == 'production':
+        raise RuntimeError("LOGFIRE_TOKEN environment variable is required in production")
+    print("Warning: LOGFIRE_TOKEN not set. Running without logging in development mode.")
+else:
+    try:
+        # Basic token format validation (assuming it should be a non-empty string of reasonable length)
+        if not isinstance(logfire_token, str) or len(logfire_token) < 32:
+            raise ValueError("Invalid Logfire token format")
+            
+        logfire.configure(
+            console=logfire.ConsoleOptions(
+                min_log_level='info' if os.getenv('ENVIRONMENT') == 'production' else 'debug'
+            ),
+            token=logfire_token
+        )
+        
+        # Test the configuration
+        logfire.info("Logfire configured successfully", 
+                    environment=os.getenv('ENVIRONMENT', 'development'))
+        
+        # Initialize FastAPI instrumentation only if Logfire is properly configured
+        logfire.instrument_fastapi(app)
+        logfire.instrument_httpx()
+        logfire.instrument_pydantic()
+    except Exception as e:
+        if os.getenv('ENVIRONMENT') == 'production':
+            raise RuntimeError(f"Failed to configure Logfire in production: {e}")
+        print(f"Warning: Failed to configure Logfire: {e}. Running without logging in development mode.")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -70,10 +93,6 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 env = Environment(loader=FileSystemLoader(TEMPLATE_DIR))
-
-logfire.instrument_fastapi(app)
-logfire.instrument_httpx()
-logfire.instrument_pydantic()
 
 http_client = httpx.AsyncClient(
     timeout=10.0, headers={"Accept": "application/vnd.github.v3+json"})
