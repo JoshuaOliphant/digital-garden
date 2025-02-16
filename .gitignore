@@ -7,3 +7,4 @@ content_analysis_report.json
 content_analysis.log
 .cursor/*
 blog_update.md
+.env

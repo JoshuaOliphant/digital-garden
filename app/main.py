@@ -49,7 +49,14 @@ ALLOWED_ATTRIBUTES = {
 GITHUB_USERNAME = "JoshuaOliphant"
 T = TypeVar('T')
 
-logfire.configure(console=logfire.ConsoleOptions(min_log_level='debug'))
+# Configure Logfire with environment-based token
+try:
+    logfire.configure(
+        console=logfire.ConsoleOptions(min_log_level='debug'),
+        token=os.getenv('LOGFIRE_TOKEN')
+    )
+except Exception as e:
+    print(f"Warning: Failed to configure Logfire: {e}")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
