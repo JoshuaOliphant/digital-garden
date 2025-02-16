@@ -27,30 +27,80 @@ mixed content types chronologically on the home page.
 ```
 
 ## 2. Frontend Layout Restructuring
-- [ ] Update main grid layout in base.html
-- [ ] Create new mixed content card component
-- [ ] Modify sidebar to remove bookmarks section
-- [ ] Update Random Quote component styling
-- [ ] Update GitHub Stars component styling
-- [ ] Implement responsive design for new layout
-- [ ] Create loading state components
-- [ ] Add content type indicators to cards
-- [ ] Update typography and spacing
-- [ ] Test layout across different screen sizes
+- [x] Update main grid layout in base.html
+- [x] Create new mixed content card component
+- [x] Modify sidebar to remove bookmarks section
+- [x] Update Random Quote component styling
+- [x] Update GitHub Stars component styling
+- [x] Implement responsive design for new layout
+- [x] Create loading state components
+- [x] Add content type indicators to cards
+- [x] Update typography and spacing
+- [x] Test layout across different screen sizes
+
+Commit message for this section:
+```
+feat: Restructure frontend layout
+
+- Update main grid layout with new sidebar
+- Create unified content card component
+- Add content type indicators and styling
+- Implement responsive design
+- Add loading states and animations
+
+This change modernizes the layout and provides a
+consistent experience across all content types.
+```
 
 ## 3. Infinite Scroll Implementation
-- [ ] Add Intersection Observer setup
-- [ ] Create HTMX integration for content loading
-- [ ] Implement scroll position restoration
-- [ ] Add loading indicators
-- [ ] Create partial template for content items
-- [ ] Implement error handling for failed loads
-- [ ] Add retry mechanism for failed requests
-- [ ] Optimize image loading
-- [ ] Add scroll progress indicator
-- [ ] Implement scroll restoration on back navigation
+- [x] Add Intersection Observer setup
+- [x] Create HTMX integration for content loading
+- [x] Implement scroll position restoration
+- [x] Add loading indicators
+- [x] Create partial template for content items
+- [x] Implement error handling for failed loads
+- [x] Add retry mechanism for failed requests
+- [x] Optimize image loading
+- [x] Add scroll progress indicator
+- [x] Implement scroll restoration on back navigation
 
-## 4. Content Display Enhancement
+Commit message for this section:
+```
+feat: Add infinite scroll with HTMX
+
+- Implement infinite scroll using Intersection Observer
+- Add HTMX integration for dynamic content loading
+- Create loading indicators and animations
+- Add error handling and retry mechanism
+- Optimize performance and user experience
+
+This change provides seamless content loading as users
+scroll through the site.
+```
+
+## 4. Template Cleanup and Optimization
+- [x] Remove unused bookmarks templates
+- [x] Consolidate star-related templates
+- [x] Keep TIL dedicated page
+- [x] Optimize template hierarchy
+- [x] Remove redundant template code
+- [x] Update template documentation
+
+Commit message for this section:
+```
+refactor: Clean up and optimize templates
+
+- Remove unused bookmarks templates
+- Consolidate GitHub stars templates
+- Maintain TIL dedicated page
+- Optimize template structure
+- Remove redundant code
+
+This change streamlines the template structure while
+maintaining all necessary functionality.
+```
+
+## 5. Content Display Enhancement
 - [ ] Create unified content card design
 - [ ] Implement metadata display consistency
 - [ ] Add content type badges
@@ -62,7 +112,7 @@ mixed content types chronologically on the home page.
 - [ ] Implement progressive image loading
 - [ ] Add accessibility improvements
 
-## 5. Performance Optimization
+## 6. Performance Optimization
 - [ ] Implement content preloading
 - [ ] Optimize image delivery
 - [ ] Add lazy loading for off-screen content
@@ -74,7 +124,7 @@ mixed content types chronologically on the home page.
 - [ ] Optimize JavaScript bundle
 - [ ] Add performance testing suite
 
-## 6. Testing and Documentation
+## 7. Testing and Documentation
 - [ ] Write unit tests for new components
 - [ ] Create integration tests for infinite scroll
 - [ ] Add performance benchmarks
@@ -86,7 +136,7 @@ mixed content types chronologically on the home page.
 - [ ] Add performance guidelines
 - [ ] Create deployment checklist
 
-## 7. Mobile Experience Enhancement
+## 8. Mobile Experience Enhancement
 - [ ] Optimize touch interactions
 - [ ] Improve mobile navigation
 - [ ] Enhance mobile performance
@@ -98,7 +148,7 @@ mixed content types chronologically on the home page.
 - [ ] Test on various devices
 - [ ] Add mobile gesture support
 
-## 8. Final Integration and Deployment
+## 9. Final Integration and Deployment
 - [ ] Conduct final integration testing
 - [ ] Create deployment plan
 - [ ] Set up monitoring

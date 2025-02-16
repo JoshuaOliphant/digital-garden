@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Request, HTTPException
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from jinja2 import Environment, FileSystemLoader
 from markdown.extensions.toc import TocExtension
@@ -21,6 +21,7 @@ from functools import wraps
 from fastapi.responses import Response
 from email.utils import format_datetime
 from pydantic import ValidationError
+import logfire
 
 from .models import BaseContent, Bookmark, TIL, Note, ContentMetadata
 
@@ -48,9 +49,7 @@ ALLOWED_ATTRIBUTES = {
 GITHUB_USERNAME = "JoshuaOliphant"
 T = TypeVar('T')
 
-http_client = httpx.AsyncClient(
-    timeout=10.0, headers={"Accept": "application/vnd.github.v3+json"})
-
+logfire.configure(console=logfire.ConsoleOptions(min_log_level='debug'))
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -64,6 +63,13 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 env = Environment(loader=FileSystemLoader(TEMPLATE_DIR))
+
+logfire.instrument_fastapi(app)
+logfire.instrument_httpx()
+logfire.instrument_pydantic()
+
+http_client = httpx.AsyncClient(
+    timeout=10.0, headers={"Accept": "application/vnd.github.v3+json"})
 
 
 class timed_lru_cache:
@@ -303,11 +309,9 @@ class ContentManager:
 
         # Log validation errors
         if validation_errors:
-            print(f"Content validation errors in {content_type}:")
-            for file, errors in validation_errors.items():
-                print(f"{file}:")
-                for error in errors:
-                    print(f"  - {error}")
+            logfire.warning('content_validation_errors', 
+                          content_type=content_type, 
+                          errors=validation_errors)
 
         return {
             "content": content[:limit] if limit else content,
@@ -372,7 +376,9 @@ class ContentManager:
                     "source": bookmark.source
                 })
             except ValidationError as e:
-                print(f"Error processing bookmark {name}: {e}")
+                logfire.error('bookmark_validation_error', 
+                            bookmark_name=name, 
+                            error=str(e))
                 continue
 
         return bookmarks
@@ -440,7 +446,8 @@ class ContentManager:
                 reset_time = int(response.headers['X-RateLimit-Reset'])
                 if remaining == 0:
                     reset_datetime = datetime.fromtimestamp(reset_time)
-                    print(f"Rate limit exceeded. Resets at {reset_datetime}")
+                    logfire.warning('github_rate_limit_exceeded', 
+                                  reset_time=reset_datetime.isoformat())
                     return {
                         "stars": [],
                         "next_page": None,
@@ -448,9 +455,9 @@ class ContentManager:
                     }
 
             if response.status_code != 200:
-                print(
-                    f"GitHub API error: {response.status_code} - {response.text}"
-                )
+                logfire.error('github_api_error', 
+                            status_code=response.status_code, 
+                            response_text=response.text)
                 return {
                     "stars": [],
                     "next_page": None,
@@ -497,7 +504,7 @@ class ContentManager:
             return {"stars": stars, "next_page": next_page, "error": None}
 
         except httpx.RequestError as e:
-            print(f"Error fetching GitHub stars: {e}")
+            logfire.error('github_request_error', error=str(e))
             return {
                 "stars": [],
                 "next_page": None,
@@ -599,7 +606,7 @@ class ContentManager:
 
     @staticmethod
     @timed_lru_cache(maxsize=10, ttl_seconds=300)  # Cache for 5 minutes
-    def get_mixed_content(page: int = 1, per_page: int = 10) -> dict:
+    async def get_mixed_content(page: int = 1, per_page: int = 10) -> dict:
         """Get mixed content (notes, how-tos, bookmarks, TILs) sorted by date"""
         try:
             all_content = []
@@ -920,7 +927,7 @@ async def read_home(request: Request):
         f"{CONTENT_DIR}/pages/home.md")
 
     # Get mixed content for the home page
-    mixed_content = ContentManager.get_mixed_content(page=1, per_page=10)
+    mixed_content = await ContentManager.get_mixed_content(page=1, per_page=10)
 
     # Fetch GitHub stars asynchronously
     stars_result = await ContentManager.get_github_stars(page=1, per_page=5)
@@ -966,6 +973,48 @@ async def read_tag(request: Request, tag: str):
         request=request, tag=tag, posts=posts, content_type=content_type))
 
 
+@app.get("/api/mixed-content", response_class=HTMLResponse)
+async def get_mixed_content_api(
+    request: Request,
+    page: int = 1,
+    per_page: int = 10,
+    content_types: Optional[List[str]] = None
+):
+    """API endpoint for retrieving mixed content with pagination"""
+    with logfire.span('mixed_content_api', page=page, per_page=per_page):
+        try:
+            if page < 1:
+                raise HTTPException(status_code=400, detail="Page number must be greater than 0")
+            if per_page < 1:
+                raise HTTPException(status_code=400, detail="Items per page must be greater than 0")
+            if per_page > 100:
+                raise HTTPException(status_code=400, detail="Items per page cannot exceed 100")
+                
+            with logfire.span('fetching_mixed_content'):
+                result = await ContentManager.get_mixed_content(page=page, per_page=per_page)
+                logfire.debug('mixed_content_result', 
+                            next_page=result['next_page'], 
+                            content_length=len(result['content']),
+                            total=result['total'])
+            
+            with logfire.span('rendering_template'):
+                template = env.get_template("partials/mixed_content_page.html")
+                html_content = template.render(
+                    content=result["content"],
+                    next_page=result["next_page"]
+                )
+                logfire.debug('template_rendered', html_length=len(html_content))
+            
+            return HTMLResponse(content=html_content)
+            
+        except ValueError as e:
+            logfire.error('value_error', error=str(e))
+            raise HTTPException(status_code=400, detail=str(e))
+        except Exception as e:
+            logfire.error('unexpected_error', error=str(e))
+            raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.get("/{content_type}/{page_name}", response_class=HTMLResponse)
 async def read_content(request: Request, content_type: str, page_name: str):
     file_path = f"{CONTENT_DIR}/{content_type}/{page_name}.md"
@@ -976,9 +1025,11 @@ async def read_content(request: Request, content_type: str, page_name: str):
     is_htmx = request.headers.get("HX-Request") == "true"
     template_name = "partials/content.html" if is_htmx else "content_page.html"
 
-    print(f"Template used: {template_name}")  # Debug print
-    print(f"Is HTMX request: {is_htmx}")     # Debug print
-    print(f"Metadata: {content_data['metadata']}")  # Debug print
+    logfire.debug('rendering_content', 
+                 template=template_name, 
+                 is_htmx=is_htmx, 
+                 content_type=content_type,
+                 page_name=page_name)
 
     return HTMLResponse(
         content=env.get_template(template_name).render(
@@ -1113,36 +1164,3 @@ async def read_projects(request: Request):
 @app.get("/health")
 async def health_check():
     return {"status": "healthy"}
-
-
-@app.get("/api/mixed-content")
-async def get_mixed_content_api(
-    request: Request,
-    page: int = 1,
-    per_page: int = 10,
-    content_types: Optional[List[str]] = None
-):
-    """API endpoint for retrieving mixed content with pagination"""
-    try:
-        if page < 1:
-            raise HTTPException(status_code=400, detail="Page number must be greater than 0")
-        if per_page < 1:
-            raise HTTPException(status_code=400, detail="Items per page must be greater than 0")
-        if per_page > 100:
-            raise HTTPException(status_code=400, detail="Items per page cannot exceed 100")
-            
-        result = ContentManager.get_mixed_content(page=page, per_page=per_page)
-        
-        # If there are errors but we still have content, include them in the response
-        if result.get("errors"):
-            return {
-                **result,
-                "warning": "Some content could not be retrieved. See errors for details."
-            }
-            
-        return result
-        
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))

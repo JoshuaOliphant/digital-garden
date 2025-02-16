@@ -21,6 +21,13 @@ class BaseContent(BaseModel):
 
 class Bookmark(BaseContent):
     url: str
+    description: Optional[str] = None
+    via_url: Optional[str] = None
+    via_title: Optional[str] = None
+    commentary: Optional[str] = None
+    screenshot_path: Optional[str] = None
+    author: Optional[str] = None
+    source: Optional[str] = None
 
 class TIL(BaseContent):
     difficulty: Optional[str] = None

@@ -1,170 +1,100 @@
 {% extends "base.html" %} {% block content %}
-<header class="py-8">
+<header class="mb-12">
+    <h1 class="text-4xl font-bold mb-4">Welcome</h1>
     <p class="text-xl text-gray-600">
-        Joshua's notes and thoughts about programming, DevOps, and other odds
-        and ends.
+        Joshua's notes and thoughts about programming, DevOps, and other odds and ends.
     </p>
 </header>
 
-<div class="flex flex-col md:flex-row">
-    <main class="md:w-2/3 md:pr-8">
-        <section id="how_tos" class="mb-12">
-            <h2 class="text-2xl font-semibold mb-4">How to's</h2>
-            <p class="mb-4">
-                Writeups on how I did things. Mostly for my own reference.
-            </p>
-            <ul>
-                {% for how_to in how_tos %}
-                <li class="mb-2">
-                    <a
-                        href="/how_to/{{ how_to.name }}"
-                        class="text-emerald-600 hover:text-emerald-500 hover:underline"
-                        hx-get="/how_to/{{ how_to.name }}"
-                        hx-target="#content-area"
-                        hx-swap="innerHTML"
-                        hx-push-url="true"
-                    >
-                        {{ how_to.title }}
-                    </a>
-                </li>
-                {% endfor %}
-            </ul>
-        </section>
+<div class="grid grid-cols-1 lg:grid-cols-main gap-8">
+    <!-- Main Content -->
+    <section class="space-y-6" id="content-list">
+        <!-- Mixed Content -->
+        {% for item in mixed_content %}
+            {% include "partials/content_card.html" %}
+        {% endfor %}
 
-        <section id="notes" class="mb-12">
-            <h2 class="text-2xl font-semibold mb-4">Notes</h2>
-            <p class="mb-4">
-                Notes, quotes, links, and other things I've collected.
-            </p>
-            <ul>
-                {% for note in notes %}
-                <li class="mb-2">
-                    <a
-                        href="/notes/{{ note.name }}"
-                        class="text-emerald-600 hover:text-emerald-500 hover:underline"
-                        hx-get="/notes/{{ note.name }}"
-                        hx-target="#content-area"
-                        hx-swap="innerHTML"
-                        hx-push-url="true"
-                    >
-                        {{ note.title }}
-                    </a>
-                </li>
-                {% endfor %}
-            </ul>
-        </section>
+        <!-- Infinite Scroll Trigger -->
+        {% if has_more %}
+        <div class="text-center py-4"
+             hx-get="/api/mixed-content?page=2"
+             hx-trigger="revealed"
+             hx-swap="outerHTML"
+             hx-indicator="#scroll-indicator">
+            <div id="scroll-indicator" class="htmx-indicator">
+                <div class="inline-flex items-center gap-2 text-gray-500">
+                    <svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span>Loading more content...</span>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </section>
 
-        <section id="inspiration" class="mb-12">
-            <h2 class="text-2xl font-semibold mb-4">Inspiration</h2>
-            <p class="mb-4">
-                Based on Maggie Appleton's post on
-                <a
-                    href="https://maggieappleton.com/garden-history"
-                    class="text-emerald-600 hover:text-emerald-500 hover:underline"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    >Digital Gardens</a
-                >
-            </p>
-        </section>
-    </main>
-
-    <aside class="md:w-1/3 relative">
-        <!-- Wrapper div for fixed-position quote -->
-        <div class="absolute top-0 left-0 right-0">
-            {% if random_quote %}
-            <div class="random-quote bg-gray-100 p-6 rounded-lg shadow-md mb-8">
-                <h2 class="text-2xl font-semibold mb-4">Random Quote</h2>
-                <h3 class="text-xl mb-2">{{ random_quote.title }}</h3>
-                <blockquote class="prose">
+    <!-- Sidebar -->
+    <aside class="space-y-8">
+        <!-- Random Quote -->
+        {% if random_quote %}
+        <div class="bg-white rounded-lg shadow-sm p-6">
+            <h2 class="text-xl font-semibold mb-4 text-gray-900">Random Quote</h2>
+            <div class="prose">
+                <blockquote class="border-l-4 border-emerald-500 pl-4 italic text-gray-700">
                     {{ random_quote.content | safe }}
                 </blockquote>
+                {% if random_quote.title %}
+                <p class="text-sm text-gray-500 mt-2">— {{ random_quote.title }}</p>
+                {% endif %}
             </div>
-            {% endif %}
         </div>
+        {% endif %}
 
-        <!-- Wrapper for scrollable content with appropriate top margin -->
-        <div class="mt-[calc(var(--quote-height,300px)+2rem)]">
-            <div class="bg-gray-100 p-6 rounded-lg shadow-md mb-8">
-                <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-2xl font-semibold">Recent Bookmarks</h2>
-                    <a
-                        href="/bookmarks"
-                        class="text-emerald-600 hover:text-emerald-500 hover:underline text-sm"
-                        hx-get="/bookmarks"
-                        hx-target="#content-area"
-                        hx-swap="innerHTML"
-                        hx-push-url="true"
-                    >
-                        View all →
-                    </a>
-                </div>
-                <ul>
-                    {% for bookmark in recent_bookmarks %}
-                    <li class="mb-2">
-                        <a
-                            href="{{ bookmark.url }}"
-                            class="text-emerald-600 hover:text-emerald-500 hover:underline"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                        >
-                            {{ bookmark.title }}
-                        </a>
-                        <span class="text-sm text-gray-500 ml-2">
-                            {{ bookmark.date }}
-                        </span>
-                    </li>
-                    {% endfor %}
-                </ul>
+        <!-- GitHub Stars -->
+        <div class="bg-white rounded-lg shadow-sm p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-semibold text-gray-900">GitHub Stars</h2>
+                <a href="/stars" 
+                   class="text-emerald-600 hover:text-emerald-500 text-sm"
+                   hx-get="/stars"
+                   hx-target="#content-area"
+                   hx-swap="innerHTML"
+                   hx-push-url="true">
+                    View all →
+                </a>
             </div>
-
-            <div class="bg-gray-100 p-6 rounded-lg shadow-md">
-                <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-2xl font-semibold">GitHub Stars</h2>
-                    <a
-                        href="/stars"
-                        class="text-emerald-600 hover:text-emerald-500 hover:underline text-sm"
-                        hx-get="/stars"
-                        hx-target="#content-area"
-                        hx-swap="innerHTML"
-                        hx-push-url="true"
-                    >
-                        View all →
-                    </a>
-                </div>
-                <ul>
+            {% if github_error %}
+                <p class="text-red-600">{{ github_error }}</p>
+            {% else %}
+                <ul class="space-y-4">
                     {% for star in github_stars %}
-                    <li class="mb-4">
-                        <a
-                            href="{{ star.url }}"
-                            class="text-emerald-600 hover:text-emerald-500 hover:underline block font-semibold"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                        >
+                    <li class="border-b border-gray-100 last:border-0 pb-4 last:pb-0">
+                        <a href="{{ star.url }}"
+                           class="text-gray-900 hover:text-emerald-600 font-medium block"
+                           target="_blank"
+                           rel="noopener noreferrer">
                             {{ star.full_name }}
                         </a>
                         {% if star.description %}
-                        <p class="text-sm text-gray-600 mt-1">
-                            {{ star.description }}
-                        </p>
+                        <p class="text-sm text-gray-600 mt-1">{{ star.description }}</p>
                         {% endif %}
-                        <div class="flex items-center mt-1 text-sm">
+                        <div class="flex items-center mt-2 text-sm text-gray-500">
                             {% if star.language %}
-                            <span class="text-gray-600 mr-4">
-                                {{ star.language }}
-                            </span>
+                            <span class="mr-3">{{ star.language }}</span>
                             {% endif %}
-                            <span class="text-gray-600">
-                                ⭐ {{ star.stars }}
+                            <span class="flex items-center">
+                                <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                                </svg>
+                                {{ star.stars }}
                             </span>
-                            <span class="text-gray-500 ml-4">
-                                {{ star.starred_at }}
-                            </span>
+                            <span class="ml-3">{{ star.starred_at }}</span>
                         </div>
                     </li>
                     {% endfor %}
                 </ul>
-            </div>
+            {% endif %}
         </div>
     </aside>
 </div>
