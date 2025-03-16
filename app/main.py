@@ -33,7 +33,7 @@ STATIC_DIR = "app/static"
 ALLOWED_TAGS = list(bleach.sanitizer.ALLOWED_TAGS) + [
     "p", "pre", "code", "h1", "h2", "h3", "h4", "h5", "h6", "blockquote", "ul",
     "ol", "li", "strong", "em", "a", "img", "table", "thead", "tbody", "tr",
-    "th", "td", "span"
+    "th", "td", "span", "iframe"
 ]
 
 ALLOWED_ATTRIBUTES = {
@@ -43,7 +43,8 @@ ALLOWED_ATTRIBUTES = {
     "th": ["align"],
     "td": ["align"],
     "code": ["class"],
-    "span": ["class"]
+    "span": ["class"],
+    "iframe": ["src", "width", "height", "frameborder", "allow", "allowfullscreen", "title", "referrerpolicy"]
 }
 
 GITHUB_USERNAME = "JoshuaOliphant"
@@ -271,6 +272,7 @@ class ContentManager:
         allowed_attrs = {
             **ALLOWED_ATTRIBUTES,
             'a': ['href', 'title', 'rel', 'class', 'target'],
+            'iframe': ['src', 'width', 'height', 'frameborder', 'allow', 'allowfullscreen', 'title', 'referrerpolicy'],
         }
         
         clean_html = bleach.clean(
