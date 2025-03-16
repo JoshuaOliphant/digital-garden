@@ -41,3 +41,47 @@
         {{ content | safe }}
     </div>
 </article>
+
+<div class="mt-12">
+    <h2 class="text-2xl font-semibold mb-4">Recent Content</h2>
+    <div class="grid grid-cols-2 gap-8">
+        <div>
+            <h3 class="text-xl font-semibold mb-2">Recent How to's</h3>
+            <ul>
+                {% for how_to in recent_how_tos %}
+                <li class="mb-2">
+                    <a
+                        href="/how_to/{{ how_to.name }}"
+                        class="text-emerald-500 hover:underline"
+                        hx-get="/how_to/{{ how_to.name }}"
+                        hx-target="#content-area"
+                        hx-swap="innerHTML"
+                        hx-push-url="true"
+                    >
+                        {{ how_to.title }}
+                    </a>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        <div>
+            <h3 class="text-xl font-semibold mb-2">Recent Notes</h3>
+            <ul>
+                {% for note in recent_notes %}
+                <li class="mb-2">
+                    <a
+                        href="/notes/{{ note.name }}"
+                        class="text-emerald-500 hover:underline"
+                        hx-get="/notes/{{ note.name }}"
+                        hx-target="#content-area"
+                        hx-swap="innerHTML"
+                        hx-push-url="true"
+                    >
+                        {{ note.title }}
+                    </a>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+</div>
