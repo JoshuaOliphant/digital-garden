@@ -48,7 +48,7 @@
         <div>
             <h3 class="text-xl font-semibold mb-2">Recent How to's</h3>
             <ul>
-                {% for how_to in recent_how_tos %}
+                {% for how_to in recent_how_tos.content %}
                 <li class="mb-2">
                     <a
                         href="/how_to/{{ how_to.name }}"
@@ -67,7 +67,7 @@
         <div>
             <h3 class="text-xl font-semibold mb-2">Recent Notes</h3>
             <ul>
-                {% for note in recent_notes %}
+                {% for note in recent_notes.content %}
                 <li class="mb-2">
                     <a
                         href="/notes/{{ note.name }}"
