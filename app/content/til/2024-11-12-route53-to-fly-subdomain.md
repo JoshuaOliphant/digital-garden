@@ -8,6 +8,8 @@ tags: [aws, route53, fly, subdomain, dns-configuration, custom-domain, web-hosti
 
 I built this face shape identifier tool that helps people get personalized hairstyle recommendations based on their face shape, after looking up information on how to choose the right hairstyle for my own face shape. After deploying it to [fly.io](https://fly.io), I wanted to make it accessible through a subdomain of my main website [anoliphantneverforgets.com](https://anoliphantneverforgets.com).
 
+![alt text](<../../static/images/Setting Up a Custom Subdomain with Route53 and Fly-1.io - visual selection.png>)
+
 Here's how I set it up:
 
 ## Prerequisites

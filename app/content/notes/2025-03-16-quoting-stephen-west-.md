@@ -1,6 +1,6 @@
 ---
 # Required fields for all content types (BaseContent)
-title: "Quoting Stephen West - "
+title: "Quoting Stephen West"
 created: 2025-03-16
 updated: 2025-03-16
 tags: 
