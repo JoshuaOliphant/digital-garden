@@ -105,3 +105,10 @@ Type checking:
 ```bash
 mypy .
 ```
+
+## Usage Notes
+
+The `timed_lru_cache` decorator in `app/main.py` keeps its data in process
+memory and does not implement any locking. It is designed for single-threaded
+execution. For deployments with multiple workers or threads, prefer an external
+cache instead of this helper.
