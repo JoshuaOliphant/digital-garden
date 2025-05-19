@@ -41,6 +41,7 @@ A digital garden for organizing and sharing knowledge, powered by FastAPI and AI
    CLAUDE_MODEL=claude-3-5-sonnet-latest  # or other model version
    CLAUDE_MAX_TOKENS=4096
    CLAUDE_TEMPERATURE=0.7
+   BASE_URL=https://anoliphantneverforgets.com
    ```
 
 5. Initialize the content directories:

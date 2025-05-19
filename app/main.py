@@ -23,6 +23,8 @@ from email.utils import format_datetime
 from pydantic import ValidationError
 import logfire
 
+from .config import content_config
+
 from .models import BaseContent, Bookmark, TIL, Note, ContentMetadata
 
 # Constants
@@ -781,17 +783,17 @@ def generate_rss_feed():
     rss += '<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">\n'
     rss += '<channel>\n'
     rss += '<title>An Oliphant Never Forgets</title>\n'
-    rss += '<link>https://anoliphantneverforgets.com</link>\n'
+    rss += f'<link>{content_config.base_url}</link>\n'
     rss += '<description>Latest content from An Oliphant Never Forgets</description>\n'
     rss += '<language>en-us</language>\n'
     rss += '<managingEditor>joshua.oliphant@gmail.com (Joshua Oliphant)</managingEditor>\n'
     rss += '<webMaster>joshua.oliphant@gmail.com (Joshua Oliphant)</webMaster>\n'
-    rss += '<atom:link href="https://anoliphantneverforgets.com/feed.xml" rel="self" type="application/rss+xml" />\n'
+    rss += f'<atom:link href="{content_config.base_url}/feed.xml" rel="self" type="application/rss+xml" />\n'
 
     for item, content_type in all_content:
         rss += '<item>\n'
         rss += f'<title>{item["title"]}</title>\n'
-        rss += f'<link>https://anoliphantneverforgets.com/{content_type}/{item["name"]}</link>\n'
+        rss += f'<link>{content_config.base_url}/{content_type}/{item["name"]}</link>\n'
         rss += '<author>joshua.oliphant@gmail.com (Joshua Oliphant)</author>\n'
 
         # Add description/excerpt if available
@@ -820,7 +822,7 @@ def generate_rss_feed():
         for tag in tags:
             rss += f'<category>{tag}</category>\n'
 
-        rss += f'<guid>https://anoliphantneverforgets.com/{content_type}/{item["name"]}</guid>\n'
+        rss += f'<guid>{content_config.base_url}/{content_type}/{item["name"]}</guid>\n'
         rss += '</item>\n'
 
     rss += '</channel>\n'
@@ -832,7 +834,7 @@ def generate_rss_feed():
 def generate_sitemap() -> str:
     """Generate XML sitemap for the site"""
     # Base URL for the site
-    base_url = "https://anoliphantneverforgets.com"
+    base_url = content_config.base_url
     
     # Start XML sitemap
     sitemap = '<?xml version="1.0" encoding="UTF-8"?>\n'
@@ -939,9 +941,9 @@ async def sitemap():
 @app.get("/robots.txt")
 async def robots():
     return Response(
-        content="""User-agent: *
+        content=f"""User-agent: *
 Allow: /
-Sitemap: https://anoliphantneverforgets.com/sitemap.xml""",
+Sitemap: {content_config.base_url}/sitemap.xml""",
         media_type="text/plain"
     )
 
