@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Simple setup script for the Digital Garden project
 
-set -euo pipefail
+set -eu
 
 # Use the directory of this script as the project root
 PROJECT_ROOT="$(cd "$(dirname "$0")" && pwd)"
