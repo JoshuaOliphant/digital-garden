@@ -99,8 +99,12 @@ else:
         print(f"Warning: Failed to configure Logfire: {e}. Running without logging in development mode.")
 
 class timed_lru_cache:
-    """
-    Decorator that adds time-based expiration to LRU cache
+    """Decorator that adds time-based expiration to an in-memory LRU cache.
+
+    The cache uses regular Python dictionaries and is **not** thread safe.
+    It is intended for single-threaded use such as development servers or
+    scripts. Use an external cache if you need multi-process or multi-threaded
+    safety.
     """
 
     def __init__(self, maxsize: int = 128, ttl_seconds: int = 3600):
