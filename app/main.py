@@ -10,7 +10,7 @@ import markdown
 import os
 import re
 import yaml
-import glob
+from pathlib import Path
 import bleach
 import random
 import httpx
@@ -23,7 +23,10 @@ from email.utils import format_datetime
 from pydantic import ValidationError
 import logfire
 
+from .config import content_config
+
 from .models import BaseContent, Bookmark, TIL, Note, ContentMetadata
+from .config import ai_config
 
 # Constants
 CONTENT_DIR = "app/content"
@@ -78,8 +81,9 @@ ALLOWED_ATTRIBUTES = {
     ],
 }
 
+
 GITHUB_USERNAME = "JoshuaOliphant"
-T = TypeVar("T")
+T = TypeVar(
 
 # Initialize HTTP client first since it's used in lifespan
 http_client = httpx.AsyncClient(
@@ -144,8 +148,12 @@ else:
 
 
 class timed_lru_cache:
-    """
-    Decorator that adds time-based expiration to LRU cache
+    """Decorator that adds time-based expiration to an in-memory LRU cache.
+
+    The cache uses regular Python dictionaries and is **not** thread safe.
+    It is intended for single-threaded use such as development servers or
+    scripts. Use an external cache if you need multi-process or multi-threaded
+    safety.
     """
 
     def __init__(self, maxsize: int = 128, ttl_seconds: int = 3600):
@@ -362,20 +370,20 @@ class ContentManager:
     @staticmethod
     def get_content(content_type: str, limit=None):
         """Get content of a specific type with consistent format"""
-        files = glob.glob(f"{CONTENT_DIR}/{content_type}/*.md")
+        files = list(Path(CONTENT_DIR, content_type).glob("*.md"))
         files.sort(key=ContentManager._get_date_from_filename, reverse=True)
 
         content = []
         validation_errors = {}
 
         for file in files:
-            name = os.path.splitext(os.path.basename(file))[0]
-            file_content = ContentManager.render_markdown(file)
+            name = file.stem
+            file_content = ContentManager.render_markdown(str(file))
             metadata = file_content["metadata"]
             errors = file_content.get("errors", [])
 
             if errors:
-                validation_errors[file] = errors
+                validation_errors[str(file)] = errors
                 # Skip invalid content in production, include with errors in development
                 if os.getenv("ENVIRONMENT") == "production":
                     continue
@@ -424,18 +432,18 @@ class ContentManager:
         }
 
     @staticmethod
-    def _get_date_from_filename(filename: str) -> str:
-        match = re.search(r"(\d{4}-\d{2}-\d{2})", os.path.basename(filename))
-        return match.group(1) if match else "0000-00-00"
+    def _get_date_from_filename(filename: str | Path) -> str:
+        match = re.search(r'(\d{4}-\d{2}-\d{2})', Path(filename).name)
+        return match.group(1) if match else '0000-00-00'
 
     @staticmethod
     def get_random_quote():
-        quote_files = glob.glob(f"{CONTENT_DIR}/notes/*quoting*.md")
+        quote_files = list(Path(CONTENT_DIR, "notes").glob("*quoting*.md"))
         if not quote_files:
             return None
 
         random_quote_file = random.choice(quote_files)
-        quote_content = ContentManager.render_markdown(random_quote_file)
+        quote_content = ContentManager.render_markdown(str(random_quote_file))
 
         # Extract quote safely
         soup = BeautifulSoup(quote_content["html"], "html.parser")
@@ -450,7 +458,7 @@ class ContentManager:
     @staticmethod
     def get_bookmarks(limit: Optional[int] = 10) -> List[dict]:
         """Get bookmarks with pagination"""
-        files = glob.glob(f"{CONTENT_DIR}/bookmarks/*.md")
+        files = list(Path(CONTENT_DIR, "bookmarks").glob("*.md"))
         files.sort(key=ContentManager._get_date_from_filename, reverse=True)
         bookmarks = []
         files_to_process = (
@@ -458,8 +466,8 @@ class ContentManager:
         )
 
         for file in files_to_process:
-            name = os.path.splitext(os.path.basename(file))[0]
-            file_content = ContentManager.render_markdown(file)
+            name = file.stem
+            file_content = ContentManager.render_markdown(str(file))
             metadata = file_content["metadata"]
 
             # Convert the metadata to a Bookmark model for validation
@@ -497,10 +505,10 @@ class ContentManager:
             content_types = ["notes", "how_to", "til"]
 
         for content_type in content_types:
-            files = glob.glob(f"{CONTENT_DIR}/{content_type}/*.md")
+            files = list(Path(CONTENT_DIR, content_type).glob("*.md"))
             for file in files:
-                name = os.path.splitext(os.path.basename(file))[0]
-                file_content = ContentManager.render_markdown(file)
+                name = file.stem
+                file_content = ContentManager.render_markdown(str(file))
                 metadata = file_content["metadata"]
 
                 if "tags" in metadata and tag in metadata["tags"]:
@@ -536,9 +544,11 @@ class ContentManager:
         """
         try:
             response = await http_client.get(
-                f"https://api.github.com/users/{GITHUB_USERNAME}/starred",
-                params={"page": page, "per_page": per_page},
-            )
+                f"https://api.github.com/users/{ai_config.github_username}/starred",
+                params={
+                    "page": page,
+                    "per_page": per_page
+                })
 
             # Handle rate limiting
             if (
@@ -621,7 +631,7 @@ class ContentManager:
     @staticmethod
     def get_til_posts(page: int = 1, per_page: int = 30) -> dict:
         """Get TiL posts with pagination"""
-        files = glob.glob(f"{CONTENT_DIR}/til/*.md")
+        files = list(Path(CONTENT_DIR, "til").glob("*.md"))
         files.sort(key=ContentManager._get_date_from_filename, reverse=True)
 
         # Calculate pagination
@@ -633,8 +643,8 @@ class ContentManager:
         til_tags = {}
 
         for file in page_files:
-            name = os.path.splitext(os.path.basename(file))[0]
-            file_content = ContentManager.render_markdown(file)
+            name = file.stem
+            file_content = ContentManager.render_markdown(str(file))
             metadata = file_content["metadata"]
 
             # Get first paragraph for excerpt
@@ -667,12 +677,12 @@ class ContentManager:
     @staticmethod
     def get_til_posts_by_tag(tag: str) -> List[dict]:
         """Get TiL posts filtered by tag"""
-        files = glob.glob(f"{CONTENT_DIR}/til/*.md")
+        files = list(Path(CONTENT_DIR, "til").glob("*.md"))
         tils = []
 
         for file in files:
-            name = os.path.splitext(os.path.basename(file))[0]
-            file_content = ContentManager.render_markdown(file)
+            name = file.stem
+            file_content = ContentManager.render_markdown(str(file))
             metadata = file_content["metadata"]
 
             if tag in metadata.get("tags", []):
@@ -849,22 +859,21 @@ def generate_rss_feed():
     # Generate RSS XML
     rss = '<?xml version="1.0" encoding="UTF-8" ?>\n'
     rss += '<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">\n'
-    rss += "<channel>\n"
-    rss += "<title>An Oliphant Never Forgets</title>\n"
-    rss += "<link>https://anoliphantneverforgets.com</link>\n"
-    rss += "<description>Latest content from An Oliphant Never Forgets</description>\n"
-    rss += "<language>en-us</language>\n"
-    rss += (
-        "<managingEditor>joshua.oliphant@gmail.com (Joshua Oliphant)</managingEditor>\n"
-    )
-    rss += "<webMaster>joshua.oliphant@gmail.com (Joshua Oliphant)</webMaster>\n"
-    rss += '<atom:link href="https://anoliphantneverforgets.com/feed.xml" rel="self" type="application/rss+xml" />\n'
+
+    rss += '<channel>\n'
+    rss += '<title>An Oliphant Never Forgets</title>\n'
+    rss += f'<link>{content_config.base_url}</link>\n'
+    rss += '<description>Latest content from An Oliphant Never Forgets</description>\n'
+    rss += '<language>en-us</language>\n'
+    rss += '<managingEditor>joshua.oliphant@gmail.com (Joshua Oliphant)</managingEditor>\n'
+    rss += '<webMaster>joshua.oliphant@gmail.com (Joshua Oliphant)</webMaster>\n'
+    rss += f'<atom:link href="{content_config.base_url}/feed.xml" rel="self" type="application/rss+xml" />\n'
 
     for item, content_type in all_content:
         rss += "<item>\n"
         rss += f'<title>{item["title"]}</title>\n'
-        rss += f'<link>https://anoliphantneverforgets.com/{content_type}/{item["name"]}</link>\n'
-        rss += "<author>joshua.oliphant@gmail.com (Joshua Oliphant)</author>\n"
+        rss += f'<link>{content_config.base_url}/{content_type}/{item["name"]}</link>\n'
+        rss += '<author>joshua.oliphant@gmail.com (Joshua Oliphant)</author>\n'
 
         # Add description/excerpt if available
         if "excerpt" in item:
@@ -892,8 +901,8 @@ def generate_rss_feed():
         for tag in tags:
             rss += f"<category>{tag}</category>\n"
 
-        rss += f'<guid>https://anoliphantneverforgets.com/{content_type}/{item["name"]}</guid>\n'
-        rss += "</item>\n"
+        rss += f'<guid>{content_config.base_url}/{content_type}/{item["name"]}</guid>\n'
+        rss += '</item>\n'
 
     rss += "</channel>\n"
     rss += "</rss>"
@@ -904,8 +913,8 @@ def generate_rss_feed():
 def generate_sitemap() -> str:
     """Generate XML sitemap for the site"""
     # Base URL for the site
-    base_url = "https://anoliphantneverforgets.com"
-
+    base_url = content_config.base_url
+    
     # Start XML sitemap
     sitemap = '<?xml version="1.0" encoding="UTF-8"?>\n'
     sitemap += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
@@ -1010,10 +1019,10 @@ async def sitemap():
 async def robots():
     """Return ``robots.txt`` as a plain text ``Response``."""
     return Response(
-        content="""User-agent: *
+        content=f"""User-agent: *
 Allow: /
-Sitemap: https://anoliphantneverforgets.com/sitemap.xml""",
-        media_type="text/plain",
+Sitemap: {content_config.base_url}/sitemap.xml""",
+        media_type="text/plain"
     )
 
 
@@ -1060,7 +1069,6 @@ async def read_now(request: Request):
     )
 
 
-@app.get("/tags/{tag}", response_class=HTMLResponse)
 @app.get("/tags/{tag}", response_class=HTMLResponse)
 async def read_tag(request: Request, tag: str):
     """Return posts tagged with ``tag`` as an ``HTMLResponse``."""
