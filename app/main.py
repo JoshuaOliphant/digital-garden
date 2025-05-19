@@ -26,6 +26,7 @@ import logfire
 from .config import content_config
 
 from .models import BaseContent, Bookmark, TIL, Note, ContentMetadata
+from .config import ai_config
 
 # Constants
 CONTENT_DIR = "app/content"
@@ -49,7 +50,6 @@ ALLOWED_ATTRIBUTES = {
     "iframe": ["src", "width", "height", "frameborder", "allow", "allowfullscreen", "title", "referrerpolicy"]
 }
 
-GITHUB_USERNAME = "JoshuaOliphant"
 T = TypeVar('T')
 
 # Initialize HTTP client first since it's used in lifespan
@@ -463,7 +463,7 @@ class ContentManager:
         """
         try:
             response = await http_client.get(
-                f"https://api.github.com/users/{GITHUB_USERNAME}/starred",
+                f"https://api.github.com/users/{ai_config.github_username}/starred",
                 params={
                     "page": page,
                     "per_page": per_page
