@@ -988,7 +988,6 @@ async def read_now(request: Request):
 
 
 @app.get("/tags/{tag}", response_class=HTMLResponse)
-@app.get("/tags/{tag}", response_class=HTMLResponse)
 async def read_tag(request: Request, tag: str):
     # Get content type from query parameter, default to all
     content_type = request.query_params.get("type")
