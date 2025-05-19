@@ -417,7 +417,7 @@ class ContentManager:
             content_types = ["notes", "how_to", "til"]
 
         for content_type in content_types:
-            files = Path(CONTENT_DIR, content_type).glob("*.md")
+            files = list(Path(CONTENT_DIR, content_type).glob("*.md"))
             for file in files:
                 name = file.stem
                 file_content = ContentManager.render_markdown(str(file))
