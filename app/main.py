@@ -10,7 +10,7 @@ import markdown
 import os
 import re
 import yaml
-import glob
+from pathlib import Path
 import bleach
 import random
 import httpx
@@ -293,20 +293,20 @@ class ContentManager:
     @staticmethod
     def get_content(content_type: str, limit=None):
         """Get content of a specific type with consistent format"""
-        files = glob.glob(f"{CONTENT_DIR}/{content_type}/*.md")
+        files = list(Path(CONTENT_DIR, content_type).glob("*.md"))
         files.sort(key=ContentManager._get_date_from_filename, reverse=True)
 
         content = []
         validation_errors = {}
         
         for file in files:
-            name = os.path.splitext(os.path.basename(file))[0]
-            file_content = ContentManager.render_markdown(file)
+            name = file.stem
+            file_content = ContentManager.render_markdown(str(file))
             metadata = file_content["metadata"]
             errors = file_content.get("errors", [])
 
             if errors:
-                validation_errors[file] = errors
+                validation_errors[str(file)] = errors
                 # Skip invalid content in production, include with errors in development
                 if os.getenv("ENVIRONMENT") == "production":
                     continue
@@ -353,18 +353,18 @@ class ContentManager:
         }
 
     @staticmethod
-    def _get_date_from_filename(filename: str) -> str:
-        match = re.search(r'(\d{4}-\d{2}-\d{2})', os.path.basename(filename))
+    def _get_date_from_filename(filename: str | Path) -> str:
+        match = re.search(r'(\d{4}-\d{2}-\d{2})', Path(filename).name)
         return match.group(1) if match else '0000-00-00'
 
     @staticmethod
     def get_random_quote():
-        quote_files = glob.glob(f"{CONTENT_DIR}/notes/*quoting*.md")
+        quote_files = list(Path(CONTENT_DIR, "notes").glob("*quoting*.md"))
         if not quote_files:
             return None
 
         random_quote_file = random.choice(quote_files)
-        quote_content = ContentManager.render_markdown(random_quote_file)
+        quote_content = ContentManager.render_markdown(str(random_quote_file))
 
         # Extract quote safely
         soup = BeautifulSoup(quote_content["html"], 'html.parser')
@@ -379,15 +379,15 @@ class ContentManager:
     @staticmethod
     def get_bookmarks(limit: Optional[int] = 10) -> List[dict]:
         """Get bookmarks with pagination"""
-        files = glob.glob(f"{CONTENT_DIR}/bookmarks/*.md")
+        files = list(Path(CONTENT_DIR, "bookmarks").glob("*.md"))
         files.sort(key=ContentManager._get_date_from_filename, reverse=True)
         bookmarks = []
         files_to_process = files if limit is None else sorted(
             files, reverse=True)[:limit]
 
         for file in files_to_process:
-            name = os.path.splitext(os.path.basename(file))[0]
-            file_content = ContentManager.render_markdown(file)
+            name = file.stem
+            file_content = ContentManager.render_markdown(str(file))
             metadata = file_content["metadata"]
 
             # Convert the metadata to a Bookmark model for validation
@@ -423,10 +423,10 @@ class ContentManager:
             content_types = ["notes", "how_to", "til"]
 
         for content_type in content_types:
-            files = glob.glob(f"{CONTENT_DIR}/{content_type}/*.md")
+            files = list(Path(CONTENT_DIR, content_type).glob("*.md"))
             for file in files:
-                name = os.path.splitext(os.path.basename(file))[0]
-                file_content = ContentManager.render_markdown(file)
+                name = file.stem
+                file_content = ContentManager.render_markdown(str(file))
                 metadata = file_content["metadata"]
 
                 if "tags" in metadata and tag in metadata["tags"]:
@@ -552,7 +552,7 @@ class ContentManager:
     @staticmethod
     def get_til_posts(page: int = 1, per_page: int = 30) -> dict:
         """Get TiL posts with pagination"""
-        files = glob.glob(f"{CONTENT_DIR}/til/*.md")
+        files = list(Path(CONTENT_DIR, "til").glob("*.md"))
         files.sort(key=ContentManager._get_date_from_filename, reverse=True)
 
         # Calculate pagination
@@ -564,8 +564,8 @@ class ContentManager:
         til_tags = {}
 
         for file in page_files:
-            name = os.path.splitext(os.path.basename(file))[0]
-            file_content = ContentManager.render_markdown(file)
+            name = file.stem
+            file_content = ContentManager.render_markdown(str(file))
             metadata = file_content["metadata"]
 
             # Get first paragraph for excerpt
@@ -604,12 +604,12 @@ class ContentManager:
     @staticmethod
     def get_til_posts_by_tag(tag: str) -> List[dict]:
         """Get TiL posts filtered by tag"""
-        files = glob.glob(f"{CONTENT_DIR}/til/*.md")
+        files = list(Path(CONTENT_DIR, "til").glob("*.md"))
         tils = []
 
         for file in files:
-            name = os.path.splitext(os.path.basename(file))[0]
-            file_content = ContentManager.render_markdown(file)
+            name = file.stem
+            file_content = ContentManager.render_markdown(str(file))
             metadata = file_content["metadata"]
 
             if tag in metadata.get("tags", []):
