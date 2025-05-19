@@ -83,7 +83,7 @@ ALLOWED_ATTRIBUTES = {
 
 
 GITHUB_USERNAME = "JoshuaOliphant"
-T = TypeVar(
+T = TypeVar("T")
 
 # Initialize HTTP client first since it's used in lifespan
 http_client = httpx.AsyncClient(
