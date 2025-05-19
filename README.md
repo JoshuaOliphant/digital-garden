@@ -18,14 +18,15 @@ A digital garden for organizing and sharing knowledge, powered by FastAPI and AI
    cd digital_garden
    ```
 
-2. Create a Python virtual environment (Python 3.12+ required):
+2. Run the setup script to create a virtual environment and install dependencies (Python 3.12+ required):
+   ```bash
+   ./setup.sh
+   ```
+
+   If you prefer to run the steps manually:
    ```bash
    uv venv
    source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-   ```
-
-3. Install dependencies:
-   ```bash
    uv sync
    ```
 
