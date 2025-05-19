@@ -31,6 +31,7 @@ class ContentConfig(BaseSettings):
     content_dir: str = "app/content"
     backup_dir: str = "app/content_backup"
     cache_dir: str = "app/cache"
+    base_url: str = "https://anoliphantneverforgets.com"
     
     # Content types and their models
     content_types: Dict[str, str] = {
