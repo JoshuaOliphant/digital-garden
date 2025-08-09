@@ -8,3 +8,4 @@ content_analysis.log
 .cursor/*
 blog_update.md
 .env
+logs
