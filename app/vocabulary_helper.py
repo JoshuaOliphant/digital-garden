@@ -1,6 +1,7 @@
 # ABOUTME: Helper functions for converting technical terms to garden vocabulary
 # ABOUTME: Maps terms like 'created' to 'planted' and provides growth stage styling
 
+
 def convert_to_garden_vocabulary(term: str) -> str:
     """Convert technical terms to garden vocabulary equivalents."""
     vocabulary_map = {
@@ -15,23 +16,23 @@ GROWTH_STAGES = {
     "seedling": {
         "emoji": "🌱",
         "color": "#10b981",  # emerald-500
-        "description": "New idea, just planted"
+        "description": "New idea, just planted",
     },
     "budding": {
-        "emoji": "🌿", 
+        "emoji": "🌿",
         "color": "#f59e0b",  # amber-500
-        "description": "Growing with some development"
+        "description": "Growing with some development",
     },
     "growing": {
         "emoji": "🌳",
         "color": "#3b82f6",  # blue-500
-        "description": "Actively developing and evolving"
+        "description": "Actively developing and evolving",
     },
     "evergreen": {
         "emoji": "🌲",
         "color": "#059669",  # emerald-600
-        "description": "Mature, stable, and valuable"
-    }
+        "description": "Mature, stable, and valuable",
+    },
 }
 
 

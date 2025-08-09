@@ -21,7 +21,7 @@ class BaseContent(BaseModel):
     created: datetime
     updated: datetime
     tags: List[str]
-    
+
     # Existing optional fields
     status: str = "Evergreen"
     series: Optional[str] = None
@@ -29,7 +29,7 @@ class BaseContent(BaseModel):
     prerequisites: Optional[List[str]] = None
     related_content: Optional[List[str]] = None
     visibility: str = "public"
-    
+
     # New growth stage fields
     growth_stage: GrowthStage = GrowthStage.SEEDLING
     tended_count: int = Field(default=0, ge=0)  # Must be non-negative
@@ -37,17 +37,17 @@ class BaseContent(BaseModel):
     connections: List[str] = Field(default_factory=list)
 
     model_config = ConfigDict(extra="allow")
-    
+
     def tend(self):
         """Increment the tended count when content is updated."""
         self.tended_count += 1
-    
+
     def should_advance_growth_stage(self) -> bool:
         """Determine if content should advance to the next growth stage."""
         # Evergreen content doesn't advance
         if self.growth_stage == GrowthStage.EVERGREEN:
             return False
-        
+
         # Logic for advancement based on tended_count
         if self.growth_stage == GrowthStage.SEEDLING and self.tended_count >= 1:
             return True
@@ -56,26 +56,26 @@ class BaseContent(BaseModel):
         elif self.growth_stage == GrowthStage.GROWING and self.tended_count >= 5:
             return True
         return False
-    
+
     def check_growth_stage_regression(self, new_stage: str) -> bool:
         """Check if a new growth stage would be a regression."""
         stage_order = {
             GrowthStage.SEEDLING: 0,
             GrowthStage.BUDDING: 1,
             GrowthStage.GROWING: 2,
-            GrowthStage.EVERGREEN: 3
+            GrowthStage.EVERGREEN: 3,
         }
-        
+
         # Convert string to enum if needed
         if isinstance(new_stage, str):
             try:
                 new_stage = GrowthStage(new_stage)
             except ValueError:
                 return False
-        
+
         current_order = stage_order.get(self.growth_stage, 0)
         new_order = stage_order.get(new_stage, 0)
-        
+
         # Allow same stage or progression, but not regression
         return new_order >= current_order
 
