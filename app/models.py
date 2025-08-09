@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import List, Optional
-from pydantic import BaseModel, ConfigDict, Field, validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 from enum import Enum
 
 
@@ -34,7 +34,8 @@ class BaseContent(BaseModel):
 
     model_config = ConfigDict(extra="allow")
 
-    @validator('growth_stage')
+    @field_validator('growth_stage')
+    @classmethod
     def validate_growth_stage(cls, v):
         valid_stages = {"seedling", "budding", "growing", "evergreen"}
         if v not in valid_stages:
@@ -87,5 +88,5 @@ class ContentMetadata(BaseModel):
     series: Optional[str] = None
     difficulty: Optional[str] = None
     prerequisites: Optional[List[str]] = None
-    related_content: Optional[List[str]] = None
+    related_content: Optional[List[str] = None
     visibility: str = "public"
