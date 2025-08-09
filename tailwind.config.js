@@ -16,9 +16,13 @@ module.exports = {
         sans: ["Inter", "sans-serif"],
         serif: ["Merriweather", "serif"],
       },
+      gridTemplateColumns: {
+        'main': 'minmax(0, 2fr) minmax(300px, 1fr)',
+      },
       typography: {
         DEFAULT: {
           css: {
+            maxWidth: 'none',
             blockquote: {
               borderLeftWidth: "4px",
               borderLeftColor: "#cccccc",
