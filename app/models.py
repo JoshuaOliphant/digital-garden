@@ -88,5 +88,5 @@ class ContentMetadata(BaseModel):
     series: Optional[str] = None
     difficulty: Optional[str] = None
     prerequisites: Optional[List[str]] = None
-    related_content: Optional[List[str] = None
+    related_content: Optional[List[str]] = None
     visibility: str = "public"
