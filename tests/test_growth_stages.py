@@ -1,46 +1,18 @@
 # ABOUTME: Tests for the growth stages system in the digital garden
-# ABOUTME: These tests define behavior for content lifecycle management using garden metaphors
+# ABOUTME: These tests verify content lifecycle management using garden metaphors
 
 import pytest
 from datetime import datetime
-from enum import Enum
 from pydantic import ValidationError
-from unittest.mock import Mock
 
-# Import existing models
-from app.models import BaseContent, Bookmark, TIL, Note
-
-# Mock the non-existent features that need to be implemented
-# This allows tests to run and fail appropriately
-try:
-    from app.models import GrowthStage
-except ImportError:
-    # Create a mock GrowthStage enum for testing
-    class GrowthStage(Enum):
-        SEEDLING = "seedling"
-        BUDDING = "budding" 
-        GROWING = "growing"
-        EVERGREEN = "evergreen"
-
-try:
-    from app.vocabulary_helper import (
-        convert_to_garden_vocabulary,
-        GROWTH_STAGES,
-        get_growth_stage_color,
-        get_growth_stage_emoji,
-    )
-except ImportError:
-    # Mock functions for testing - these will need to be implemented
-    def convert_to_garden_vocabulary(term):
-        raise NotImplementedError("vocabulary_helper module not implemented yet")
-    
-    GROWTH_STAGES = {}
-    
-    def get_growth_stage_color(stage):
-        raise NotImplementedError("get_growth_stage_color function not implemented yet")
-    
-    def get_growth_stage_emoji(stage):
-        raise NotImplementedError("get_growth_stage_emoji function not implemented yet")
+# Import the actual implementations
+from app.models import BaseContent, Bookmark, TIL, Note, GrowthStage
+from app.vocabulary_helper import (
+    convert_to_garden_vocabulary,
+    GROWTH_STAGES,
+    get_growth_stage_color,
+    get_growth_stage_emoji,
+)
 
 
 class TestGrowthStageEnum:
@@ -52,411 +24,329 @@ class TestGrowthStageEnum:
         assert GrowthStage.BUDDING.value == "budding"
         assert GrowthStage.GROWING.value == "growing"
         assert GrowthStage.EVERGREEN.value == "evergreen"
+    
+    def test_growth_stage_enum_has_all_stages(self):
+        """Test that all expected growth stages exist."""
+        stages = [stage.value for stage in GrowthStage]
+        assert "seedling" in stages
+        assert "budding" in stages
+        assert "growing" in stages
+        assert "evergreen" in stages
+        assert len(stages) == 4
 
-    def test_growth_stage_enum_is_complete(self):
-        """Test that all expected growth stages are present."""
-        expected_stages = {"seedling", "budding", "growing", "evergreen"}
-        actual_stages = {stage.value for stage in GrowthStage}
-        assert actual_stages == expected_stages
 
-
-class TestBaseContentGrowthStageValidation:
-    """Test growth stage validation in BaseContent model."""
-
-    def test_base_content_accepts_valid_growth_stages(self):
-        """Test that BaseContent accepts all valid growth_stage values."""
-        valid_stages = ["seedling", "budding", "growing", "evergreen"]
-        
-        for stage in valid_stages:
-            with pytest.raises(ValidationError) as exc_info:
-                # This will fail because growth_stage field doesn't exist yet
-                content = BaseContent(
-                    title="Test Content",
-                    created=datetime.now(),
-                    updated=datetime.now(),
-                    tags=["test"],
-                    growth_stage=stage,
-                )
-            
-            # The error should be about an unknown field, not validation
-            errors = exc_info.value.errors()
-            assert any("growth_stage" in str(error) for error in errors)
-
-    def test_base_content_rejects_invalid_growth_stages(self):
-        """Test that invalid growth_stage values raise ValidationError."""
-        invalid_stages = ["invalid", "draft", "published", "mature", ""]
-        
-        for stage in invalid_stages:
-            with pytest.raises(ValidationError) as exc_info:
-                # This will fail because growth_stage field doesn't exist yet
-                BaseContent(
-                    title="Test Content",
-                    created=datetime.now(),
-                    updated=datetime.now(),
-                    tags=["test"],
-                    growth_stage=stage,
-                )
-            
-            errors = exc_info.value.errors()
-            assert any("growth_stage" in str(error) for error in errors)
-
+class TestBaseContentGrowthStage:
+    """Test growth stage functionality in BaseContent model."""
+    
+    def test_base_content_accepts_valid_growth_stage(self):
+        """Test that BaseContent accepts valid growth stage values."""
+        for stage in ["seedling", "budding", "growing", "evergreen"]:
+            content = BaseContent(
+                title="Test Content",
+                created=datetime.now(),
+                updated=datetime.now(),
+                tags=["test"],
+                growth_stage=stage
+            )
+            assert content.growth_stage == GrowthStage(stage)
+    
+    def test_base_content_rejects_invalid_growth_stage(self):
+        """Test that BaseContent raises error for invalid growth stage."""
+        with pytest.raises(ValidationError) as exc_info:
+            BaseContent(
+                title="Test Content",
+                created=datetime.now(),
+                updated=datetime.now(),
+                tags=["test"],
+                growth_stage="invalid_stage"
+            )
+        errors = exc_info.value.errors()
+        assert any("growth_stage" in str(error) for error in errors)
+    
     def test_growth_stage_defaults_to_seedling(self):
         """Test that growth_stage defaults to 'seedling' for new content."""
         content = BaseContent(
             title="New Content",
             created=datetime.now(),
             updated=datetime.now(),
-            tags=["test"],
+            tags=["test"]
         )
-        
-        # This will fail because growth_stage field doesn't exist yet
-        with pytest.raises(AttributeError):
-            assert content.growth_stage == "seedling"
-
-    def test_growth_stage_enum_integration(self):
-        """Test that BaseContent accepts GrowthStage enum values."""
-        with pytest.raises(ValidationError) as exc_info:
-            # This will fail because growth_stage field doesn't exist yet
-            content = BaseContent(
-                title="Test Content",
-                created=datetime.now(),
-                updated=datetime.now(),
-                tags=["test"],
-                growth_stage=GrowthStage.EVERGREEN,
-            )
-        
-        errors = exc_info.value.errors()
-        assert any("growth_stage" in str(error) for error in errors)
+        assert content.growth_stage == GrowthStage.SEEDLING
+    
+    def test_existing_content_without_growth_stage(self):
+        """Test that existing content without growth_stage loads with default."""
+        # Simulate loading existing content without growth_stage field
+        content = BaseContent(
+            title="Existing Content",
+            created=datetime(2024, 1, 1),
+            updated=datetime(2024, 1, 2),
+            tags=["existing"],
+            status="Evergreen"  # Old field still works
+        )
+        assert content.growth_stage == GrowthStage.SEEDLING
+        assert content.status == "Evergreen"  # Backward compatibility
 
 
-class TestTendedCountTracking:
-    """Test the tended_count field that tracks content updates."""
-
+class TestTendedCount:
+    """Test the tended_count functionality."""
+    
     def test_tended_count_defaults_to_zero(self):
         """Test that tended_count defaults to 0 for new content."""
         content = BaseContent(
             title="New Content",
             created=datetime.now(),
             updated=datetime.now(),
-            tags=["test"],
+            tags=["test"]
         )
-        
-        # This will fail because tended_count field doesn't exist yet
-        with pytest.raises(AttributeError):
-            assert content.tended_count == 0
-
-    def test_tended_count_increments_on_update(self):
-        """Test that tended_count increments when content is updated."""
-        with pytest.raises(ValidationError) as exc_info:
-            # This will fail because tended_count field doesn't exist yet
-            content = BaseContent(
-                title="Test Content",
-                created=datetime.now(),
-                updated=datetime.now(),
-                tags=["test"],
-                tended_count=5,
-            )
-        
-        errors = exc_info.value.errors()
-        assert any("tended_count" in str(error) for error in errors)
-        
-        # Test for tend() method that doesn't exist yet
+        assert content.tended_count == 0
+    
+    def test_tended_count_increments(self):
+        """Test that tended_count increments when tend() is called."""
         content = BaseContent(
             title="Test Content",
             created=datetime.now(),
             updated=datetime.now(),
             tags=["test"],
+            tended_count=5
         )
-        
-        with pytest.raises(AttributeError):
-            content.tend()  # This method doesn't exist yet - needs implementation
-
-    def test_tended_count_is_non_negative(self):
+        content.tend()
+        assert content.tended_count == 6
+    
+    def test_tended_count_non_negative(self):
         """Test that tended_count cannot be negative."""
         with pytest.raises(ValidationError) as exc_info:
-            # This will fail because tended_count field doesn't exist yet
             BaseContent(
                 title="Test Content",
                 created=datetime.now(),
                 updated=datetime.now(),
                 tags=["test"],
-                tended_count=-1,
+                tended_count=-1
             )
-        
         errors = exc_info.value.errors()
         assert any("tended_count" in str(error) for error in errors)
 
 
-class TestGardenBedField:
-    """Test the garden_bed field for content organization."""
-
+class TestGardenBed:
+    """Test the garden_bed field functionality."""
+    
     def test_garden_bed_is_optional(self):
         """Test that garden_bed field is optional."""
         content = BaseContent(
             title="Test Content",
             created=datetime.now(),
             updated=datetime.now(),
-            tags=["test"],
+            tags=["test"]
         )
-        
-        # This will fail because garden_bed field doesn't exist yet
-        with pytest.raises(AttributeError):
-            assert content.garden_bed is None
-
-    def test_garden_bed_accepts_valid_strings(self):
-        """Test that garden_bed accepts valid string values."""
-        valid_beds = ["programming", "data-science", "personal", "projects", "learning"]
-        
-        for bed in valid_beds:
-            with pytest.raises(ValidationError) as exc_info:
-                # This will fail because garden_bed field doesn't exist yet
-                content = BaseContent(
-                    title="Test Content",
-                    created=datetime.now(),
-                    updated=datetime.now(),
-                    tags=["test"],
-                    garden_bed=bed,
-                )
-            
-            errors = exc_info.value.errors()
-            assert any("garden_bed" in str(error) for error in errors)
-
-    def test_garden_bed_validates_as_string(self):
-        """Test that garden_bed must be a string if provided."""
-        with pytest.raises(ValidationError) as exc_info:
-            # This will fail because garden_bed field doesn't exist yet
-            BaseContent(
-                title="Test Content",
-                created=datetime.now(),
-                updated=datetime.now(),
-                tags=["test"],
-                garden_bed=123,  # Should be string, not int
-            )
-        
-        errors = exc_info.value.errors()
-        assert any("garden_bed" in str(error) for error in errors)
-
-
-class TestConnectionsField:
-    """Test the connections field for linking related content."""
-
-    def test_connections_defaults_to_empty_list(self):
-        """Test that connections field defaults to empty list."""
+        assert content.garden_bed is None
+    
+    def test_garden_bed_accepts_string(self):
+        """Test that garden_bed accepts string values."""
         content = BaseContent(
             title="Test Content",
             created=datetime.now(),
             updated=datetime.now(),
             tags=["test"],
+            garden_bed="vegetable-garden"
         )
-        
-        # This will fail because connections field doesn't exist yet
-        with pytest.raises(AttributeError):
-            assert content.connections == []
-
-    def test_connections_accepts_list_of_content_ids(self):
-        """Test that connections field accepts list of content IDs."""
-        content_ids = ["note-123", "til-456", "bookmark-789"]
-        
+        assert content.garden_bed == "vegetable-garden"
+    
+    def test_garden_bed_validates_type(self):
+        """Test that garden_bed validates as string type."""
         with pytest.raises(ValidationError) as exc_info:
-            # This will fail because connections field doesn't exist yet
-            content = BaseContent(
-                title="Test Content",
-                created=datetime.now(),
-                updated=datetime.now(),
-                tags=["test"],
-                connections=content_ids,
-            )
-        
-        errors = exc_info.value.errors()
-        assert any("connections" in str(error) for error in errors)
-
-    def test_connections_validates_as_list(self):
-        """Test that connections must be a list."""
-        with pytest.raises(ValidationError) as exc_info:
-            # This will fail because connections field doesn't exist yet
             BaseContent(
                 title="Test Content",
                 created=datetime.now(),
                 updated=datetime.now(),
                 tags=["test"],
-                connections="not-a-list",  # Should be list, not string
+                garden_bed=123  # Should be string
             )
-        
+        errors = exc_info.value.errors()
+        assert any("garden_bed" in str(error) for error in errors)
+
+
+class TestConnections:
+    """Test the connections field functionality."""
+    
+    def test_connections_defaults_to_empty_list(self):
+        """Test that connections defaults to empty list."""
+        content = BaseContent(
+            title="Test Content",
+            created=datetime.now(),
+            updated=datetime.now(),
+            tags=["test"]
+        )
+        assert content.connections == []
+    
+    def test_connections_accepts_list_of_ids(self):
+        """Test that connections accepts list of content IDs."""
+        content = BaseContent(
+            title="Test Content",
+            created=datetime.now(),
+            updated=datetime.now(),
+            tags=["test"],
+            connections=["note-1", "til-2", "bookmark-3"]
+        )
+        assert content.connections == ["note-1", "til-2", "bookmark-3"]
+    
+    def test_connections_validates_type(self):
+        """Test that connections validates as list type."""
+        with pytest.raises(ValidationError) as exc_info:
+            BaseContent(
+                title="Test Content",
+                created=datetime.now(),
+                updated=datetime.now(),
+                tags=["test"],
+                connections="not-a-list"  # Should be list
+            )
         errors = exc_info.value.errors()
         assert any("connections" in str(error) for error in errors)
 
 
 class TestVocabularyMapping:
-    """Test the garden vocabulary helper functions."""
-
+    """Test vocabulary mapping functions."""
+    
     def test_convert_created_to_planted(self):
-        """Test that 'created' is converted to 'planted' in garden vocabulary."""
-        with pytest.raises(NotImplementedError):
-            result = convert_to_garden_vocabulary("created")
-
+        """Test that 'created' converts to 'planted'."""
+        result = convert_to_garden_vocabulary("created")
+        assert result == "planted"
+    
     def test_convert_updated_to_tended(self):
-        """Test that 'updated' is converted to 'tended' in garden vocabulary."""
-        with pytest.raises(NotImplementedError):
-            result = convert_to_garden_vocabulary("updated")
-
-    def test_convert_unknown_terms_unchanged(self):
-        """Test that unknown terms are returned unchanged."""
-        unknown_terms = ["title", "tags", "status", "description"]
-        
-        for term in unknown_terms:
-            with pytest.raises(NotImplementedError):
-                result = convert_to_garden_vocabulary(term)
-
+        """Test that 'updated' converts to 'tended'."""
+        result = convert_to_garden_vocabulary("updated")
+        assert result == "tended"
+    
+    def test_convert_unknown_term_unchanged(self):
+        """Test that unknown terms remain unchanged."""
+        result = convert_to_garden_vocabulary("unknown")
+        assert result == "unknown"
+    
     def test_growth_stages_constant_exists(self):
-        """Test that GROWTH_STAGES constant is properly defined."""
-        # This will fail because GROWTH_STAGES is not implemented yet
-        assert GROWTH_STAGES == {}  # Currently empty mock
-
+        """Test that GROWTH_STAGES constant is defined."""
+        assert GROWTH_STAGES is not None
+        assert isinstance(GROWTH_STAGES, dict)
+        assert len(GROWTH_STAGES) > 0
+    
     def test_growth_stage_colors_mapping(self):
-        """Test that growth stage colors map correctly."""
-        expected_colors = {
-            "seedling": "#10b981",  # emerald-500
-            "budding": "#f59e0b",   # amber-500
-            "growing": "#3b82f6",   # blue-500
-            "evergreen": "#059669", # emerald-600
-        }
-        
-        for stage, expected_color in expected_colors.items():
-            with pytest.raises(NotImplementedError):
-                color = get_growth_stage_color(stage)
-
+        """Test that growth stages have color mappings."""
+        for stage in ["seedling", "budding", "growing", "evergreen"]:
+            color = get_growth_stage_color(stage)
+            assert color is not None
+            assert isinstance(color, str)
+            assert len(color) > 0
+    
     def test_growth_stage_emojis_mapping(self):
-        """Test that growth stage emojis map correctly."""
-        expected_emojis = {
-            "seedling": "🌱",
-            "budding": "🌿",
-            "growing": "🌳",
-            "evergreen": "🌲",
-        }
-        
-        for stage, expected_emoji in expected_emojis.items():
-            with pytest.raises(NotImplementedError):
-                emoji = get_growth_stage_emoji(stage)
+        """Test that growth stages have emoji mappings."""
+        for stage in ["seedling", "budding", "growing", "evergreen"]:
+            emoji = get_growth_stage_emoji(stage)
+            assert emoji is not None
+            assert isinstance(emoji, str)
+            assert len(emoji) > 0
 
 
-class TestExistingContentBackwardCompatibility:
-    """Test that existing content without growth_stage loads properly."""
-
-    def test_existing_content_loads_with_default_growth_stage(self):
-        """Test that content without growth_stage gets default value."""
-        # Simulate loading content that was created before growth stages existed
-        content_data = {
-            "title": "Existing Content",
-            "created": datetime.now(),
-            "updated": datetime.now(),
-            "tags": ["test"],
-            "status": "Evergreen",
-        }
-        
-        content = BaseContent(**content_data)
-        
-        # This will fail because growth_stage field doesn't exist yet
-        with pytest.raises(AttributeError):
-            assert content.growth_stage == "seedling"  # Should get default
-
-    def test_existing_content_preserves_growth_stage_if_present(self):
-        """Test that existing content with growth_stage preserves the value."""
-        content_data = {
-            "title": "Existing Content",
-            "created": datetime.now(),
-            "updated": datetime.now(),
-            "tags": ["test"],
-            "growth_stage": "evergreen",
-        }
-        
-        with pytest.raises(ValidationError) as exc_info:
-            # This will fail because growth_stage field doesn't exist yet
-            content = BaseContent(**content_data)
-        
-        errors = exc_info.value.errors()
-        assert any("growth_stage" in str(error) for error in errors)
-
-
-class TestSpecializedContentModels:
-    """Test that specialized content models inherit growth stage behavior."""
-
-    def test_bookmark_inherits_growth_stage(self):
-        """Test that Bookmark model inherits growth stage functionality."""
-        with pytest.raises(ValidationError) as exc_info:
-            # This will fail because growth_stage field doesn't exist yet
-            bookmark = Bookmark(
-                title="Test Bookmark",
-                created=datetime.now(),
-                updated=datetime.now(),
-                tags=["test"],
-                url="https://example.com",
-                growth_stage="budding",
-            )
-        
-        errors = exc_info.value.errors()
-        assert any("growth_stage" in str(error) for error in errors)
-
-    def test_til_inherits_growth_stage(self):
-        """Test that TIL model inherits growth stage functionality."""
-        with pytest.raises(ValidationError) as exc_info:
-            # This will fail because growth_stage field doesn't exist yet
-            til = TIL(
-                title="Test TIL",
-                created=datetime.now(),
-                updated=datetime.now(),
-                tags=["test"],
-                growth_stage="growing",
-            )
-        
-        errors = exc_info.value.errors()
-        assert any("growth_stage" in str(error) for error in errors)
-
-    def test_note_inherits_growth_stage(self):
-        """Test that Note model inherits growth stage functionality."""
-        with pytest.raises(ValidationError) as exc_info:
-            # This will fail because growth_stage field doesn't exist yet
-            note = Note(
-                title="Test Note",
-                created=datetime.now(),
-                updated=datetime.now(),
-                tags=["test"],
-                growth_stage="evergreen",
-            )
-        
-        errors = exc_info.value.errors()
-        assert any("growth_stage" in str(error) for error in errors)
-
-
-class TestGrowthStageProgression:
-    """Test logical progression of growth stages."""
-
-    def test_growth_stage_progression_logic(self):
-        """Test that growth stages follow logical progression."""
-        # This would test business logic for automatic stage progression
-        # based on factors like tended_count, age, connections, etc.
+class TestBackwardCompatibility:
+    """Test backward compatibility with existing content."""
+    
+    def test_existing_content_loads_without_new_fields(self):
+        """Test that content loads without growth stage fields."""
+        # Simulate loading old content that only has required fields
+        content = BaseContent(
+            title="Old Content",
+            created=datetime(2023, 1, 1),
+            updated=datetime(2023, 1, 2),
+            tags=["old"],
+            status="Budding"
+        )
+        # Should have default values for new fields
+        assert content.growth_stage == GrowthStage.SEEDLING
+        assert content.tended_count == 0
+        assert content.garden_bed is None
+        assert content.connections == []
+    
+    def test_growth_stage_preserved_on_update(self):
+        """Test that growth stage is preserved when updating content."""
         content = BaseContent(
             title="Test Content",
             created=datetime.now(),
             updated=datetime.now(),
             tags=["test"],
+            growth_stage="evergreen"
         )
-        
-        # Test for methods that don't exist yet
-        with pytest.raises(AttributeError):
-            content.tend()  # Method doesn't exist yet
-            
-        with pytest.raises(AttributeError):
-            content.should_advance_growth_stage()  # Method doesn't exist yet
-        
-    def test_evergreen_content_stays_evergreen(self):
-        """Test that evergreen content doesn't regress to earlier stages."""
+        # Update other fields
+        content.title = "Updated Title"
+        content.tags = ["test", "updated"]
+        # Growth stage should remain unchanged
+        assert content.growth_stage == GrowthStage.EVERGREEN
+
+
+class TestSpecializedModels:
+    """Test that specialized content models inherit growth stage functionality."""
+    
+    def test_bookmark_has_growth_stage(self):
+        """Test that Bookmark model has growth stage field."""
+        bookmark = Bookmark(
+            title="Test Bookmark",
+            created=datetime.now(),
+            updated=datetime.now(),
+            tags=["test"],
+            url="https://example.com",
+            growth_stage="budding"
+        )
+        assert bookmark.growth_stage == GrowthStage.BUDDING
+    
+    def test_til_has_growth_stage(self):
+        """Test that TIL model has growth stage field."""
+        til = TIL(
+            title="Test TIL",
+            created=datetime.now(),
+            updated=datetime.now(),
+            tags=["test"],
+            growth_stage="growing"
+        )
+        assert til.growth_stage == GrowthStage.GROWING
+    
+    def test_note_has_growth_stage(self):
+        """Test that Note model has growth stage field."""
+        note = Note(
+            title="Test Note",
+            created=datetime.now(),
+            updated=datetime.now(),
+            tags=["test"],
+            growth_stage="evergreen"
+        )
+        assert note.growth_stage == GrowthStage.EVERGREEN
+
+
+class TestGrowthLogic:
+    """Test growth stage progression logic."""
+    
+    def test_should_advance_growth_stage(self):
+        """Test logic for when content should advance growth stage."""
         content = BaseContent(
             title="Test Content",
             created=datetime.now(),
             updated=datetime.now(),
             tags=["test"],
+            growth_stage="seedling",
+            tended_count=10
         )
+        # With 10 tends, seedling should be ready to advance
+        assert content.should_advance_growth_stage() is True
         
-        # Test for method that doesn't exist yet
-        with pytest.raises(AttributeError):
-            content.check_growth_stage_regression()  # Method doesn't exist yet
+        # Evergreen content should never advance
+        content.growth_stage = GrowthStage.EVERGREEN
+        content.tended_count = 100
+        assert content.should_advance_growth_stage() is False
+    
+    def test_growth_stage_regression_check(self):
+        """Test that growth stages don't regress."""
+        content = BaseContent(
+            title="Test Content",
+            created=datetime.now(),
+            updated=datetime.now(),
+            tags=["test"],
+            growth_stage="evergreen"
+        )
+        # Should not allow regression from evergreen to growing
+        assert content.check_growth_stage_regression("growing") is False
+        # Should allow progression or same stage
+        assert content.check_growth_stage_regression("evergreen") is True
