@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+{% from 'macros/layout.html' import page_container, content_card_container %}
+
+{% block content %}
+{% call page_container(
+    title='Garden Paths',
+    subtitle='Curated content sequences to guide your journey through the digital garden'
+) %}
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+    {% for path_id, path in garden_paths.items() %}
+    <div class="group">
+        {% call content_card_container(extra_classes='hover:shadow-xl transition-all duration-200 hover:border-garden-sage/30') %}
+        <div class="space-y-4">
+            <!-- Path Header -->
+            <div class="flex items-start justify-between">
+                <div class="flex-1">
+                    <h3 class="text-2xl font-semibold text-garden-text-primary font-serif mb-2">
+                        {{ path.name }}
+                    </h3>
+                    <p class="text-garden-text-secondary mb-3">
+                        {{ path.description }}
+                    </p>
+                </div>
+                <!-- Status Badge -->
+                <span class="ml-4 inline-flex items-center px-3 py-1 rounded-full text-sm
+                             {% if path.status == 'Evergreen' %}
+                               bg-garden-growth-evergreen/20 text-garden-growth-evergreen
+                             {% elif path.status == 'Budding' %}
+                               bg-garden-growth-budding/20 text-garden-growth-budding
+                             {% else %}
+                               bg-garden-growth-seedling/20 text-garden-growth-seedling
+                             {% endif %}">
+                    {% if path.status == 'Evergreen' %}🌳
+                    {% elif path.status == 'Budding' %}🌿
+                    {% else %}🌱
+                    {% endif %}
+                    {{ path.status }}
+                </span>
+            </div>
+
+            <!-- Path Metadata -->
+            <div class="flex flex-wrap items-center gap-4 text-sm text-garden-text-muted">
+                <span class="flex items-center">
+                    📊 {{ path.difficulty }}
+                </span>
+                <span class="flex items-center">
+                    ⏱️ {{ path.estimated_time }}
+                </span>
+                <span class="flex items-center">
+                    🚶 {{ path.path|length }} steps
+                </span>
+            </div>
+
+            <!-- Path Preview -->
+            <div class="space-y-2">
+                <h4 class="text-sm font-medium text-garden-text-primary">Path Preview:</h4>
+                <ol class="text-sm text-garden-text-secondary space-y-1">
+                    {% for step in path.path[:3] %}
+                    <li class="flex items-center">
+                        <span class="w-5 h-5 rounded-full bg-garden-sage/20 text-garden-sage text-xs flex items-center justify-center mr-2">
+                            {{ loop.index }}
+                        </span>
+                        {{ step.replace('-', ' ').title() }}
+                    </li>
+                    {% endfor %}
+                    {% if path.path|length > 3 %}
+                    <li class="text-garden-text-muted italic ml-7">
+                        ... and {{ path.path|length - 3 }} more
+                    </li>
+                    {% endif %}
+                </ol>
+            </div>
+
+            <!-- Tags -->
+            {% if path.tags %}
+            <div class="flex flex-wrap gap-2">
+                {% for tag in path.tags %}
+                <span class="inline-flex items-center px-2 py-1 rounded text-xs bg-garden-sage/10 text-garden-sage-dark">
+                    #{{ tag }}
+                </span>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <!-- Action Button -->
+            <div class="pt-4 border-t border-garden-border">
+                <a href="/garden-path/{{ path_id }}" 
+                   class="inline-flex items-center px-6 py-3 bg-garden-sage text-white rounded-lg hover:bg-garden-sage-dark transition-colors group-hover:bg-garden-sage-dark"
+                   hx-get="/garden-path/{{ path_id }}"
+                   hx-target="#content-area"
+                   hx-swap="innerHTML"
+                   hx-push-url="true">
+                    <span>Begin Path</span>
+                    <svg class="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                    </svg>
+                </a>
+            </div>
+        </div>
+        {% endcall %}
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Call to Action -->
+<div class="mt-12 text-center">
+    {% call content_card_container(bg_class='bg-gradient-to-r from-garden-sage/10 to-garden-emerald/10') %}
+    <h3 class="text-xl font-semibold text-garden-text-primary font-serif mb-4">
+        Create Your Own Path
+    </h3>
+    <p class="text-garden-text-secondary mb-6">
+        Garden paths are curated sequences designed to guide your exploration. 
+        As you browse content, you can create your own paths for future reference.
+    </p>
+    <div class="flex flex-col sm:flex-row gap-4 justify-center">
+        <a href="/topics" 
+           class="inline-flex items-center px-6 py-3 bg-garden-emerald text-white rounded-lg hover:bg-garden-emerald-dark transition-colors"
+           hx-get="/topics"
+           hx-target="#content-area"
+           hx-swap="innerHTML"
+           hx-push-url="true">
+            <span>Explore Topics</span>
+        </a>
+        <a href="/wander" 
+           class="inline-flex items-center px-6 py-3 bg-garden-sage text-white rounded-lg hover:bg-garden-sage-dark transition-colors">
+            <span>Wander Randomly</span>
+            <svg class="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z"></path>
+            </svg>
+        </a>
+    </div>
+    {% endcall %}
+</div>
+
+{% endcall %}
+{% endblock %}

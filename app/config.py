@@ -107,6 +107,83 @@ def validate_config() -> Optional[str]:
     return None
 
 
+# Garden Beds Configuration (from topics implementation)
+GARDEN_BEDS = {
+    "Technology": {
+        "tags": ["python", "javascript", "typescript", "react", "fastapi", "htmx", "alpine", "tailwind", "api", "web", "frontend", "backend", "programming", "code", "development", "software", "tech"],
+        "color": "bg-blue-100 text-blue-800 border-blue-200",
+        "icon": "⚡"
+    },
+    "Creative": {
+        "tags": ["design", "ui", "ux", "creativity", "art", "writing", "storytelling", "visual", "graphics", "photography", "music", "drawing"],
+        "color": "bg-purple-100 text-purple-800 border-purple-200", 
+        "icon": "🎨"
+    },
+    "Learning": {
+        "tags": ["education", "learning", "study", "course", "tutorial", "book", "knowledge", "skill", "training", "teaching", "academic", "research"],
+        "color": "bg-green-100 text-green-800 border-green-200",
+        "icon": "📚"
+    },
+    "Research": {
+        "tags": ["science", "data", "analysis", "experiment", "methodology", "statistics", "ai", "ml", "machine-learning", "artificial-intelligence", "nlp"],
+        "color": "bg-orange-100 text-orange-800 border-orange-200",
+        "icon": "🔬"
+    },
+    "Process": {
+        "tags": ["productivity", "workflow", "process", "methodology", "organization", "planning", "management", "strategy", "efficiency", "automation", "tools"],
+        "color": "bg-yellow-100 text-yellow-800 border-yellow-200",
+        "icon": "⚙️"
+    },
+    "Lifestyle": {
+        "tags": ["life", "personal", "health", "wellness", "mindfulness", "habits", "growth", "philosophy", "reflection", "thoughts", "experience"],
+        "color": "bg-emerald-100 text-emerald-800 border-emerald-200",
+        "icon": "🌱"
+    }
+}
+
+# Curated Garden Paths Configuration
+GARDEN_PATHS = {
+    "getting-started": {
+        "name": "Getting Started with Digital Gardens",
+        "description": "A gentle introduction to digital gardening concepts and philosophy",
+        "path": ["digital-garden-philosophy", "evergreen-notes", "learning-in-public"],
+        "difficulty": "Beginner",
+        "estimated_time": "15 minutes",
+        "tags": ["digital-garden", "learning", "philosophy"],
+        "status": "Evergreen"
+    },
+    "web-development": {
+        "name": "Modern Web Development Journey",
+        "description": "From basics to advanced web development concepts",
+        "path": ["html-fundamentals", "css-layouts", "javascript-basics", "react-introduction"],
+        "difficulty": "Intermediate", 
+        "estimated_time": "45 minutes",
+        "tags": ["web", "development", "javascript", "react"],
+        "status": "Evergreen"
+    },
+    "productivity-system": {
+        "name": "Building a Personal Productivity System",
+        "description": "Learn to create and maintain an effective productivity workflow",
+        "path": ["productivity-principles", "note-taking-systems", "task-management"],
+        "difficulty": "Beginner",
+        "estimated_time": "20 minutes", 
+        "tags": ["productivity", "workflow", "organization"],
+        "status": "Budding"
+    }
+}
+
+
+def get_config() -> Dict:
+    """Get the complete configuration including garden beds and paths."""
+    return {
+        "garden_beds": GARDEN_BEDS,
+        "garden_paths": GARDEN_PATHS,
+        "feature_flags": get_feature_flags(),
+        "ai_config": ai_config,
+        "content_config": content_config
+    }
+
+
 def setup_directories():
     """Create necessary directories if they don't exist."""
     for directory in [

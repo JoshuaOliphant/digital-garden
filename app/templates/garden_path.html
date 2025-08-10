@@ -1,0 +1,291 @@
+{% extends "base.html" %}
+{% from 'macros/layout.html' import page_container, content_card_container, prose_content, metadata_badges %}
+
+{% block content %}
+{% call page_container(
+    title=path_data.name,
+    subtitle=path_data.description
+) %}
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <!-- Main Content Area -->
+    <div class="lg:col-span-2 space-y-8">
+        
+        <!-- Path Metadata -->
+        <div class="flex flex-wrap items-center gap-4 mb-6 text-sm">
+            <span class="inline-flex items-center px-3 py-1 rounded-full
+                         {% if path_data.status == 'Evergreen' %}
+                           bg-garden-growth-evergreen/20 text-garden-growth-evergreen
+                         {% elif path_data.status == 'Budding' %}
+                           bg-garden-growth-budding/20 text-garden-growth-budding
+                         {% else %}
+                           bg-garden-growth-seedling/20 text-garden-growth-seedling
+                         {% endif %}">
+                {% if path_data.status == 'Evergreen' %}🌳
+                {% elif path_data.status == 'Budding' %}🌿
+                {% else %}🌱
+                {% endif %}
+                {{ path_data.status }}
+            </span>
+            
+            <span class="text-garden-text-muted">
+                📊 {{ path_data.difficulty }}
+            </span>
+            
+            <span class="text-garden-text-muted">
+                ⏱️ {{ path_data.estimated_time }}
+            </span>
+            
+            <span class="text-garden-text-muted">
+                🚶 {{ path_content|length }} steps
+            </span>
+        </div>
+
+        <!-- Path Progress -->
+        <div class="bg-garden-surface rounded-lg p-6 border border-garden-border">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold text-garden-text-primary">Path Progress</h3>
+                <span class="text-sm text-garden-text-muted">
+                    {{ progress.completed }}/{{ progress.total }} completed
+                </span>
+            </div>
+            
+            <!-- Progress Bar -->
+            <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 mb-4">
+                <div class="bg-garden-sage h-2 rounded-full transition-all duration-300" 
+                     style="width: {{ progress.percentage }}%"></div>
+            </div>
+            
+            <!-- Validation Status -->
+            {% if validation.missing_content %}
+            <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3">
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        <svg class="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                        </svg>
+                    </div>
+                    <div class="ml-3">
+                        <h4 class="text-sm font-medium text-yellow-800 dark:text-yellow-200">
+                            Some content is missing
+                        </h4>
+                        <div class="text-sm text-yellow-700 dark:text-yellow-300 mt-1">
+                            {% for missing in validation.missing_content %}
+                            <span class="inline-block bg-yellow-100 dark:bg-yellow-800 px-2 py-1 rounded text-xs mr-2 mb-1">
+                                {{ missing }}
+                            </span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Path Content -->
+        <div class="space-y-6">
+            {% for step_data in path_content %}
+            <div class="group">
+                {% call content_card_container(extra_classes='hover:shadow-lg transition-all duration-200') %}
+                <div class="flex items-start space-x-4">
+                    <!-- Step Number -->
+                    <div class="flex-shrink-0">
+                        <span class="w-8 h-8 rounded-full bg-garden-sage/20 text-garden-sage font-semibold text-sm flex items-center justify-center">
+                            {{ loop.index }}
+                        </span>
+                    </div>
+                    
+                    <!-- Step Content -->
+                    <div class="flex-1 min-w-0">
+                        {% if step_data %}
+                        <!-- Content exists -->
+                        <div class="flex items-start justify-between">
+                            <div class="flex-1">
+                                <h3 class="text-xl font-semibold text-garden-text-primary font-serif mb-2">
+                                    <a href="{{ step_data.url }}" 
+                                       class="hover:text-garden-sage transition-colors"
+                                       hx-get="{{ step_data.url }}"
+                                       hx-target="#content-area"
+                                       hx-swap="innerHTML"
+                                       hx-push-url="true">
+                                        {{ step_data.title }}
+                                    </a>
+                                </h3>
+                                
+                                {% if step_data.excerpt %}
+                                <p class="text-garden-text-secondary mb-3">
+                                    {{ step_data.excerpt }}
+                                </p>
+                                {% endif %}
+                                
+                                <!-- Step Metadata -->
+                                <div class="flex flex-wrap items-center gap-3 text-sm text-garden-text-muted">
+                                    <span class="inline-flex items-center">
+                                        {% if step_data.status == 'Evergreen' %}🌳
+                                        {% elif step_data.status == 'Budding' %}🌿
+                                        {% else %}🌱
+                                        {% endif %}
+                                        {{ step_data.status or 'Seedling' }}
+                                    </span>
+                                    
+                                    {% if step_data.created %}
+                                    <span>🌅 {{ step_data.created }}</span>
+                                    {% endif %}
+                                    
+                                    {% if step_data.reading_time %}
+                                    <span>📖 {{ step_data.reading_time }} min</span>
+                                    {% endif %}
+                                </div>
+                                
+                                <!-- Tags -->
+                                {% if step_data.tags %}
+                                <div class="flex flex-wrap gap-2 mt-3">
+                                    {% for tag in step_data.tags[:3] %}
+                                    <span class="inline-flex items-center px-2 py-1 rounded text-xs bg-garden-sage/10 text-garden-sage-dark">
+                                        #{{ tag }}
+                                    </span>
+                                    {% endfor %}
+                                    {% if step_data.tags|length > 3 %}
+                                    <span class="text-xs text-garden-text-muted">
+                                        +{{ step_data.tags|length - 3 }} more
+                                    </span>
+                                    {% endif %}
+                                </div>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Action Button -->
+                            <div class="flex-shrink-0 ml-4">
+                                <a href="{{ step_data.url }}" 
+                                   class="inline-flex items-center px-4 py-2 bg-garden-sage text-white text-sm rounded-lg hover:bg-garden-sage-dark transition-colors"
+                                   hx-get="{{ step_data.url }}"
+                                   hx-target="#content-area"
+                                   hx-swap="innerHTML"
+                                   hx-push-url="true">
+                                    Read
+                                </a>
+                            </div>
+                        </div>
+                        
+                        {% else %}
+                        <!-- Content missing -->
+                        <div class="flex items-center justify-between">
+                            <div class="flex-1">
+                                <h3 class="text-xl font-semibold text-garden-text-primary font-serif mb-2">
+                                    {{ step_data.title or path_data.path[loop.index0].replace('-', ' ').title() }}
+                                </h3>
+                                <p class="text-red-600 dark:text-red-400">
+                                    Content not found: {{ path_data.path[loop.index0] }}
+                                </p>
+                            </div>
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
+                                Missing
+                            </span>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endcall %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    
+    <!-- Sidebar -->
+    <aside class="space-y-6">
+        
+        <!-- Path Information -->
+        {% call content_card_container() %}
+        <h3 class="text-lg font-semibold text-garden-text-primary font-serif mb-4">Path Information</h3>
+        
+        <div class="space-y-3 text-sm">
+            <div class="flex justify-between">
+                <span class="text-garden-text-muted">Difficulty:</span>
+                <span class="font-medium">{{ path_data.difficulty }}</span>
+            </div>
+            <div class="flex justify-between">
+                <span class="text-garden-text-muted">Estimated Time:</span>
+                <span class="font-medium">{{ path_data.estimated_time }}</span>
+            </div>
+            <div class="flex justify-between">
+                <span class="text-garden-text-muted">Steps:</span>
+                <span class="font-medium">{{ path_data.path|length }}</span>
+            </div>
+            <div class="flex justify-between">
+                <span class="text-garden-text-muted">Status:</span>
+                <span class="font-medium">{{ path_data.status }}</span>
+            </div>
+        </div>
+        
+        {% if path_data.tags %}
+        <div class="pt-4 border-t border-garden-border">
+            <h4 class="text-sm font-medium text-garden-text-primary mb-3">Topics Covered</h4>
+            <div class="flex flex-wrap gap-2">
+                {% for tag in path_data.tags %}
+                <span class="inline-flex items-center px-2 py-1 rounded text-xs bg-garden-sage/10 text-garden-sage-dark">
+                    #{{ tag }}
+                </span>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+        {% endcall %}
+        
+        <!-- Navigation -->
+        {% call content_card_container() %}
+        <h3 class="text-lg font-semibold text-garden-text-primary font-serif mb-4">Navigation</h3>
+        
+        <div class="space-y-3">
+            <a href="/garden-paths" 
+               class="block w-full px-4 py-2 text-center bg-garden-sage/10 text-garden-sage hover:bg-garden-sage/20 rounded-lg transition-colors"
+               hx-get="/garden-paths"
+               hx-target="#content-area"
+               hx-swap="innerHTML"
+               hx-push-url="true">
+                ← All Paths
+            </a>
+            
+            <a href="/topics" 
+               class="block w-full px-4 py-2 text-center bg-garden-emerald/10 text-garden-emerald hover:bg-garden-emerald/20 rounded-lg transition-colors"
+               hx-get="/topics"
+               hx-target="#content-area"
+               hx-swap="innerHTML"
+               hx-push-url="true">
+                Explore Topics
+            </a>
+            
+            <a href="/" 
+               class="block w-full px-4 py-2 text-center bg-garden-sage/10 text-garden-sage hover:bg-garden-sage/20 rounded-lg transition-colors"
+               hx-get="/"
+               hx-target="#content-area"
+               hx-swap="innerHTML"
+               hx-push-url="true">
+                Garden Home
+            </a>
+        </div>
+        {% endcall %}
+        
+        <!-- Share Path -->
+        {% call content_card_container() %}
+        <h3 class="text-lg font-semibold text-garden-text-primary font-serif mb-4">Share This Path</h3>
+        
+        <div class="space-y-3">
+            <button onclick="navigator.clipboard.writeText(window.location.href).then(() => alert('Link copied!'))"
+                    class="block w-full px-4 py-2 text-center bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-lg transition-colors">
+                📋 Copy Link
+            </button>
+            
+            <a href="https://twitter.com/intent/tweet?text={{ 'Following this garden path: ' + path_data.name }}&url={{ request.url }}"
+               target="_blank"
+               rel="noopener noreferrer"
+               class="block w-full px-4 py-2 text-center bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-lg transition-colors">
+                🐦 Share on Twitter
+            </a>
+        </div>
+        {% endcall %}
+        
+    </aside>
+</div>
+
+{% endcall %}
+{% endblock %}

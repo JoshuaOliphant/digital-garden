@@ -72,6 +72,8 @@ No Additional Requirements:
 - **No DaisyUI**: Custom components to maintain unique garden aesthetic
 - **CSS-first approach**: 90% visual work in pure CSS
 - **Progressive enhancement**: Features degrade gracefully
+- **Layout Architecture**: Centralized page layout through page_container macro (centering) → content_layout macro (structure) → prose_content macro (typography) to ensure consistent styling across all page types
+- **Configuration-Driven Paths**: Garden paths defined in app/config.py as GARDEN_PATHS dictionary for easy curation and maintenance
 
 ## 4. Feature Requirements
 
@@ -129,11 +131,20 @@ GROWTH_STAGES = {
 - Visual clustering of related topics
 - HTMX-powered filtering
 
-#### 4.2.2 Garden Paths
-- Curated content sequences
-- Manual definition in frontmatter
-- Visual path indicators
-- Progress tracking through paths
+#### 4.2.2 Garden Paths ✅
+- Curated content sequences ✅
+- Manual definition in frontmatter ✅
+- Visual path indicators ✅
+- Progress tracking through paths ✅
+**COMPLETED**: 2025-08-10
+
+**Key Implementation Details:**
+- Added GARDEN_PATHS configuration in app/config.py with 3 example paths
+- Implemented ContentManager methods: get_garden_paths(), get_garden_path(), validate_path_content(), get_path_progress()
+- Created routes: /garden-paths, /garden-path/{path_name}, /api/garden-path/{path_name}/progress
+- Built garden_paths.html template with grid layout and status badges
+- Built garden_path.html template with step-by-step content and progress tracking
+- Fixed layout macro architecture to ensure consistent centering across all page types
 
 #### 4.2.3 Enhanced Homepage
 - Replace linear feed with topographical layout
@@ -956,3 +967,4 @@ async def seo_dashboard():
 - **v1.1:** Added comprehensive URL state management based on "Bookmarkable by Design" principles
 - **v1.2:** Added complete SEO optimization strategy including technical SEO, content optimization, performance metrics, and digital garden-specific SEO features
 - **v1.3:** Phase 1 Foundation completed - CSS pipeline, growth stages, dark mode, and design system components all implemented with TDD approach
+- **v1.4:** Garden Paths system completed with path configuration, route implementation, template creation, and layout macro architecture standardized for consistent styling across all page types

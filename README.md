@@ -1,14 +1,32 @@
 # Digital Garden
 
-A digital garden for organizing and sharing knowledge, powered by FastAPI and AI.
+A modern digital garden for organizing and sharing knowledge, built with FastAPI, HTMX, and Alpine.js. This project embodies the philosophy of "topography over timelines" with features for continuous growth and learning in public.
 
 ## Features
 
-- Content management with Markdown and YAML front matter
+### 🌱 Core Digital Garden Features
+- **Growth Stages System**: Content evolves from Seedling → Budding → Evergreen
+- **Topics & Garden Beds**: Organized content clusters with visual theming
+- **Garden Paths**: Curated learning sequences for guided exploration
+- **Garden Metaphors**: "Planted/Tended" dates, growth indicators, and organic design
+
+### 🏗️ Technical Features
+- **Modern Web Stack**: FastAPI + HTMX + Alpine.js + Tailwind CSS
+- **No Build Step Required**: Compiled CSS with npm scripts for development
+- **Responsive Design**: Mobile-first approach with garden-inspired aesthetics
+- **Content Management**: Markdown with YAML front matter and Pydantic validation
+- **Smart Caching**: Time-based LRU caching for optimal performance
+
+### 🎨 Design System
+- **Unified Garden Theme**: Sage, earth tones, and cream backgrounds
+- **Centralized Colors**: Tailwind config override for consistency
+- **Typography**: Serif fonts for content, sans-serif for UI
+- **Growth Stage Indicators**: Visual badges and color coding
+
+### 🤖 AI Enhancement (Optional)
 - AI-powered metadata generation and content analysis
-- Automatic content relationships and recommendations
-- Search with semantic understanding
-- Beautiful, responsive UI
+- Content relationships and recommendations
+- Writing style consistency validation
 
 ## Setup
 

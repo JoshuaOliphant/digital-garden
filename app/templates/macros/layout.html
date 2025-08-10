@@ -29,7 +29,7 @@
     </aside>
   </div>
   {% else %}
-  <div class="max-w-4xl mx-auto space-y-6">
+  <div class="space-y-6">
     {{ caller() }}
   </div>
   {% endif %}
@@ -42,7 +42,7 @@
 {%- endmacro %}
 
 {% macro prose_content(extra_classes='') -%}
-  <article class="prose prose-lg max-w-none
+  <article class="prose prose-lg
                  prose-p:text-garden-text-primary 
                  prose-li:text-garden-text-primary 
                  prose-strong:text-garden-text-primary prose-strong:font-bold

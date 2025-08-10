@@ -24,7 +24,7 @@ from email.utils import format_datetime
 from pydantic import ValidationError
 import logfire
 
-from .models import BaseContent, Bookmark, TIL, Note, ContentMetadata
+from .models import BaseContent, Bookmark, TIL, Note
 from .config import ai_config, content_config
 
 # Constants
@@ -626,6 +626,177 @@ class ContentManager:
     def ttl_hash(seconds=3600):
         """Return the same value within `seconds` time period"""
         return round(datetime.now().timestamp() / seconds)
+    
+    @staticmethod
+    def get_tag_counts() -> Dict[str, int]:
+        """Get counts of content items by tag."""
+        tag_counts = {}
+        content_types = ["bookmarks", "til", "notes", "how_to"]
+        
+        for content_type in content_types:
+            files = list(Path(CONTENT_DIR, content_type).glob("*.md"))
+            for file in files:
+                file_content = ContentManager.render_markdown(str(file))
+                metadata = file_content["metadata"]
+                for tag in metadata.get("tags", []):
+                    tag_counts[tag] = tag_counts.get(tag, 0) + 1
+        
+        return tag_counts
+    
+    @staticmethod
+    def get_topics_data() -> Dict[str, Any]:
+        """Get organized topics data with garden bed clustering."""
+        from app.config import get_config
+        config = get_config()
+        
+        tag_counts = ContentManager.get_tag_counts()
+        garden_beds = config["garden_beds"]
+        
+        # Organize tags into garden beds
+        bed_data = {}
+        uncategorized_tags = set(tag_counts.keys())
+        
+        for bed_name, bed_config in garden_beds.items():
+            bed_tags = []
+            for tag in bed_config["tags"]:
+                if tag in tag_counts:
+                    bed_tags.append({
+                        "name": tag,
+                        "count": tag_counts[tag]
+                    })
+                    uncategorized_tags.discard(tag)
+            
+            if bed_tags:
+                bed_data[bed_name] = {
+                    "tags": sorted(bed_tags, key=lambda x: x["count"], reverse=True),
+                    "color": bed_config["color"],
+                    "icon": bed_config["icon"],
+                    "total_count": sum(tag["count"] for tag in bed_tags)
+                }
+        
+        # Add uncategorized tags if any
+        if uncategorized_tags:
+            uncategorized = [{
+                "name": tag,
+                "count": tag_counts[tag]
+            } for tag in uncategorized_tags]
+            bed_data["Other"] = {
+                "tags": sorted(uncategorized, key=lambda x: x["count"], reverse=True),
+                "color": "bg-gray-100 text-gray-800 border-gray-200",
+                "icon": "🏷️",
+                "total_count": sum(tag["count"] for tag in uncategorized)
+            }
+        
+        return bed_data
+    
+    @staticmethod
+    def filter_content_by_tags(selected_tags: List[str]) -> List[Dict[str, Any]]:
+        """Filter mixed content by selected tags."""
+        if not selected_tags:
+            return []
+        
+        filtered_content = []
+        selected_tags_set = set(selected_tags)
+        content_types = ["bookmarks", "til", "notes", "how_to"]
+        
+        for content_type in content_types:
+            files = list(Path(CONTENT_DIR, content_type).glob("*.md"))
+            for file in files:
+                name = file.stem
+                file_content = ContentManager.render_markdown(str(file))
+                metadata = file_content["metadata"]
+                
+                # Check if content has any of the selected tags
+                if selected_tags_set.intersection(set(metadata.get("tags", []))):
+                    # Get excerpt
+                    soup = BeautifulSoup(file_content["html"], "html.parser")
+                    first_p = soup.find("p")
+                    excerpt = first_p.get_text() if first_p else ""
+                    
+                    filtered_content.append({
+                        "type": content_type,
+                        "title": metadata.get("title", name.replace("-", " ").title()),
+                        "slug": name,
+                        "created": metadata.get("created", ""),
+                        "updated": metadata.get("updated", ""),
+                        "tags": metadata.get("tags", []),
+                        "status": metadata.get("status", "Evergreen"),
+                        "description": metadata.get("description", excerpt),
+                        "url": metadata.get("url", None),
+                        "difficulty": metadata.get("difficulty", None)
+                    })
+        
+        # Sort by creation date, newest first
+        filtered_content.sort(key=lambda x: x["created"] if x["created"] else "", reverse=True)
+        return filtered_content
+    
+    @staticmethod 
+    def get_garden_paths() -> Dict[str, Any]:
+        """Get all available garden paths."""
+        from app.config import get_config
+        config = get_config()
+        return config["garden_paths"]
+    
+    @staticmethod
+    def get_garden_path(path_id: str) -> Optional[Dict[str, Any]]:
+        """Get a specific garden path by ID."""
+        garden_paths = ContentManager.get_garden_paths()
+        return garden_paths.get(path_id)
+    
+    @staticmethod
+    def get_path_progress(path_id: str, content_items: List[str]) -> Dict[str, Any]:
+        """Calculate progress through a garden path."""
+        path_data = ContentManager.get_garden_path(path_id)
+        if not path_data:
+            return {"progress": 0, "current_step": 0, "total_steps": 0, "completed_items": []}
+        
+        path_items = path_data["path"]
+        completed_items = [item for item in path_items if item in content_items]
+        
+        return {
+            "progress": int((len(completed_items) / len(path_items)) * 100) if path_items else 0,
+            "current_step": len(completed_items),
+            "total_steps": len(path_items),
+            "completed_items": completed_items,
+            "next_item": path_items[len(completed_items)] if len(completed_items) < len(path_items) else None
+        }
+    
+    @staticmethod
+    def validate_path_content(path_id: str) -> Dict[str, Any]:
+        """Validate that all content in a garden path exists."""
+        path_data = ContentManager.get_garden_path(path_id)
+        if not path_data:
+            return {"valid": False, "missing": [], "existing": []}
+        
+        missing_items = []
+        existing_items = []
+        
+        for item_id in path_data["path"]:
+            # Check if content exists in any content type directory
+            found = False
+            content_types = ["notes", "how_to", "til", "bookmarks"]
+            
+            for content_type in content_types:
+                file_path = Path(CONTENT_DIR, content_type, f"{item_id}.md")
+                if file_path.exists():
+                    existing_items.append({
+                        "id": item_id,
+                        "type": content_type,
+                        "path": str(file_path)
+                    })
+                    found = True
+                    break
+            
+            if not found:
+                missing_items.append(item_id)
+        
+        return {
+            "valid": len(missing_items) == 0,
+            "missing": missing_items,
+            "existing": existing_items,
+            "path_name": path_data["name"],
+            "path_description": path_data["description"]
+        }
 
     @staticmethod
     def get_til_posts(page: int = 1, per_page: int = 30) -> dict:
@@ -1104,6 +1275,125 @@ async def read_tag(request: Request, tag: str):
             feature_flags=get_feature_flags(),
         )
     )
+
+
+@app.get("/topics", response_class=HTMLResponse)
+async def topics_page(request: Request):
+    """Display topics organized by garden beds."""
+    topics_data = ContentManager.get_topics_data()
+    
+    # Calculate totals
+    total_tags = sum(len(bed["tags"]) for bed in topics_data.values())
+    total_content = sum(bed["total_count"] for bed in topics_data.values())
+    
+    return HTMLResponse(
+        content=env.get_template("topics.html").render(
+            request=request,
+            topics_data=topics_data,
+            total_tags=total_tags,
+            total_content=total_content,
+            feature_flags=get_feature_flags(),
+        )
+    )
+
+
+@app.post("/topics/filter", response_class=HTMLResponse)
+async def filter_topics(request: Request):
+    """Filter content by selected tags via HTMX."""
+    form = await request.form()
+    selected_tags = form.getlist("tags")
+    
+    filtered_content = ContentManager.filter_content_by_tags(selected_tags)
+    
+    return HTMLResponse(
+        content=env.get_template("partials/topics_filter.html").render(
+            request=request,
+            filtered_content=filtered_content,
+            selected_tags=selected_tags,
+            total_results=len(filtered_content)
+        )
+    )
+
+
+@app.get("/topics/filter", response_class=HTMLResponse)
+async def filter_topics_get(request: Request):
+    """Filter content by selected tags via query parameters."""
+    selected_tags = request.query_params.getlist("tags")
+    
+    filtered_content = ContentManager.filter_content_by_tags(selected_tags)
+    
+    return HTMLResponse(
+        content=env.get_template("partials/topics_filter.html").render(
+            request=request,
+            filtered_content=filtered_content,
+            selected_tags=selected_tags,
+            total_results=len(filtered_content)
+        )
+    )
+
+
+@app.get("/garden-paths", response_class=HTMLResponse)
+async def garden_paths_index(request: Request):
+    """Display all available garden paths."""
+    garden_paths = ContentManager.get_garden_paths()
+    
+    # Validate each path and add validation status
+    paths_with_validation = {}
+    for path_id, path_data in garden_paths.items():
+        validation = ContentManager.validate_path_content(path_id)
+        paths_with_validation[path_id] = {
+            **path_data,
+            "validation": validation,
+            "id": path_id
+        }
+    
+    return HTMLResponse(
+        content=env.get_template("garden_paths.html").render(
+            request=request,
+            garden_paths=paths_with_validation,
+            feature_flags=get_feature_flags(),
+        )
+    )
+
+
+@app.get("/garden-path/{path_name}", response_class=HTMLResponse) 
+async def named_garden_path(request: Request, path_name: str):
+    """Load a curated garden path by name and redirect to garden walk."""
+    path_data = ContentManager.get_garden_path(path_name)
+    
+    if not path_data:
+        raise HTTPException(status_code=404, detail="Garden path not found")
+    
+    # Validate that the path content exists
+    validation = ContentManager.validate_path_content(path_name)
+    
+    if not validation["valid"]:
+        # For now, show the path anyway but with warnings
+        # In a full implementation, you might want to handle missing content differently
+        pass
+    
+    # For now, render a simple path view - in Phase 3 this would redirect to garden-walk
+    return HTMLResponse(
+        content=env.get_template("garden_path.html").render(
+            request=request,
+            path_name=path_name,
+            path_data=path_data,
+            validation=validation,
+            feature_flags=get_feature_flags(),
+        )
+    )
+
+
+@app.get("/api/garden-path/{path_name}/progress")
+async def garden_path_progress(path_name: str, completed: str = ""):
+    """Get progress through a garden path based on completed items."""
+    completed_items = completed.split(",") if completed else []
+    progress = ContentManager.get_path_progress(path_name, completed_items)
+    
+    if not progress or progress["total_steps"] == 0:
+        raise HTTPException(status_code=404, detail="Garden path not found")
+    
+    return JSONResponse(content=progress)
 
 
 @app.get("/api/mixed-content", response_class=HTMLResponse)
