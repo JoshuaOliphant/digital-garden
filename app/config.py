@@ -38,7 +38,7 @@ class AIConfig(BaseSettings):
 
     anthropic_api_key: str = os.getenv("ANTHROPIC_API_KEY", "")
     github_username: str = os.getenv("GITHUB_USERNAME", "")
-    
+
     # Claude model configuration
     claude_model: str = "claude-3-7-sonnet-latest"  # Latest stable model
     claude_max_tokens: int = 4096
@@ -64,7 +64,7 @@ class ContentConfig(BaseSettings):
     backup_dir: str = "app/content_backup"
     cache_dir: str = "app/cache"
     base_url: str = "https://anoliphantneverforgets.com"
-    
+
     # Content types and their models
     content_types: Dict[str, str] = {
         "bookmarks": "Bookmark",

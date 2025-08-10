@@ -1,63 +1,76 @@
-<div class="max-w-4xl mx-auto">
-    <h1 class="text-3xl font-bold mb-8">Today I Learned</h1>
+{% from 'macros/layout.html' import page_container, content_layout, content_card_container, tag_list %}
+{% from 'macros/garden.html' import growth_indicator %}
 
+{% call page_container(title='Today I Learned') %}
+  {% call content_layout() %}
+    
     <!-- Tags Section -->
+    {% if til_tags %}
     <div class="mb-8">
-        <div class="flex flex-wrap gap-2">
-            {% for tag, count in til_tags.items() %}
-            <a
-                href="/tags/{{ tag }}?type=til"
-                class="px-3 py-1 bg-gray-200 text-gray-700 rounded-full text-sm hover:bg-gray-300 transition-colors"
-            >
-                {{ tag }} ({{ count }})
-            </a>
-            {% endfor %}
-        </div>
+      <div class="flex flex-wrap gap-2">
+        {% for tag, count in til_tags.items() %}
+        <a href="/tags/{{ tag }}?type=til"
+           class="inline-flex items-center px-3 py-1 rounded-full text-sm bg-garden-sage/10 text-garden-sage-dark hover:bg-garden-sage/20 transition-colors"
+           hx-get="/tags/{{ tag }}?type=til"
+           hx-target="#content-area"
+           hx-swap="innerHTML"
+           hx-push-url="true">
+          #{{ tag }} ({{ count }})
+        </a>
+        {% endfor %}
+      </div>
     </div>
+    {% endif %}
 
     <!-- TIL Entries -->
     <div class="grid gap-6">
-        {% for til in tils %}
-        <article class="bg-white p-6 rounded-lg shadow prose prose-code:bg-gray-100 prose-code:text-gray-800 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:before:content-[''] prose-code:after:content-[''] prose-code:prose-a:text-emerald-400 prose-code:prose-a:hover:text-emerald-300">
-            <div class="flex justify-between items-start mb-2">
-                <a
-                    href="{{ til.url }}"
-                    class="text-emerald-600 hover:text-emerald-500 hover:underline"
-                >
-                    {{ til.title }}
-                </a>
-                <span class="text-sm text-gray-500">{{ til.created }}</span>
-            </div>
-
-            <div class="text-gray-600 mb-3">{{ til.excerpt }}</div>
-
-            <div class="flex items-center text-sm">
-                <span class="text-gray-600">
-                    <a
-                        href="/til/tag/{{ til.tags[0] }}"
-                        class="text-emerald-600 hover:text-emerald-500 hover:underline"
-                    >
-                        {{ til.tags[0] }}
-                    </a>
-                </span>
-                {% if til.updated != til.created %}
-                <span class="text-gray-500 ml-4">
-                    Updated: {{ til.updated }}
-                </span>
-                {% endif %}
-            </div>
-        </article>
-        {% endfor %} {% if next_page %}
-        <div
-            hx-get="/til/page/{{ next_page }}"
-            hx-trigger="intersect once"
-            hx-swap="afterend"
-            class="bg-white p-6 rounded-lg shadow text-center"
-        >
-            <div
-                class="animate-spin inline-block w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full"
-            ></div>
+      {% for til in tils %}
+      {% call content_card_container() %}
+        <div class="flex justify-between items-start mb-2">
+          <a href="{{ til.url }}"
+             class="text-xl font-semibold text-garden-sage hover:text-garden-sage-dark hover:underline transition-colors"
+             hx-get="{{ til.url }}"
+             hx-target="#content-area"
+             hx-swap="innerHTML"
+             hx-push-url="true">
+            {{ til.title }}
+          </a>
+          <span class="text-sm text-garden-text-muted">{{ til.created }}</span>
         </div>
-        {% endif %}
+
+        <div class="text-garden-text-secondary mb-3">{{ til.excerpt }}</div>
+
+        <div class="flex items-center gap-4 text-sm">
+          {% if til.tags %}
+          <span class="text-garden-text-muted">
+            <a href="/til/tag/{{ til.tags[0] }}"
+               class="text-garden-sage hover:text-garden-sage-dark hover:underline"
+               hx-get="/til/tag/{{ til.tags[0] }}"
+               hx-target="#content-area"
+               hx-swap="innerHTML"
+               hx-push-url="true">
+              #{{ til.tags[0] }}
+            </a>
+          </span>
+          {% endif %}
+          {% if til.updated != til.created %}
+          <span class="text-garden-text-muted">
+            Updated: {{ til.updated }}
+          </span>
+          {% endif %}
+        </div>
+      {% endcall %}
+      {% endfor %}
+      
+      {% if next_page %}
+      <div hx-get="/til/page/{{ next_page }}"
+           hx-trigger="intersect once"
+           hx-swap="afterend"
+           class="bg-garden-surface p-6 rounded-lg shadow text-center border border-garden-border">
+        <div class="animate-spin inline-block w-8 h-8 border-4 border-garden-sage border-t-transparent rounded-full"></div>
+      </div>
+      {% endif %}
     </div>
-</div>
+    
+  {% endcall %}
+{% endcall %}

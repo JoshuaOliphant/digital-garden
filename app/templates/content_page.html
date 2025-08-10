@@ -1,89 +1,72 @@
-{% extends "base.html" %} {% block content %}
-<article class="prose max-w-none">
-    <h1 class="text-4xl font-bold mb-4">{{ metadata.title }}</h1>
+{% extends "base.html" %}
+{% from 'macros/layout.html' import page_container, content_layout, content_card_container, prose_content, metadata_badges, tag_list %}
+{% from 'macros/garden.html' import growth_indicator %}
 
-    {% if metadata.status %}
-    <div class="mb-4">
-        <span
-            class="px-2 py-1 rounded text-sm {{
-                'bg-green-200 text-green-800' if metadata.status == 'Evergreen' else
-                'bg-yellow-200 text-yellow-800' if metadata.status == 'Budding' else
-                'bg-gray-200 text-gray-800'
-            }}"
-        >
-            {{ metadata.status }}
-        </span>
-    </div>
-    {% endif %}
-
-    <!-- Single dates section, outside of any other conditionals -->
-    <div class="text-sm text-gray-600 mb-4">
-        {% if metadata.created %}
-        <span>Created: {{ metadata.created }}</span>
-        {% endif %} {% if metadata.updated %}
-        <span class="ml-4">Updated: {{ metadata.updated }}</span>
+{% block content %}
+{% call page_container(title=metadata.title) %}
+  {% call content_layout() %}
+    
+    {% call content_card_container() %}
+      <!-- Metadata and Status -->
+      {{ metadata_badges(metadata) }}
+      
+      <!-- Tags -->
+      {{ tag_list(metadata.tags, content_type) }}
+      
+      <!-- Main Content -->
+      <div class="mt-6">
+        {% call prose_content() %}
+          {{ content | safe }}
+        {% endcall %}
+      </div>
+    {% endcall %}
+    
+    <!-- Recent Content Section -->
+    {% call content_card_container(bg_class='bg-garden-surface-alt', extra_classes='mt-6') %}
+      <h2 class="text-2xl font-semibold mb-6 text-garden-text-primary font-serif">Recent Content</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+        {% if recent_how_tos.content %}
+        <div>
+          <h3 class="text-lg font-semibold mb-3 text-garden-text-primary">Recent How-to's</h3>
+          <ul class="space-y-2">
+            {% for how_to in recent_how_tos.content[:5] %}
+            <li>
+              <a href="/how_to/{{ how_to.name }}"
+                 class="text-garden-sage hover:text-garden-sage-dark hover:underline transition-colors"
+                 hx-get="/how_to/{{ how_to.name }}"
+                 hx-target="#content-area"
+                 hx-swap="innerHTML"
+                 hx-push-url="true">
+                {{ how_to.title }}
+              </a>
+            </li>
+            {% endfor %}
+          </ul>
+        </div>
         {% endif %}
-    </div>
-
-    {% if metadata.tags %}
-    <div class="flex flex-wrap gap-2 mt-4">
-        {% for tag in metadata.tags %}
-        <a
-            href="/tags/{{ tag }}{% if content_type %}?type={{ content_type }}{% endif %}"
-            class="px-3 py-1 bg-gray-200 text-gray-700 rounded-full text-sm hover:bg-gray-300 transition-colors"
-        >
-            {{ tag }}
-        </a>
-        {% endfor %}
-    </div>
-    {% endif %}
-
-    <div class="prose prose-code:bg-gray-100 prose-code:text-gray-800 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:before:content-[''] prose-code:after:content-[''] prose-code:prose-a:text-emerald-300 prose-code:prose-a:hover:text-emerald-200">
-        {{ content | safe }}
-    </div>
-</article>
-
-<div class="mt-12">
-    <h2 class="text-2xl font-semibold mb-4">Recent Content</h2>
-    <div class="grid grid-cols-2 gap-8">
+        
+        {% if recent_notes.content %}
         <div>
-            <h3 class="text-xl font-semibold mb-2">Recent How to's</h3>
-            <ul>
-                {% for how_to in recent_how_tos.content %}
-                <li class="mb-2">
-                    <a
-                        href="/how_to/{{ how_to.name }}"
-                        class="text-emerald-500 hover:underline"
-                        hx-get="/how_to/{{ how_to.name }}"
-                        hx-target="#content-area"
-                        hx-swap="innerHTML"
-                        hx-push-url="true"
-                    >
-                        {{ how_to.title }}
-                    </a>
-                </li>
-                {% endfor %}
-            </ul>
+          <h3 class="text-lg font-semibold mb-3 text-garden-text-primary">Recent Notes</h3>
+          <ul class="space-y-2">
+            {% for note in recent_notes.content[:5] %}
+            <li>
+              <a href="/notes/{{ note.name }}"
+                 class="text-garden-sage hover:text-garden-sage-dark hover:underline transition-colors"
+                 hx-get="/notes/{{ note.name }}"
+                 hx-target="#content-area"
+                 hx-swap="innerHTML"
+                 hx-push-url="true">
+                {{ note.title }}
+              </a>
+            </li>
+            {% endfor %}
+          </ul>
         </div>
-        <div>
-            <h3 class="text-xl font-semibold mb-2">Recent Notes</h3>
-            <ul>
-                {% for note in recent_notes.content %}
-                <li class="mb-2">
-                    <a
-                        href="/notes/{{ note.name }}"
-                        class="text-emerald-500 hover:underline"
-                        hx-get="/notes/{{ note.name }}"
-                        hx-target="#content-area"
-                        hx-swap="innerHTML"
-                        hx-push-url="true"
-                    >
-                        {{ note.title }}
-                    </a>
-                </li>
-                {% endfor %}
-            </ul>
-        </div>
-    </div>
-</div>
+        {% endif %}
+      </div>
+    {% endcall %}
+    
+  {% endcall %}
+{% endcall %}
 {% endblock %}

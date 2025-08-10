@@ -847,11 +847,22 @@ def generate_rss_feed():
 
     def get_created_date(x):
         item = x[0]
-        return (
-            item.get("created", "")
-            if "created" in item
-            else item.get("metadata", {}).get("created", "")
-        )
+        if isinstance(item, dict):
+            date_val = None
+            if "created" in item:
+                date_val = item.get("created", "")
+            elif "metadata" in item and isinstance(item["metadata"], dict):
+                date_val = item["metadata"].get("created", "")
+            
+            # Convert string dates to datetime for consistent comparison
+            if isinstance(date_val, str) and date_val:
+                try:
+                    return datetime.strptime(date_val, "%Y-%m-%d")
+                except ValueError:
+                    return datetime.min
+            elif isinstance(date_val, datetime):
+                return date_val
+        return datetime.min
 
     all_content.sort(key=get_created_date, reverse=True)
 
@@ -1102,7 +1113,7 @@ async def get_mixed_content_api(
     per_page: int = 10,
     content_types: Optional[List[str]] = None,
 ):
-    """Return paginated mixed content as an ``HTMLResponse``."""
+    \"\"\"Return paginated mixed content as an ``HTMLResponse``.\"\"\"
     with logfire.span("mixed_content_api", page=page, per_page=per_page):
         try:
             if page < 1:
@@ -1132,8 +1143,9 @@ async def get_mixed_content_api(
             with logfire.span("rendering_template"):
                 template = env.get_template("partials/mixed_content_page.html")
                 html_content = template.render(
-                    content=result["content"],
+                    mixed_content=result["content"],
                     next_page=result["next_page"],
+                    request=request,
                     feature_flags=get_feature_flags(),
                 )
                 logfire.debug("template_rendered", html_length=len(html_content))
@@ -1182,7 +1194,7 @@ async def read_content(request: Request, content_type: str, page_name: str):
 
 @app.get("/bookmarks", response_class=HTMLResponse)
 async def read_bookmarks(request: Request):
-    """Return all bookmarks rendered in an ``HTMLResponse``."""
+    \"\"\"Return all bookmarks rendered in an ``HTMLResponse``.\"\"\"
     template_name = (
         "partials/bookmarks.html"
         if request.headers.get("HX-Request") == "true"
@@ -1203,7 +1215,7 @@ async def read_bookmarks(request: Request):
 
 @app.get("/stars", response_class=HTMLResponse)
 async def read_stars(request: Request):
-    """Display starred repositories from GitHub in an ``HTMLResponse``."""
+    \"\"\"Display starred repositories from GitHub in an ``HTMLResponse``.\"\"\"
     template_name = (
         "partials/stars.html"
         if request.headers.get("HX-Request") == "true"
@@ -1244,7 +1256,7 @@ async def read_stars_page(request: Request, page: int):
 
 @app.get("/til", response_class=HTMLResponse)
 async def read_til(request: Request):
-    """Render the TIL index page as an ``HTMLResponse``."""
+    \"\"\"Render the TIL index page as an ``HTMLResponse``.\"\"\"
     template_name = (
         "partials/til.html"
         if request.headers.get("HX-Request") == "true"
@@ -1267,7 +1279,7 @@ async def read_til(request: Request):
 
 @app.get("/til/tag/{tag}", response_class=HTMLResponse)
 async def read_til_tag(request: Request, tag: str):
-    """Return TIL posts filtered by ``tag`` as an ``HTMLResponse``."""
+    \"\"\"Return TIL posts filtered by ``tag`` as an ``HTMLResponse``.\"\"\"
     template_name = (
         "partials/til.html"
         if request.headers.get("HX-Request") == "true"

@@ -73,11 +73,12 @@ This plan transforms an existing FastAPI blog into a modern digital garden follo
 - Add growth stage validation
 - Implement vocabulary changes
 
-#### Task 3: Dark Mode Toggle
+#### Task 3: Dark Mode Toggle ✅
 **Complexity**: 2/5 | **AI Rounds**: ~2 | **Test Coverage**: 4 units
-- Implement theme switcher
-- Add localStorage persistence
-- Create garden color palette
+- Implement theme switcher ✅
+- Add localStorage persistence ✅
+- Create garden color palette ✅
+**COMPLETED**: 2025-08-10
 
 #### Task 4: Design System Components
 **Complexity**: 3/5 | **AI Rounds**: ~3 | **Test Coverage**: 6 units

@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" x-data>
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -41,9 +41,9 @@
             href="/feed.xml"
         />
     </head>
-    <body class="bg-gray-50 text-gray-900 min-h-screen flex flex-col">
+    <body class="bg-garden-bg text-garden-text-primary min-h-screen flex flex-col">
         <!-- Navigation -->
-        <nav class="bg-white shadow-sm sticky top-0 z-50">
+        <nav class="bg-garden-surface shadow-md sticky top-0 z-50 border-b border-garden-border">
             <div class="container mx-auto px-4 py-3 flex justify-between items-center">
                 <a href="/" class="flex items-center">
                     <img
@@ -53,12 +53,14 @@
                     />
                     <span class="text-xl font-semibold">An Oliphant Never Forgets</span>
                 </a>
-                <ul class="flex space-x-6">
-                    <li><a href="/" class="hover:text-emerald-600 transition-colors">Home</a></li>
-                    <li><a href="/now" class="hover:text-emerald-600 transition-colors">Now</a></li>
-                    <li><a href="/til" class="hover:text-emerald-600 transition-colors">TIL</a></li>
-                    <li><a href="/projects" class="hover:text-emerald-600 transition-colors">Projects</a></li>
-                </ul>
+                <div class="flex items-center space-x-6">
+                    <ul class="flex space-x-6">
+                        <li><a href="/" class="hover:text-emerald-500 transition-colors">Home</a></li>
+                        <li><a href="/now" class="hover:text-emerald-500 transition-colors">Now</a></li>
+                        <li><a href="/til" class="hover:text-emerald-500 transition-colors">TIL</a></li>
+                        <li><a href="/projects" class="hover:text-emerald-500 transition-colors">Projects</a></li>
+                    </ul>
+                </div>
             </div>
         </nav>
 
@@ -68,8 +70,8 @@
         </main>
 
         <!-- Footer -->
-        <footer class="bg-white py-6 mt-auto border-t border-gray-200">
-            <div class="container mx-auto px-4 text-center text-gray-600">
+        <footer class="bg-garden-surface py-6 mt-auto border-t border-garden-border">
+            <div class="container mx-auto px-4 text-center text-garden-text-muted">
                 <p>&copy; 2024 Joshua Oliphant. All rights reserved.</p>
             </div>
         </footer>
