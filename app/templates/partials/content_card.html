@@ -38,7 +38,7 @@
     <div class="flex flex-wrap gap-2">
         {% for tag in item.metadata.tags %}
         <a href="/tags/{{ tag }}" 
-           class="text-sm px-2 py-1 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors"
+           class="text-sm px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
            hx-get="/tags/{{ tag }}"
            hx-target="#content-area"
            hx-swap="innerHTML"
