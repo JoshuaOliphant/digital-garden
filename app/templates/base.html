@@ -129,5 +129,65 @@
                 }, 300);
             });
         </script>
+        
+        <!-- Alpine.js Dark Mode Component -->
+        <script>
+            function darkModeToggle() {
+                return {
+                    isDark: false,
+                    
+                    init() {
+                        // Check for saved theme preference or system preference
+                        const savedTheme = localStorage.getItem('theme');
+                        const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                        
+                        this.isDark = savedTheme === 'dark' || (!savedTheme && systemPrefersDark);
+                        
+                        // Apply the theme
+                        this.updateTheme();
+                        
+                        // Listen for storage events from other tabs
+                        window.addEventListener('storage', (e) => {
+                            if (e.key === 'theme') {
+                                this.isDark = e.newValue === 'dark';
+                                this.updateTheme();
+                            }
+                        });
+                        
+                        // Listen for system preference changes
+                        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+                            if (!localStorage.getItem('theme')) {
+                                this.isDark = e.matches;
+                                this.updateTheme();
+                            }
+                        });
+                    },
+                    
+                    toggleTheme() {
+                        this.isDark = !this.isDark;
+                        this.updateTheme();
+                        
+                        // Save preference to localStorage
+                        localStorage.setItem('theme', this.isDark ? 'dark' : 'light');
+                        
+                        // Dispatch storage event for other tabs
+                        window.dispatchEvent(new StorageEvent('storage', {
+                            key: 'theme',
+                            newValue: this.isDark ? 'dark' : 'light',
+                            oldValue: this.isDark ? 'light' : 'dark',
+                            url: window.location.href
+                        }));
+                    },
+                    
+                    updateTheme() {
+                        if (this.isDark) {
+                            document.documentElement.classList.add('dark');
+                        } else {
+                            document.documentElement.classList.remove('dark');
+                        }
+                    }
+                }
+            }
+        </script>
     </body>
 </html>
