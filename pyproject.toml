@@ -39,6 +39,12 @@ venv = ".venv"
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
+[dependency-groups]
+dev = [
+    "playwright>=1.54.0",
+    "pytest-playwright>=0.7.0",
+]
+
 [tool.pytest.ini_options]
 pythonpath = ["."]
 asyncio_mode = "auto"
