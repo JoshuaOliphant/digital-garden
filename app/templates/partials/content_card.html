@@ -1,19 +1,19 @@
-<div class="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow p-6 mb-6">
+<div class="bg-garden-surface rounded-lg shadow-lg hover:shadow-xl transition-shadow p-6 mb-6 border border-garden-border">
     <!-- Content Type Badge -->
     <div class="flex items-center justify-between mb-4">
         <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium
             {% if item.type_indicator == 'Note' %}
-                bg-blue-100 text-blue-800
+                bg-garden-sky/20 text-garden-sky font-medium
             {% elif item.type_indicator == 'How To' %}
-                bg-purple-100 text-purple-800
+                bg-garden-earth-light/30 text-garden-earth-dark font-medium
             {% elif item.type_indicator == 'Bookmark' %}
-                bg-amber-100 text-amber-800
+                bg-garden-growth-budding/20 text-garden-growth-budding font-medium
             {% elif item.type_indicator == 'TIL' %}
-                bg-emerald-100 text-emerald-800
+                bg-garden-growth-evergreen/20 text-garden-growth-evergreen font-medium
             {% endif %}">
             {{ item.type_indicator }}
         </span>
-        <time datetime="{{ item.created }}" class="text-sm text-gray-500">
+        <time datetime="{{ item.created }}" class="text-sm text-garden-text-muted">
             {{ item.created.strftime('%B %d, %Y') if item.created is not string else item.created }}
         </time>
     </div>
@@ -21,7 +21,7 @@
     <!-- Title -->
     <h2 class="text-xl font-semibold mb-3">
         <a href="{{ item.url }}" 
-           class="text-gray-900 hover:text-emerald-600 transition-colors"
+           class="text-garden-text-primary hover:text-garden-sage transition-colors font-serif"
            hx-get="{{ item.url }}"
            hx-target="#content-area"
            hx-swap="innerHTML"
@@ -31,14 +31,14 @@
     </h2>
 
     <!-- Excerpt -->
-    <p class="text-gray-600 mb-4">{{ item.excerpt }}</p>
+    <p class="text-garden-text-secondary mb-4 leading-relaxed">{{ item.excerpt }}</p>
 
     <!-- Tags -->
     {% if item.metadata and item.metadata.tags %}
     <div class="flex flex-wrap gap-2">
         {% for tag in item.metadata.tags %}
         <a href="/tags/{{ tag }}" 
-           class="text-sm px-2 py-1 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors"
+           class="text-sm px-2 py-1 bg-garden-sage/10 text-garden-sage-dark rounded-md hover:bg-garden-sage/20 transition-colors"
            hx-get="/tags/{{ tag }}"
            hx-target="#content-area"
            hx-swap="innerHTML"
@@ -50,10 +50,10 @@
     {% endif %}
 
     <!-- Additional Metadata -->
-    <div class="mt-4 pt-4 border-t border-gray-100 text-sm text-gray-500">
+    <div class="mt-4 pt-4 border-t border-garden-border text-sm text-garden-text-muted">
         {% if item.content_type == 'bookmarks' and item.url %}
             <a href="{{ item.url }}" 
-               class="inline-flex items-center text-emerald-600 hover:text-emerald-500"
+               class="inline-flex items-center text-garden-emerald hover:text-garden-sage transition-colors"
                target="_blank" 
                rel="noopener noreferrer">
                 Visit Website

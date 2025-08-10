@@ -9,3 +9,4 @@ content_analysis.log
 blog_update.md
 .env
 logs
+.mcp.json

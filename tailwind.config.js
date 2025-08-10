@@ -1,34 +1,87 @@
 module.exports = {
-  darkMode: "class", // Enables class-based dark mode
   content: [
     "./app/templates/**/*.html",
     "./app/pages/**/*.md",
     "./app/static/**/*.js",
   ],
   theme: {
-    extend: {
-      colors: {
-        primary: "#1a202c",
-        secondary: "#2d3748",
-        accent: "#38b2ac",
-        // Garden-themed dark mode colors
-        dark: {
-          bg: {
-            primary: "#0f1419",    // Deep forest green
-            secondary: "#1a1f2e",  // Midnight blue
-            surface: "#2a3441",    // Moonlit sage
-          },
-          text: {
-            primary: "#e6f1ff",    // Soft moonlight
-            secondary: "#f0f6fc",  // Warm ivory
-          },
-          accent: {
-            primary: "#f7cc47",    // Firefly gold
-            secondary: "#c9a7eb",  // Night bloom purple
-            tertiary: "#7ce38b",   // Aurora green
-          }
-        }
+    // Override default colors with our garden theme
+    colors: {
+      // Keep transparent and current
+      transparent: 'transparent',
+      current: 'currentColor',
+      
+      // Redefine whites and blacks for our theme
+      white: '#ffffff',
+      black: '#2d3436',
+      
+      // Redefine grays with our garden palette
+      gray: {
+        50: '#f8f6f3',    // Our background cream
+        100: '#f0ede8',   // Surface alt
+        200: '#e5e1db',   // Border color
+        300: '#d4c5b9',   // Light earth
+        400: '#8b949e',   // Muted text
+        500: '#5a6067',   // Secondary text
+        600: '#4a5568',   // Slightly darker
+        700: '#2d3436',   // Primary text (deep charcoal)
+        800: '#1a202c',   // Even darker
+        900: '#171923',   // Darkest
       },
+      
+      // Sage green as primary accent
+      emerald: {
+        50: '#f0fdf4',
+        100: '#dcfce7',
+        200: '#bbf7d0',
+        300: '#A3B88C',   // Light sage
+        400: '#6B8E6B',   // Primary sage
+        500: '#6B8E6B',   // Primary sage (main)
+        600: '#4a6349',   // Deep sage
+        700: '#3f5a3f',
+        800: '#365136',
+        900: '#2d442d',
+      },
+      
+      // Earth tones
+      amber: {
+        100: '#D4C5B9',   // Light earth
+        200: '#c9b5a6',
+        300: '#bea593',
+        400: '#b39580',
+        500: '#8B7355',   // Earth brown
+        600: '#6b5843',   // Deep earth
+        700: '#5b4a38',
+        800: '#4b3c2d',
+        900: '#3b2e22',
+      },
+      
+      // Sky blue
+      blue: {
+        400: '#5B8FA3',   // Sky blue
+        500: '#5B8FA3',
+        600: '#4a7a8c',
+      },
+      
+      // Growth stage colors
+      green: {
+        400: '#84cc16',   // Growing (lime)
+        500: '#10b981',   // Evergreen
+      },
+      yellow: {
+        500: '#f59e0b',   // Budding
+      },
+      stone: {
+        400: '#9ca3af',   // Seedling
+      },
+      
+      // Error/success states
+      red: {
+        500: '#ef4444',
+        600: '#dc2626',
+      }
+    },
+    extend: {
       fontFamily: {
         sans: ["Inter", "sans-serif"],
         serif: ["Merriweather", "serif"],

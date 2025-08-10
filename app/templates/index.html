@@ -1,7 +1,7 @@
 {% extends "base.html" %} {% block content %}
 <header class="mb-12">
     <h1 class="text-4xl font-bold mb-4">Welcome</h1>
-    <p class="text-xl text-gray-600">
+    <p class="text-xl text-garden-text-secondary">
         Joshua's notes and thoughts about programming, DevOps, and other odds and ends.
     </p>
 </header>
@@ -38,25 +38,25 @@
     <aside class="space-y-8">
         <!-- Random Quote -->
         {% if random_quote %}
-        <div class="bg-white rounded-lg shadow-sm p-6">
-            <h2 class="text-xl font-semibold mb-4 text-gray-900">Random Quote</h2>
+        <div class="bg-garden-surface rounded-lg shadow-lg p-6 border border-garden-border">
+            <h2 class="text-xl font-semibold mb-4 text-garden-text-primary font-serif">Random Quote</h2>
             <div class="prose">
-                <blockquote class="border-l-4 border-emerald-500 pl-4 italic text-gray-700">
+                <blockquote class="border-l-4 border-garden-sage pl-4 italic text-garden-text-secondary">
                     {{ random_quote.content | safe }}
                 </blockquote>
                 {% if random_quote.title %}
-                <p class="text-sm text-gray-500 mt-2">— {{ random_quote.title }}</p>
+                <p class="text-sm text-garden-text-muted mt-2">— {{ random_quote.title }}</p>
                 {% endif %}
             </div>
         </div>
         {% endif %}
 
         <!-- GitHub Stars -->
-        <div class="bg-white rounded-lg shadow-sm p-6">
+        <div class="bg-garden-surface rounded-lg shadow-lg p-6 border border-garden-border">
             <div class="flex justify-between items-center mb-4">
-                <h2 class="text-xl font-semibold text-gray-900">GitHub Stars</h2>
+                <h2 class="text-xl font-semibold text-garden-text-primary font-serif">GitHub Stars</h2>
                 <a href="/stars" 
-                   class="text-emerald-600 hover:text-emerald-500 text-sm"
+                   class="text-garden-emerald hover:text-garden-sage text-sm transition-colors"
                    hx-get="/stars"
                    hx-target="#content-area"
                    hx-swap="innerHTML"
@@ -69,17 +69,17 @@
             {% else %}
                 <ul class="space-y-4">
                     {% for star in github_stars %}
-                    <li class="border-b border-gray-100 last:border-0 pb-4 last:pb-0">
+                    <li class="border-b border-garden-border last:border-0 pb-4 last:pb-0">
                         <a href="{{ star.url }}"
-                           class="text-gray-900 hover:text-emerald-600 font-medium block"
+                           class="text-garden-text-primary hover:text-garden-sage font-medium block transition-colors"
                            target="_blank"
                            rel="noopener noreferrer">
                             {{ star.full_name }}
                         </a>
                         {% if star.description %}
-                        <p class="text-sm text-gray-600 mt-1">{{ star.description }}</p>
+                        <p class="text-sm text-garden-text-secondary mt-1">{{ star.description }}</p>
                         {% endif %}
-                        <div class="flex items-center mt-2 text-sm text-gray-500">
+                        <div class="flex items-center mt-2 text-sm text-garden-text-muted">
                             {% if star.language %}
                             <span class="mr-3">{{ star.language }}</span>
                             {% endif %}
