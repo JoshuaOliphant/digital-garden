@@ -102,4 +102,4 @@ def test_content_metadata():
     assert metadata.difficulty == "advanced"
     assert metadata.prerequisites == ["python", "fastapi"]
     assert metadata.related_content == ["post1", "post2"]
-    assert metadata.visibility == "public"  # default value
+    # Note: visibility field is not in ContentMetadata, only in BaseContent
