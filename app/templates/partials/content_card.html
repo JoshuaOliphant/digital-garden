@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 <div class="bg-garden-surface rounded-lg shadow-lg hover:shadow-xl transition-shadow p-6 mb-6 border border-garden-border">
+=======
+<div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm hover:shadow-md dark:shadow-gray-900 transition-shadow p-6 mb-6">
+>>>>>>> f333c1d726b0af45f6948a2028f44949c97e61aa
     <!-- Content Type Badge -->
     <div class="flex items-center justify-between mb-4">
         <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium
@@ -21,7 +25,11 @@
     <!-- Title -->
     <h2 class="text-xl font-semibold mb-3">
         <a href="{{ item.url }}" 
+<<<<<<< HEAD
            class="text-garden-text-primary hover:text-garden-sage transition-colors font-serif"
+=======
+           class="text-gray-900 dark:text-gray-100 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
+>>>>>>> f333c1d726b0af45f6948a2028f44949c97e61aa
            hx-get="{{ item.url }}"
            hx-target="#content-area"
            hx-swap="innerHTML"
@@ -31,14 +39,22 @@
     </h2>
 
     <!-- Excerpt -->
+<<<<<<< HEAD
     <p class="text-garden-text-secondary mb-4 leading-relaxed">{{ item.excerpt }}</p>
+=======
+    <p class="text-gray-600 dark:text-gray-300 mb-4">{{ item.excerpt }}</p>
+>>>>>>> f333c1d726b0af45f6948a2028f44949c97e61aa
 
     <!-- Tags -->
     {% if item.metadata and item.metadata.tags %}
     <div class="flex flex-wrap gap-2">
         {% for tag in item.metadata.tags %}
         <a href="/tags/{{ tag }}" 
+<<<<<<< HEAD
            class="text-sm px-2 py-1 bg-garden-sage/10 text-garden-sage-dark rounded-md hover:bg-garden-sage/20 transition-colors"
+=======
+           class="text-sm px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+>>>>>>> f333c1d726b0af45f6948a2028f44949c97e61aa
            hx-get="/tags/{{ tag }}"
            hx-target="#content-area"
            hx-swap="innerHTML"
@@ -50,7 +66,11 @@
     {% endif %}
 
     <!-- Additional Metadata -->
+<<<<<<< HEAD
     <div class="mt-4 pt-4 border-t border-garden-border text-sm text-garden-text-muted">
+=======
+    <div class="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700 text-sm text-gray-500 dark:text-gray-400">
+>>>>>>> f333c1d726b0af45f6948a2028f44949c97e61aa
         {% if item.content_type == 'bookmarks' and item.url %}
             <a href="{{ item.url }}" 
                class="inline-flex items-center text-garden-emerald hover:text-garden-sage transition-colors"

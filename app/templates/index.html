@@ -38,8 +38,13 @@
     <aside class="space-y-8">
         <!-- Random Quote -->
         {% if random_quote %}
+<<<<<<< HEAD
         <div class="bg-garden-surface rounded-lg shadow-lg p-6 border border-garden-border">
             <h2 class="text-xl font-semibold mb-4 text-garden-text-primary font-serif">Random Quote</h2>
+=======
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm dark:shadow-gray-900 p-6">
+            <h2 class="text-xl font-semibold mb-4 text-gray-900 dark:text-gray-100">Random Quote</h2>
+>>>>>>> f333c1d726b0af45f6948a2028f44949c97e61aa
             <div class="prose">
                 <blockquote class="border-l-4 border-garden-sage pl-4 italic text-garden-text-secondary">
                     {{ random_quote.content | safe }}
