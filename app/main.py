@@ -26,6 +26,8 @@ import logfire
 
 from .models import BaseContent, Bookmark, TIL, Note
 from .config import ai_config, content_config
+from .logging_config import setup_logging, get_logger, LogConfig
+from .middleware.logging_middleware import LoggingMiddleware
 
 # Constants
 CONTENT_DIR = "app/content"
@@ -98,8 +100,22 @@ async def lifespan(app: FastAPI):
     await http_client.aclose()
 
 
+# Set up logging
+setup_logging(LogConfig(
+    level=os.getenv("LOG_LEVEL", "INFO"),
+    format=os.getenv("LOG_FORMAT", "json"),
+    log_dir=Path(os.getenv("LOG_DIR", "logs"))
+))
+
 # Initialize FastAPI
 app = FastAPI(lifespan=lifespan)
+
+# Add logging middleware
+app.add_middleware(
+    LoggingMiddleware,
+    skip_paths=["/health", "/metrics", "/static"]
+)
+
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 env = Environment(loader=FileSystemLoader(TEMPLATE_DIR))
 
@@ -199,6 +215,7 @@ class timed_lru_cache:
 
 
 class ContentManager:
+    logger = get_logger(__name__)
     CONTENT_TYPE_MAP = {
         "bookmarks": Bookmark,
         "til": TIL,
