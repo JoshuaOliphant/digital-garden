@@ -6,6 +6,21 @@
         <title>An Oliphant Never Forgets</title>
         <!-- Include HTMX -->
         <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+        <!-- Include Alpine.js for reactive components -->
+        <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+        
+        <!-- Theme Detection Script (must run before Alpine.js) -->
+        <script>
+            // Prevent flash of unstyled content
+            (function() {
+                const theme = localStorage.getItem('theme');
+                const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                
+                if (theme === 'dark' || (!theme && systemPrefersDark)) {
+                    document.documentElement.classList.add('dark');
+                }
+            })();
+        </script>
         
         {% if feature_flags.use_compiled_css %}
             <!-- Use Compiled Tailwind CSS -->
