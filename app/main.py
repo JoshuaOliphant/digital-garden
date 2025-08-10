@@ -1113,7 +1113,7 @@ async def get_mixed_content_api(
     per_page: int = 10,
     content_types: Optional[List[str]] = None,
 ):
-    \"\"\"Return paginated mixed content as an ``HTMLResponse``.\"\"\"
+    """Return paginated mixed content as an ``HTMLResponse``."""
     with logfire.span("mixed_content_api", page=page, per_page=per_page):
         try:
             if page < 1:
@@ -1194,7 +1194,7 @@ async def read_content(request: Request, content_type: str, page_name: str):
 
 @app.get("/bookmarks", response_class=HTMLResponse)
 async def read_bookmarks(request: Request):
-    \"\"\"Return all bookmarks rendered in an ``HTMLResponse``.\"\"\"
+    """Return all bookmarks rendered in an ``HTMLResponse``."""
     template_name = (
         "partials/bookmarks.html"
         if request.headers.get("HX-Request") == "true"
@@ -1215,7 +1215,7 @@ async def read_bookmarks(request: Request):
 
 @app.get("/stars", response_class=HTMLResponse)
 async def read_stars(request: Request):
-    \"\"\"Display starred repositories from GitHub in an ``HTMLResponse``.\"\"\"
+    """Display starred repositories from GitHub in an ``HTMLResponse``."""
     template_name = (
         "partials/stars.html"
         if request.headers.get("HX-Request") == "true"
@@ -1256,7 +1256,7 @@ async def read_stars_page(request: Request, page: int):
 
 @app.get("/til", response_class=HTMLResponse)
 async def read_til(request: Request):
-    \"\"\"Render the TIL index page as an ``HTMLResponse``.\"\"\"
+    """Render the TIL index page as an ``HTMLResponse``."""
     template_name = (
         "partials/til.html"
         if request.headers.get("HX-Request") == "true"
@@ -1279,7 +1279,7 @@ async def read_til(request: Request):
 
 @app.get("/til/tag/{tag}", response_class=HTMLResponse)
 async def read_til_tag(request: Request, tag: str):
-    \"\"\"Return TIL posts filtered by ``tag`` as an ``HTMLResponse``.\"\"\"
+    """Return TIL posts filtered by ``tag`` as an ``HTMLResponse``."""
     template_name = (
         "partials/til.html"
         if request.headers.get("HX-Request") == "true"
