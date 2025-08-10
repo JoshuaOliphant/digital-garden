@@ -1,0 +1,116 @@
+{% macro growth_indicator(status) -%}
+  {% set growth_stages = {
+    'Seedling': {'emoji': '🌱', 'class': 'text-sage-600 dark:text-sage-400'},
+    'Budding': {'emoji': '🌿', 'class': 'text-sage-500 dark:text-sage-300'},
+    'Evergreen': {'emoji': '🌳', 'class': 'text-sage-700 dark:text-sage-500'},
+    'draft': {'emoji': '📝', 'class': 'text-earth-500 dark:text-earth-400'}
+  } %}
+  {% set stage = growth_stages.get(status, {'emoji': '🌱', 'class': 'text-sage-600 dark:text-sage-400'}) %}
+  <span class="{{ stage.class }}" aria-label="Growth stage: {{ status }}">{{ stage.emoji }}</span>
+{%- endmacro %}
+
+{% macro garden_date(date_str) -%}
+  {% if date_str %}
+    {% if date_str is string %}
+      {% set date_parts = date_str.split('-') %}
+      {% set year = date_parts[0] | int %}
+      {% set month = date_parts[1] | int if date_parts|length > 1 else 1 %}
+      {% set day = date_parts[2] | int if date_parts|length > 2 else 1 %}
+    {% else %}
+      {% set year = date_str.year %}
+      {% set month = date_str.month %}
+      {% set day = date_str.day %}
+    {% endif %}
+    {% set seasons = {
+      1: 'Winter', 2: 'Winter', 3: 'Spring',
+      4: 'Spring', 5: 'Spring', 6: 'Summer',
+      7: 'Summer', 8: 'Summer', 9: 'Autumn',
+      10: 'Autumn', 11: 'Autumn', 12: 'Winter'
+    } %}
+    {% set season = seasons[month] %}
+    <span class="garden-date" data-season="{{ season.lower() }}">Planted {{ season }} {{ day }}, {{ year }}</span>
+  {% endif %}
+{%- endmacro %}
+
+{% macro garden_card(item, show_excerpt=true, show_tags=true, show_metadata=true) -%}
+  <article class="garden-card bg-garden-surface rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200 p-6 border border-garden-border mb-6">
+    <header class="mb-4">
+      <div class="flex items-start justify-between">
+        <h3 class="text-xl font-semibold text-garden-text-primary mb-2">
+          <a href="{{ item.url }}" 
+             class="hover:text-garden-sage transition-colors"
+             hx-get="{{ item.url }}"
+             hx-target="#content-area"
+             hx-swap="innerHTML"
+             hx-push-url="true">
+            {{ item.title }}
+          </a>
+        </h3>
+        {% if item.status %}
+          {{ growth_indicator(item.status) }}
+        {% elif item.metadata and item.metadata.status %}
+          {{ growth_indicator(item.metadata.status) }}
+        {% endif %}
+      </div>
+      
+      {% if show_metadata %}
+      <div class="flex items-center gap-4 text-sm text-garden-text-muted">
+        {% if item.created %}
+        <time datetime="{{ item.created }}" class="flex items-center gap-1">
+          <span aria-hidden="true">🌅</span>
+          {{ garden_date(item.created) }}
+        </time>
+        {% endif %}
+        
+        {% if item.updated and item.updated != item.created %}
+        <time datetime="{{ item.updated }}" class="flex items-center gap-1">
+          <span aria-hidden="true">🌿</span>
+          <span class="garden-date">Tended {{ item.updated.strftime('%B %d, %Y') if item.updated.strftime else item.updated }}</span>
+        </time>
+        {% endif %}
+        
+        {% if item.metadata and item.metadata.difficulty %}
+        <span class="flex items-center gap-1 px-2 py-1 rounded-full bg-sky-100 dark:bg-sky-900 text-sky-700 dark:text-sky-300 text-xs">
+          <span aria-hidden="true">📊</span>
+          {{ item.metadata.difficulty }}
+        </span>
+        {% endif %}
+      </div>
+      {% endif %}
+    </header>
+    
+    {% if show_excerpt and item.excerpt %}
+    <p class="text-garden-text-secondary mb-4 leading-relaxed">{{ item.excerpt }}</p>
+    {% endif %}
+    
+    {% if show_tags and item.metadata and item.metadata.tags %}
+    <footer class="flex flex-wrap gap-2">
+      {% for tag in item.metadata.tags %}
+      <a href="/tags/{{ tag }}" 
+         class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-garden-sage/10 text-garden-sage-dark hover:bg-garden-sage/20 transition-colors"
+         hx-get="/tags/{{ tag }}"
+         hx-target="#content-area"
+         hx-swap="innerHTML"
+         hx-push-url="true">
+        <span aria-hidden="true">#</span>{{ tag }}
+      </a>
+      {% endfor %}
+    </footer>
+    {% endif %}
+    
+    {% if item.content_type == 'bookmarks' and item.url %}
+    <div class="mt-4 pt-4 border-t border-garden-border">
+      <a href="{{ item.url }}" 
+         class="inline-flex items-center text-garden-emerald hover:text-garden-sage transition-colors"
+         target="_blank" 
+         rel="noopener noreferrer">
+        Visit Website
+        <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+        </svg>
+      </a>
+    </div>
+    {% endif %}
+  </article>
+{%- endmacro %}

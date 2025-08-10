@@ -1,0 +1,122 @@
+{% macro page_container(title='', subtitle='', show_header=true, width='max-w-4xl') -%}
+  <div class="mx-auto {{ width }}">
+    {% if show_header and (title or subtitle) %}
+    <header class="mb-8">
+      {% if title %}
+      <h1 class="text-4xl font-bold mb-4 text-garden-text-primary font-serif">{{ title }}</h1>
+      {% endif %}
+      {% if subtitle %}
+      <p class="text-xl text-garden-text-secondary">{{ subtitle }}</p>
+      {% endif %}
+    </header>
+    {% endif %}
+    
+    {{ caller() }}
+  </div>
+{%- endmacro %}
+
+{% macro content_layout(has_sidebar=false, sidebar_content='') -%}
+  {% if has_sidebar %}
+  <div class="grid grid-cols-1 lg:grid-cols-main gap-8">
+    <!-- Main Content -->
+    <section class="space-y-6">
+      {{ caller() }}
+    </section>
+    
+    <!-- Sidebar -->
+    <aside class="space-y-8">
+      {{ sidebar_content | safe }}
+    </aside>
+  </div>
+  {% else %}
+  <div class="max-w-4xl mx-auto space-y-6">
+    {{ caller() }}
+  </div>
+  {% endif %}
+{%- endmacro %}
+
+{% macro content_card_container(bg_class='bg-garden-surface', padding='p-8', extra_classes='') -%}
+  <div class="{{ bg_class }} rounded-lg shadow-lg {{ padding }} border border-garden-border {{ extra_classes }}">
+    {{ caller() }}
+  </div>
+{%- endmacro %}
+
+{% macro prose_content(extra_classes='') -%}
+  <article class="prose prose-lg max-w-none
+                 prose-p:text-garden-text-primary 
+                 prose-li:text-garden-text-primary 
+                 prose-strong:text-garden-text-primary prose-strong:font-bold
+                 prose-h1:text-garden-text-primary prose-h1:font-serif
+                 prose-h2:text-garden-text-primary prose-h2:font-serif
+                 prose-h3:text-garden-text-primary prose-h3:font-serif
+                 prose-h4:text-garden-text-primary
+                 prose-h5:text-garden-text-primary
+                 prose-h6:text-garden-text-primary
+                 prose-code:bg-garden-sage/10 
+                 prose-code:text-garden-sage-dark 
+                 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded 
+                 prose-code:before:content-[''] prose-code:after:content-[''] 
+                 prose-a:text-garden-sage 
+                 prose-a:hover:text-garden-sage-dark
+                 prose-blockquote:border-l-4 prose-blockquote:border-garden-sage
+                 prose-blockquote:pl-4 prose-blockquote:italic
+                 {{ extra_classes }}">
+    {{ caller() }}
+  </article>
+{%- endmacro %}
+
+{% macro metadata_badges(metadata) -%}
+  <div class="flex flex-wrap items-center gap-4 mb-6 text-sm">
+    {% if metadata.status %}
+    <span class="inline-flex items-center px-3 py-1 rounded-full
+                 {% if metadata.status == 'Evergreen' %}
+                   bg-garden-growth-evergreen/20 text-garden-growth-evergreen
+                 {% elif metadata.status == 'Budding' %}
+                   bg-garden-growth-budding/20 text-garden-growth-budding
+                 {% else %}
+                   bg-garden-growth-seedling/20 text-garden-growth-seedling
+                 {% endif %}">
+      {% if metadata.status == 'Evergreen' %}🌳
+      {% elif metadata.status == 'Budding' %}🌿
+      {% else %}🌱
+      {% endif %}
+      {{ metadata.status }}
+    </span>
+    {% endif %}
+    
+    {% if metadata.created %}
+    <span class="text-garden-text-muted">
+      🌅 Planted {{ metadata.created }}
+    </span>
+    {% endif %}
+    
+    {% if metadata.updated and metadata.updated != metadata.created %}
+    <span class="text-garden-text-muted">
+      🌿 Tended {{ metadata.updated }}
+    </span>
+    {% endif %}
+    
+    {% if metadata.difficulty %}
+    <span class="inline-flex items-center px-3 py-1 rounded-full bg-sky-100 dark:bg-sky-900 text-sky-700 dark:text-sky-300">
+      📊 {{ metadata.difficulty }}
+    </span>
+    {% endif %}
+  </div>
+{%- endmacro %}
+
+{% macro tag_list(tags, content_type='') -%}
+  {% if tags %}
+  <div class="flex flex-wrap gap-2">
+    {% for tag in tags %}
+    <a href="/tags/{{ tag }}{% if content_type %}?type={{ content_type }}{% endif %}"
+       class="inline-flex items-center px-3 py-1 rounded-full text-sm bg-garden-sage/10 text-garden-sage-dark hover:bg-garden-sage/20 transition-colors"
+       hx-get="/tags/{{ tag }}{% if content_type %}?type={{ content_type }}{% endif %}"
+       hx-target="#content-area"
+       hx-swap="innerHTML"
+       hx-push-url="true">
+      #{{ tag }}
+    </a>
+    {% endfor %}
+  </div>
+  {% endif %}
+{%- endmacro %}

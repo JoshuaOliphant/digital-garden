@@ -1,48 +1,48 @@
 {% extends "base.html" %}
+{% from 'macros/layout.html' import page_container, content_layout, content_card_container %}
 
 {% block content %}
-<div class="container mx-auto px-4 py-8">
-    <h1 class="text-4xl font-bold mb-8 text-garden-text-primary font-serif">GitHub Stars</h1>
-    
+{% call page_container(title='GitHub Stars') %}
+  {% call content_layout() %}
     <div class="grid gap-6">
-        {% for star in github_stars %}
-        <div class="bg-garden-surface rounded-lg shadow-lg p-6 border border-garden-border hover:shadow-xl transition-shadow">
-            <h2 class="text-xl font-semibold mb-2">
-                <a href="{{ star.html_url }}" 
-                   target="_blank" 
-                   rel="noopener noreferrer"
-                   class="text-garden-link hover:text-garden-link-hover">
-                    {{ star.full_name }}
-                </a>
-            </h2>
-            
-            {% if star.description %}
-            <p class="text-garden-text-secondary mb-4">{{ star.description }}</p>
-            {% endif %}
-            
-            <div class="flex items-center gap-4 text-sm text-garden-text-muted">
-                {% if star.stargazers_count %}
-                <span>⭐ {{ star.stargazers_count }}</span>
-                {% endif %}
-                {% if star.language %}
-                <span>{{ star.language }}</span>
-                {% endif %}
-                {% if star.updated_at %}
-                <span>Updated: {{ star.updated_at[:10] }}</span>
-                {% endif %}
-            </div>
-            
-            {% if star.topics %}
-            <div class="flex flex-wrap gap-2 mt-3">
-                {% for topic in star.topics %}
-                <span class="px-2 py-1 bg-garden-accent/10 text-garden-accent rounded text-xs">
-                    {{ topic }}
-                </span>
-                {% endfor %}
-            </div>
-            {% endif %}
+      {% for star in github_stars %}
+      {% call content_card_container() %}
+        <h2 class="text-xl font-semibold mb-2">
+          <a href="{{ star.html_url }}" 
+             target="_blank" 
+             rel="noopener noreferrer"
+             class="text-garden-link hover:text-garden-link-hover">
+            {{ star.full_name }}
+          </a>
+        </h2>
+        
+        {% if star.description %}
+        <p class="text-garden-text-secondary mb-4">{{ star.description }}</p>
+        {% endif %}
+        
+        <div class="flex items-center gap-4 text-sm text-garden-text-muted">
+          {% if star.stargazers_count %}
+          <span>⭐ {{ star.stargazers_count }}</span>
+          {% endif %}
+          {% if star.language %}
+          <span>{{ star.language }}</span>
+          {% endif %}
+          {% if star.updated_at %}
+          <span>Updated: {{ star.updated_at[:10] }}</span>
+          {% endif %}
         </div>
-        {% endfor %}
+        
+        {% if star.topics %}
+        <div class="flex flex-wrap gap-2 mt-3">
+          {% for topic in star.topics %}
+          <span class="px-2 py-1 bg-garden-accent/10 text-garden-accent rounded text-xs">
+            {{ topic }}
+          </span>
+          {% endfor %}
+        </div>
+        {% endif %}
+      {% endcall %}
+      {% endfor %}
     </div>
     
     {% if not github_stars %}
@@ -51,13 +51,14 @@
     
     {% if next_page %}
     <div class="mt-8 text-center">
-        <button hx-get="/stars?page={{ next_page }}"
-                hx-swap="beforeend"
-                hx-target=".grid"
-                class="px-4 py-2 bg-garden-accent text-white rounded hover:bg-garden-accent/80 transition-colors">
-            Load More
-        </button>
+      <button hx-get="/stars?page={{ next_page }}"
+              hx-swap="beforeend"
+              hx-target=".grid"
+              class="px-4 py-2 bg-garden-accent text-white rounded hover:bg-garden-accent/80 transition-colors">
+        Load More
+      </button>
     </div>
     {% endif %}
-</div>
+  {% endcall %}
+{% endcall %}
 {% endblock %}

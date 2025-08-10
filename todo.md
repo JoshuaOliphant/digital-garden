@@ -27,15 +27,29 @@
     - Added 28 comprehensive tests following TDD principles
     - Full backward compatibility maintained
 
-- [ ] **Task 3: Dark Mode Toggle**
+- [x] **Task 3: Dark Mode Toggle** ✅
   - Complexity: 2/5 | Dependencies: Task 1
   - Implement theme switcher with localStorage
   - Create garden color palette
+  - **Completed**: 2025-08-10
+  - **Implementation Details**:
+    - Fixed dark mode toggle with proper Alpine.js method calls
+    - Implemented garden color palette (sage, earth, sky, sunset)
+    - Theme persists across page reloads using localStorage
+    - All components support dark mode with bg-garden-surface
 
-- [ ] **Task 4: Design System Components**
+- [x] **Task 4: Design System Components** ✅
   - Complexity: 3/5 | Dependencies: Tasks 2, 3
   - Create garden-themed components
   - Implement growth stage indicators
+  - **Completed**: 2025-08-10
+  - **Implementation Details**:
+    - Created reusable Jinja2 macro templates (garden.html, typography.html, accessibility.html, layout.html)
+    - Implemented growth stage indicators with emoji mapping (🌱 Seedling, 🌿 Budding, 🌳 Evergreen)
+    - Created unified layout system with page_container, content_layout, prose_content macros
+    - Added 112 comprehensive tests following TDD principles
+    - Unified all templates to use consistent centered max-width layout
+    - Extracted common elements to reduce special-case styling
 
 ## Phase 2: Topographical Navigation (Week 3-4)
 
@@ -157,8 +171,19 @@
   - Implemented TDD with 28 tests (all passing)
   - Full backward compatibility maintained
 
+- [x] **Task 3: Dark Mode Toggle** (2025-08-10)
+  - Fixed and implemented dark mode theme switching
+  - Garden color palette integrated throughout
+  - Theme persistence working correctly
+
+- [x] **Task 4: Design System Components** (2025-08-10)
+  - Created complete macro template system
+  - Implemented TDD with 112 tests (all passing)
+  - Unified layout across all page types
+  - Garden metaphors integrated throughout
+
 ### Current Sprint
-_Currently working on: Phase 1 - Foundation_
+_Phase 1: Foundation - COMPLETED ✅_
 
 ### Blocked Tasks
 _Any blocked tasks and their blockers will be listed here_
@@ -197,6 +222,6 @@ _Any blocked tasks and their blockers will be listed here_
 
 **Last Updated**: 2025-08-10
 **Total Tasks**: 22
-**Completed**: 2/22 (9%)
+**Completed**: 4/22 (18%)
 **Estimated Timeline**: 9-10 weeks
-**Current Phase**: Phase 1 - Foundation (In Progress)
+**Current Phase**: Phase 1 - Foundation (Completed)

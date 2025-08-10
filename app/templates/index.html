@@ -1,12 +1,12 @@
-{% extends "base.html" %} {% block content %}
-<header class="mb-12">
-    <h1 class="text-4xl font-bold mb-4">Welcome</h1>
-    <p class="text-xl text-garden-text-secondary">
-        Joshua's notes and thoughts about programming, DevOps, and other odds and ends.
-    </p>
-</header>
+{% extends "base.html" %}
+{% from 'macros/layout.html' import page_container %}
 
-<div class="grid grid-cols-1 lg:grid-cols-main gap-8">
+{% block content %}
+{% call page_container(
+    title='Welcome',
+    subtitle="Joshua's notes and thoughts about programming, DevOps, and other odds and ends."
+) %}
+  <div class="grid grid-cols-1 lg:grid-cols-main gap-8">
     <!-- Main Content -->
     <section class="space-y-6" id="content-list">
         <!-- Mixed Content -->
@@ -97,5 +97,6 @@
             {% endif %}
         </div>
     </aside>
-</div>
+  </div>
+{% endcall %}
 {% endblock %}

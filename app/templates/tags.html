@@ -1,40 +1,33 @@
-{% extends "base.html" %} {% block content %}
-<div class="mb-8 prose prose-code:bg-gray-100 prose-code:text-gray-800 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:before:content-[''] prose-code:after:content-[''] prose-code:prose-a:text-emerald-400 prose-code:prose-a:hover:text-emerald-300">
-    <h1 class="text-3xl font-bold mb-4">TiLs tagged with #{{ tag }}</h1>
+{% extends "base.html" %}
+{% from 'macros/layout.html' import page_container, content_layout, content_card_container, tag_list %}
 
+{% block content %}
+{% call page_container(title='Content tagged with #' ~ tag) %}
+  {% call content_layout() %}
     <div class="grid gap-6">
-        {% for post in posts %}
-        <div class="bg-white p-6 rounded-lg shadow">
-            <h2 class="text-xl font-semibold mb-2">
-                <a
-                    href="/{{ post.type }}/{{ post.name }}"
-                    class="text-emerald-600 hover:text-emerald-500 hover:underline"
-                    hx-get="/{{ post.type }}/{{ post.name }}"
-                    hx-target="#content-area"
-                    hx-swap="innerHTML"
-                    hx-push-url="true"
-                >
-                    {{ post.title }}
-                </a>
-            </h2>
-            {% if post.metadata.tags %}
-            <div class="flex gap-2">
-                {% for tag in post.metadata.tags %}
-                <a
-                    href="/tags/{{ tag }}"
-                    class="px-2 py-1 bg-emerald-100 text-emerald-800 rounded-full text-sm hover:bg-emerald-200"
-                    hx-get="/tags/{{ tag }}"
-                    hx-target="#content-area"
-                    hx-swap="innerHTML"
-                    hx-push-url="true"
-                >
-                    #{{ tag }}
-                </a>
-                {% endfor %}
-            </div>
-            {% endif %}
-        </div>
-        {% endfor %}
+      {% for post in posts %}
+      {% call content_card_container() %}
+        <h2 class="text-xl font-semibold mb-2">
+          <a href="/{{ post.type }}/{{ post.name }}"
+             class="text-garden-sage hover:text-garden-sage-dark hover:underline transition-colors"
+             hx-get="/{{ post.type }}/{{ post.name }}"
+             hx-target="#content-area"
+             hx-swap="innerHTML"
+             hx-push-url="true">
+            {{ post.title }}
+          </a>
+        </h2>
+        
+        {% if post.metadata.tags %}
+        {{ tag_list(post.metadata.tags) }}
+        {% endif %}
+      {% endcall %}
+      {% endfor %}
     </div>
-</div>
+    
+    {% if not posts %}
+    <p class="text-garden-text-muted">No content found with this tag.</p>
+    {% endif %}
+  {% endcall %}
+{% endcall %}
 {% endblock %}

@@ -1,51 +1,53 @@
 {% extends "base.html" %}
+{% from 'macros/layout.html' import page_container, content_layout, content_card_container %}
+{% from 'macros/garden.html' import garden_card %}
 
 {% block content %}
-<div class="container mx-auto px-4 py-8">
-    <h1 class="text-4xl font-bold mb-8 text-garden-text-primary font-serif">Bookmarks</h1>
-    
+{% call page_container(title='Bookmarks') %}
+  {% call content_layout() %}
     <div class="grid gap-6">
-        {% for bookmark in bookmarks %}
-        <div class="bg-garden-surface rounded-lg shadow-lg p-6 border border-garden-border hover:shadow-xl transition-shadow">
-            <h2 class="text-xl font-semibold mb-2">
-                <a href="{{ bookmark.url }}" 
-                   target="_blank" 
-                   rel="noopener noreferrer"
-                   class="text-garden-link hover:text-garden-link-hover">
-                    {{ bookmark.title }}
-                </a>
-            </h2>
-            
-            {% if bookmark.description %}
-            <p class="text-garden-text-secondary mb-4">{{ bookmark.description }}</p>
+      {% for bookmark in bookmarks %}
+      {% call content_card_container() %}
+        <h2 class="text-xl font-semibold mb-2">
+          <a href="{{ bookmark.url }}" 
+             target="_blank" 
+             rel="noopener noreferrer"
+             class="text-garden-link hover:text-garden-link-hover">
+            {{ bookmark.title }}
+          </a>
+        </h2>
+        
+        {% if bookmark.description %}
+        <p class="text-garden-text-secondary mb-4">{{ bookmark.description }}</p>
+        {% endif %}
+        
+        <div class="flex items-center justify-between text-sm text-garden-text-muted">
+          <div class="flex gap-4">
+            {% if bookmark.created %}
+            <span>Created: {{ bookmark.created }}</span>
             {% endif %}
-            
-            <div class="flex items-center justify-between text-sm text-garden-text-muted">
-                <div class="flex gap-4">
-                    {% if bookmark.created %}
-                    <span>Created: {{ bookmark.created }}</span>
-                    {% endif %}
-                    {% if bookmark.github_stars %}
-                    <span>⭐ {{ bookmark.github_stars }}</span>
-                    {% endif %}
-                </div>
-                
-                {% if bookmark.tags %}
-                <div class="flex flex-wrap gap-2">
-                    {% for tag in bookmark.tags %}
-                    <span class="px-2 py-1 bg-garden-accent/10 text-garden-accent rounded text-xs">
-                        {{ tag }}
-                    </span>
-                    {% endfor %}
-                </div>
-                {% endif %}
-            </div>
+            {% if bookmark.github_stars %}
+            <span>⭐ {{ bookmark.github_stars }}</span>
+            {% endif %}
+          </div>
+          
+          {% if bookmark.tags %}
+          <div class="flex flex-wrap gap-2">
+            {% for tag in bookmark.tags %}
+            <span class="px-2 py-1 bg-garden-accent/10 text-garden-accent rounded text-xs">
+              {{ tag }}
+            </span>
+            {% endfor %}
+          </div>
+          {% endif %}
         </div>
-        {% endfor %}
+      {% endcall %}
+      {% endfor %}
     </div>
     
     {% if not bookmarks %}
     <p class="text-garden-text-muted">No bookmarks found.</p>
     {% endif %}
-</div>
+  {% endcall %}
+{% endcall %}
 {% endblock %}

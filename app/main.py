@@ -542,7 +542,7 @@ class ContentManager:
         """
         try:
             response = await http_client.get(
-                f"https://api.github.com/users/{ai_config.github_username}/starred",
+                f"https://api.github.com/users/{ai_config.github_username or GITHUB_USERNAME}/starred",
                 params={
                     "page": page,
                     "per_page": per_page

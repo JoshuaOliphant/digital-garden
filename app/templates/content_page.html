@@ -1,107 +1,72 @@
-{% extends "base.html" %} {% block content %}
-<div class="bg-garden-surface rounded-lg shadow-lg p-8 border border-garden-border">
-<article class="prose max-w-none">
-    <h1 class="text-4xl font-bold mb-4 text-garden-text-primary font-serif">{{ metadata.title }}</h1>
+{% extends "base.html" %}
+{% from 'macros/layout.html' import page_container, content_layout, content_card_container, prose_content, metadata_badges, tag_list %}
+{% from 'macros/garden.html' import growth_indicator %}
 
-    {% if metadata.status %}
-    <div class="mb-4">
-        <span
-            class="px-2 py-1 rounded text-sm {{
-                'bg-garden-growth-evergreen/20 text-garden-growth-evergreen' if metadata.status == 'Evergreen' else
-                'bg-garden-growth-budding/20 text-garden-growth-budding' if metadata.status == 'Budding' else
-                'bg-garden-growth-seedling/20 text-garden-growth-seedling'
-            }}"
-        >
-            {{ metadata.status }}
-        </span>
-    </div>
-    {% endif %}
-
-    <!-- Single dates section, outside of any other conditionals -->
-    <div class="text-sm text-garden-text-muted mb-4">
-        {% if metadata.created %}
-        <span>Created: {{ metadata.created }}</span>
-        {% endif %} {% if metadata.updated %}
-        <span class="ml-4">Updated: {{ metadata.updated }}</span>
+{% block content %}
+{% call page_container(title=metadata.title) %}
+  {% call content_layout() %}
+    
+    {% call content_card_container() %}
+      <!-- Metadata and Status -->
+      {{ metadata_badges(metadata) }}
+      
+      <!-- Tags -->
+      {{ tag_list(metadata.tags, content_type) }}
+      
+      <!-- Main Content -->
+      <div class="mt-6">
+        {% call prose_content() %}
+          {{ content | safe }}
+        {% endcall %}
+      </div>
+    {% endcall %}
+    
+    <!-- Recent Content Section -->
+    {% call content_card_container(bg_class='bg-garden-surface-alt', extra_classes='mt-6') %}
+      <h2 class="text-2xl font-semibold mb-6 text-garden-text-primary font-serif">Recent Content</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+        {% if recent_how_tos.content %}
+        <div>
+          <h3 class="text-lg font-semibold mb-3 text-garden-text-primary">Recent How-to's</h3>
+          <ul class="space-y-2">
+            {% for how_to in recent_how_tos.content[:5] %}
+            <li>
+              <a href="/how_to/{{ how_to.name }}"
+                 class="text-garden-sage hover:text-garden-sage-dark hover:underline transition-colors"
+                 hx-get="/how_to/{{ how_to.name }}"
+                 hx-target="#content-area"
+                 hx-swap="innerHTML"
+                 hx-push-url="true">
+                {{ how_to.title }}
+              </a>
+            </li>
+            {% endfor %}
+          </ul>
+        </div>
         {% endif %}
-    </div>
-
-    {% if metadata.tags %}
-    <div class="flex flex-wrap gap-2 mt-4">
-        {% for tag in metadata.tags %}
-        <a
-            href="/tags/{{ tag }}{% if content_type %}?type={{ content_type }}{% endif %}"
-            class="px-3 py-1 bg-garden-sage/10 text-garden-sage-dark rounded-full text-sm hover:bg-garden-sage/20 transition-colors"
-        >
-            {{ tag }}
-        </a>
-        {% endfor %}
-    </div>
-    {% endif %}
-
-    <div class="prose max-w-none 
-                prose-p:text-garden-text-primary 
-                prose-li:text-garden-text-primary 
-                prose-strong:text-garden-text-primary prose-strong:font-bold
-                prose-h1:text-garden-text-primary
-                prose-h2:text-garden-text-primary
-                prose-h3:text-garden-text-primary
-                prose-h4:text-garden-text-primary
-                prose-h5:text-garden-text-primary
-                prose-h6:text-garden-text-primary
-                prose-code:bg-garden-sage/10 
-                prose-code:text-garden-sage-dark 
-                prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded 
-                prose-code:before:content-[''] prose-code:after:content-[''] 
-                prose-a:text-garden-sage 
-                prose-a:hover:text-garden-sage-dark
-                text-garden-text-primary">
-        {{ content | safe }}
-    </div>
-</article>
-</div>
-
-<div class="bg-garden-surface-alt rounded-lg shadow-lg p-8 mt-6 border border-garden-border">
-    <h2 class="text-2xl font-semibold mb-4 text-garden-text-primary font-serif">Recent Content</h2>
-    <div class="grid grid-cols-2 gap-8">
+        
+        {% if recent_notes.content %}
         <div>
-            <h3 class="text-xl font-semibold mb-2 text-garden-text-primary">Recent How to's</h3>
-            <ul>
-                {% for how_to in recent_how_tos.content %}
-                <li class="mb-2">
-                    <a
-                        href="/how_to/{{ how_to.name }}"
-                        class="text-garden-sage hover:text-garden-sage-dark hover:underline transition-colors"
-                        hx-get="/how_to/{{ how_to.name }}"
-                        hx-target="#content-area"
-                        hx-swap="innerHTML"
-                        hx-push-url="true"
-                    >
-                        {{ how_to.title }}
-                    </a>
-                </li>
-                {% endfor %}
-            </ul>
+          <h3 class="text-lg font-semibold mb-3 text-garden-text-primary">Recent Notes</h3>
+          <ul class="space-y-2">
+            {% for note in recent_notes.content[:5] %}
+            <li>
+              <a href="/notes/{{ note.name }}"
+                 class="text-garden-sage hover:text-garden-sage-dark hover:underline transition-colors"
+                 hx-get="/notes/{{ note.name }}"
+                 hx-target="#content-area"
+                 hx-swap="innerHTML"
+                 hx-push-url="true">
+                {{ note.title }}
+              </a>
+            </li>
+            {% endfor %}
+          </ul>
         </div>
-        <div>
-            <h3 class="text-xl font-semibold mb-2 text-garden-text-primary">Recent Notes</h3>
-            <ul>
-                {% for note in recent_notes.content %}
-                <li class="mb-2">
-                    <a
-                        href="/notes/{{ note.name }}"
-                        class="text-garden-sage hover:text-garden-sage-dark hover:underline transition-colors"
-                        hx-get="/notes/{{ note.name }}"
-                        hx-target="#content-area"
-                        hx-swap="innerHTML"
-                        hx-push-url="true"
-                    >
-                        {{ note.title }}
-                    </a>
-                </li>
-                {% endfor %}
-            </ul>
-        </div>
-    </div>
-</div>
+        {% endif %}
+      </div>
+    {% endcall %}
+    
+  {% endcall %}
+{% endcall %}
 {% endblock %}
