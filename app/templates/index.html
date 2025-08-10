@@ -38,8 +38,8 @@
     <aside class="space-y-8">
         <!-- Random Quote -->
         {% if random_quote %}
-        <div class="bg-white rounded-lg shadow-sm p-6">
-            <h2 class="text-xl font-semibold mb-4 text-gray-900">Random Quote</h2>
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm dark:shadow-gray-900 p-6">
+            <h2 class="text-xl font-semibold mb-4 text-gray-900 dark:text-gray-100">Random Quote</h2>
             <div class="prose">
                 <blockquote class="border-l-4 border-emerald-500 pl-4 italic text-gray-700">
                     {{ random_quote.content | safe }}
