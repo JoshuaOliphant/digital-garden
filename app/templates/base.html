@@ -11,13 +11,21 @@
         
         <!-- Theme Detection Script (must run before Alpine.js) -->
         <script>
-            // Prevent flash of unstyled content
+            // Apply theme before paint to avoid FOUC
             (function() {
-                const theme = localStorage.getItem('theme');
-                const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-                
-                if (theme === 'dark' || (!theme && systemPrefersDark)) {
-                    document.documentElement.classList.add('dark');
+                try {
+                    const storedTheme = localStorage.getItem('theme');
+                    const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                    const shouldUseDark = storedTheme === 'dark' || (storedTheme === null && systemPrefersDark);
+
+                    document.documentElement.classList.toggle('dark', shouldUseDark);
+                    // Help form controls and scrollbars match theme
+                    document.documentElement.style.colorScheme = shouldUseDark ? 'dark' : 'light';
+                } catch (_) {
+                    // If accessing localStorage fails, fall back to system preference
+                    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                    document.documentElement.classList.toggle('dark', prefersDark);
+                    document.documentElement.style.colorScheme = prefersDark ? 'dark' : 'light';
                 }
             })();
         </script>
@@ -179,11 +187,8 @@
                     },
                     
                     updateTheme() {
-                        if (this.isDark) {
-                            document.documentElement.classList.add('dark');
-                        } else {
-                            document.documentElement.classList.remove('dark');
-                        }
+                        document.documentElement.classList.toggle('dark', this.isDark);
+                        document.documentElement.style.colorScheme = this.isDark ? 'dark' : 'light';
                     }
                 }
             }
