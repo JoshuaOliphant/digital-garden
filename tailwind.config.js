@@ -11,6 +11,23 @@ module.exports = {
         primary: "#1a202c",
         secondary: "#2d3748",
         accent: "#38b2ac",
+        // Garden-themed dark mode colors
+        dark: {
+          bg: {
+            primary: "#0f1419",    // Deep forest green
+            secondary: "#1a1f2e",  // Midnight blue
+            surface: "#2a3441",    // Moonlit sage
+          },
+          text: {
+            primary: "#e6f1ff",    // Soft moonlight
+            secondary: "#f0f6fc",  // Warm ivory
+          },
+          accent: {
+            primary: "#f7cc47",    // Firefly gold
+            secondary: "#c9a7eb",  // Night bloom purple
+            tertiary: "#7ce38b",   // Aurora green
+          }
+        }
       },
       fontFamily: {
         sans: ["Inter", "sans-serif"],
