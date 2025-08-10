@@ -37,6 +37,7 @@ class AIConfig(BaseSettings):
     """AI service configuration."""
 
     anthropic_api_key: str = os.getenv("ANTHROPIC_API_KEY", "")
+    github_username: str = os.getenv("GITHUB_USERNAME", "")
 
     # Claude model configuration
     claude_model: str = "claude-3-7-sonnet-latest"  # Latest stable model
@@ -62,6 +63,7 @@ class ContentConfig(BaseSettings):
     content_dir: str = "app/content"
     backup_dir: str = "app/content_backup"
     cache_dir: str = "app/cache"
+    base_url: str = "https://anoliphantneverforgets.com"
 
     # Content types and their models
     content_types: Dict[str, str] = {
@@ -100,6 +102,8 @@ def validate_config() -> Optional[str]:
     """Validate the configuration and return error message if invalid."""
     if not ai_config.anthropic_api_key:
         return "ANTHROPIC_API_KEY environment variable is not set"
+    if not ai_config.github_username:
+        return "GITHUB_USERNAME environment variable is not set"
     return None
 
 

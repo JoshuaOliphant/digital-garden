@@ -18,14 +18,15 @@ A digital garden for organizing and sharing knowledge, powered by FastAPI and AI
    cd digital_garden
    ```
 
-2. Create a Python virtual environment (Python 3.12+ required):
+2. Run the setup script to create a virtual environment and install dependencies (Python 3.12+ required):
+   ```bash
+   ./setup.sh
+   ```
+
+   If you prefer to run the steps manually:
    ```bash
    uv venv
    source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-   ```
-
-3. Install dependencies:
-   ```bash
    uv sync
    ```
 
@@ -40,6 +41,7 @@ A digital garden for organizing and sharing knowledge, powered by FastAPI and AI
    CLAUDE_MODEL=claude-3-5-sonnet-latest  # or other model version
    CLAUDE_MAX_TOKENS=4096
    CLAUDE_TEMPERATURE=0.7
+   BASE_URL=https://anoliphantneverforgets.com
    ```
 
 5. Initialize the content directories:
@@ -103,3 +105,10 @@ Type checking:
 ```bash
 mypy .
 ```
+
+## Usage Notes
+
+The `timed_lru_cache` decorator in `app/main.py` keeps its data in process
+memory and does not implement any locking. It is designed for single-threaded
+execution. For deployments with multiple workers or threads, prefer an external
+cache instead of this helper.

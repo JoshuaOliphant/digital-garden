@@ -11,7 +11,7 @@ import markdown
 import os
 import re
 import yaml
-import glob
+from pathlib import Path
 import bleach
 import random
 import httpx
@@ -24,7 +24,8 @@ from email.utils import format_datetime
 from pydantic import ValidationError
 import logfire
 
-from .models import BaseContent, Bookmark, TIL, Note
+from .config import content_config, ai_config
+from .models import BaseContent, Bookmark, TIL, Note, ContentMetadata
 
 # Constants
 CONTENT_DIR = "app/content"
@@ -79,6 +80,7 @@ ALLOWED_ATTRIBUTES = {
     ],
 }
 
+
 GITHUB_USERNAME = "JoshuaOliphant"
 T = TypeVar("T")
 
@@ -119,9 +121,9 @@ else:
 
         logfire.configure(
             console=logfire.ConsoleOptions(
-                min_log_level="info"
-                if os.getenv("ENVIRONMENT") == "production"
-                else "debug"
+                min_log_level=(
+                    "info" if os.getenv("ENVIRONMENT") == "production" else "debug"
+                )
             ),
             token=logfire_token,
         )
@@ -145,8 +147,12 @@ else:
 
 
 class timed_lru_cache:
-    """
-    Decorator that adds time-based expiration to LRU cache
+    """Decorator that adds time-based expiration to an in-memory LRU cache.
+
+    The cache uses regular Python dictionaries and is **not** thread safe.
+    It is intended for single-threaded use such as development servers or
+    scripts. Use an external cache if you need multi-process or multi-threaded
+    safety.
     """
 
     def __init__(self, maxsize: int = 128, ttl_seconds: int = 3600):
@@ -362,20 +368,20 @@ class ContentManager:
     @staticmethod
     def get_content(content_type: str, limit=None):
         """Get content of a specific type with consistent format"""
-        files = glob.glob(f"{CONTENT_DIR}/{content_type}/*.md")
+        files = list(Path(CONTENT_DIR, content_type).glob("*.md"))
         files.sort(key=ContentManager._get_date_from_filename, reverse=True)
 
         content = []
         validation_errors = {}
 
         for file in files:
-            name = os.path.splitext(os.path.basename(file))[0]
-            file_content = ContentManager.render_markdown(file)
+            name = file.stem
+            file_content = ContentManager.render_markdown(str(file))
             metadata = file_content["metadata"]
             errors = file_content.get("errors", [])
 
             if errors:
-                validation_errors[file] = errors
+                validation_errors[str(file)] = errors
                 # Skip invalid content in production, include with errors in development
                 if os.getenv("ENVIRONMENT") == "production":
                     continue
@@ -424,18 +430,18 @@ class ContentManager:
         }
 
     @staticmethod
-    def _get_date_from_filename(filename: str) -> str:
-        match = re.search(r"(\d{4}-\d{2}-\d{2})", os.path.basename(filename))
-        return match.group(1) if match else "0000-00-00"
+    def _get_date_from_filename(filename: str | Path) -> str:
+        match = re.search(r'(\d{4}-\d{2}-\d{2})', Path(filename).name)
+        return match.group(1) if match else '0000-00-00'
 
     @staticmethod
     def get_random_quote():
-        quote_files = glob.glob(f"{CONTENT_DIR}/notes/*quoting*.md")
+        quote_files = list(Path(CONTENT_DIR, "notes").glob("*quoting*.md"))
         if not quote_files:
             return None
 
         random_quote_file = random.choice(quote_files)
-        quote_content = ContentManager.render_markdown(random_quote_file)
+        quote_content = ContentManager.render_markdown(str(random_quote_file))
 
         # Extract quote safely
         soup = BeautifulSoup(quote_content["html"], "html.parser")
@@ -450,7 +456,7 @@ class ContentManager:
     @staticmethod
     def get_bookmarks(limit: Optional[int] = 10) -> List[dict]:
         """Get bookmarks with pagination"""
-        files = glob.glob(f"{CONTENT_DIR}/bookmarks/*.md")
+        files = list(Path(CONTENT_DIR, "bookmarks").glob("*.md"))
         files.sort(key=ContentManager._get_date_from_filename, reverse=True)
         bookmarks = []
         files_to_process = (
@@ -458,8 +464,8 @@ class ContentManager:
         )
 
         for file in files_to_process:
-            name = os.path.splitext(os.path.basename(file))[0]
-            file_content = ContentManager.render_markdown(file)
+            name = file.stem
+            file_content = ContentManager.render_markdown(str(file))
             metadata = file_content["metadata"]
 
             # Convert the metadata to a Bookmark model for validation
@@ -497,10 +503,10 @@ class ContentManager:
             content_types = ["notes", "how_to", "til"]
 
         for content_type in content_types:
-            files = glob.glob(f"{CONTENT_DIR}/{content_type}/*.md")
+            files = list(Path(CONTENT_DIR, content_type).glob("*.md"))
             for file in files:
-                name = os.path.splitext(os.path.basename(file))[0]
-                file_content = ContentManager.render_markdown(file)
+                name = file.stem
+                file_content = ContentManager.render_markdown(str(file))
                 metadata = file_content["metadata"]
 
                 if "tags" in metadata and tag in metadata["tags"]:
@@ -536,9 +542,11 @@ class ContentManager:
         """
         try:
             response = await http_client.get(
-                f"https://api.github.com/users/{GITHUB_USERNAME}/starred",
-                params={"page": page, "per_page": per_page},
-            )
+                f"https://api.github.com/users/{ai_config.github_username}/starred",
+                params={
+                    "page": page,
+                    "per_page": per_page
+                })
 
             # Handle rate limiting
             if (
@@ -621,7 +629,7 @@ class ContentManager:
     @staticmethod
     def get_til_posts(page: int = 1, per_page: int = 30) -> dict:
         """Get TiL posts with pagination"""
-        files = glob.glob(f"{CONTENT_DIR}/til/*.md")
+        files = list(Path(CONTENT_DIR, "til").glob("*.md"))
         files.sort(key=ContentManager._get_date_from_filename, reverse=True)
 
         # Calculate pagination
@@ -633,8 +641,8 @@ class ContentManager:
         til_tags = {}
 
         for file in page_files:
-            name = os.path.splitext(os.path.basename(file))[0]
-            file_content = ContentManager.render_markdown(file)
+            name = file.stem
+            file_content = ContentManager.render_markdown(str(file))
             metadata = file_content["metadata"]
 
             # Get first paragraph for excerpt
@@ -667,12 +675,12 @@ class ContentManager:
     @staticmethod
     def get_til_posts_by_tag(tag: str) -> List[dict]:
         """Get TiL posts filtered by tag"""
-        files = glob.glob(f"{CONTENT_DIR}/til/*.md")
+        files = list(Path(CONTENT_DIR, "til").glob("*.md"))
         tils = []
 
         for file in files:
-            name = os.path.splitext(os.path.basename(file))[0]
-            file_content = ContentManager.render_markdown(file)
+            name = file.stem
+            file_content = ContentManager.render_markdown(str(file))
             metadata = file_content["metadata"]
 
             if tag in metadata.get("tags", []):
@@ -838,33 +846,43 @@ def generate_rss_feed():
 
     def get_created_date(x):
         item = x[0]
-        return (
-            item.get("created", "")
-            if "created" in item
-            else item.get("metadata", {}).get("created", "")
-        )
+        if isinstance(item, dict):
+            date_val = None
+            if "created" in item:
+                date_val = item.get("created", "")
+            elif "metadata" in item and isinstance(item["metadata"], dict):
+                date_val = item["metadata"].get("created", "")
+            
+            # Convert string dates to datetime for consistent comparison
+            if isinstance(date_val, str) and date_val:
+                try:
+                    return datetime.strptime(date_val, "%Y-%m-%d")
+                except ValueError:
+                    return datetime.min
+            elif isinstance(date_val, datetime):
+                return date_val
+        return datetime.min
 
     all_content.sort(key=get_created_date, reverse=True)
 
     # Generate RSS XML
     rss = '<?xml version="1.0" encoding="UTF-8" ?>\n'
     rss += '<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">\n'
-    rss += "<channel>\n"
-    rss += "<title>An Oliphant Never Forgets</title>\n"
-    rss += "<link>https://anoliphantneverforgets.com</link>\n"
-    rss += "<description>Latest content from An Oliphant Never Forgets</description>\n"
-    rss += "<language>en-us</language>\n"
-    rss += (
-        "<managingEditor>joshua.oliphant@gmail.com (Joshua Oliphant)</managingEditor>\n"
-    )
-    rss += "<webMaster>joshua.oliphant@gmail.com (Joshua Oliphant)</webMaster>\n"
-    rss += '<atom:link href="https://anoliphantneverforgets.com/feed.xml" rel="self" type="application/rss+xml" />\n'
+
+    rss += '<channel>\n'
+    rss += '<title>An Oliphant Never Forgets</title>\n'
+    rss += f'<link>{content_config.base_url}</link>\n'
+    rss += '<description>Latest content from An Oliphant Never Forgets</description>\n'
+    rss += '<language>en-us</language>\n'
+    rss += '<managingEditor>joshua.oliphant@gmail.com (Joshua Oliphant)</managingEditor>\n'
+    rss += '<webMaster>joshua.oliphant@gmail.com (Joshua Oliphant)</webMaster>\n'
+    rss += f'<atom:link href="{content_config.base_url}/feed.xml" rel="self" type="application/rss+xml" />\n'
 
     for item, content_type in all_content:
         rss += "<item>\n"
         rss += f'<title>{item["title"]}</title>\n'
-        rss += f'<link>https://anoliphantneverforgets.com/{content_type}/{item["name"]}</link>\n'
-        rss += "<author>joshua.oliphant@gmail.com (Joshua Oliphant)</author>\n"
+        rss += f'<link>{content_config.base_url}/{content_type}/{item["name"]}</link>\n'
+        rss += '<author>joshua.oliphant@gmail.com (Joshua Oliphant)</author>\n'
 
         # Add description/excerpt if available
         if "excerpt" in item:
@@ -892,8 +910,8 @@ def generate_rss_feed():
         for tag in tags:
             rss += f"<category>{tag}</category>\n"
 
-        rss += f'<guid>https://anoliphantneverforgets.com/{content_type}/{item["name"]}</guid>\n'
-        rss += "</item>\n"
+        rss += f'<guid>{content_config.base_url}/{content_type}/{item["name"]}</guid>\n'
+        rss += '</item>\n'
 
     rss += "</channel>\n"
     rss += "</rss>"
@@ -904,8 +922,8 @@ def generate_rss_feed():
 def generate_sitemap() -> str:
     """Generate XML sitemap for the site"""
     # Base URL for the site
-    base_url = "https://anoliphantneverforgets.com"
-
+    base_url = content_config.base_url
+    
     # Start XML sitemap
     sitemap = '<?xml version="1.0" encoding="UTF-8"?>\n'
     sitemap += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
@@ -994,30 +1012,33 @@ def generate_sitemap() -> str:
 @app.get("/feed.xml")
 @app.get("/feed")
 async def rss_feed():
+    """Return the RSS feed as an XML ``Response``."""
     rss_content = generate_rss_feed()
     return Response(content=rss_content, media_type="application/xml")
 
 
 @app.get("/sitemap.xml")
 async def sitemap():
-    """Serve the XML sitemap"""
+    """Serve the XML sitemap as an XML ``Response``."""
     sitemap_content = generate_sitemap()
     return Response(content=sitemap_content, media_type="application/xml")
 
 
 @app.get("/robots.txt")
 async def robots():
+    """Return ``robots.txt`` as a plain text ``Response``."""
     return Response(
-        content="""User-agent: *
+        content=f"""User-agent: *
 Allow: /
-Sitemap: https://anoliphantneverforgets.com/sitemap.xml""",
-        media_type="text/plain",
+Sitemap: {content_config.base_url}/sitemap.xml""",
+        media_type="text/plain"
     )
 
 
 # Route handlers
 @app.get("/", response_class=HTMLResponse)
 async def read_home(request: Request):
+    """Render the home page and return an ``HTMLResponse``."""
     template = env.get_template("index.html")
     home_content = ContentManager.render_markdown(f"{CONTENT_DIR}/pages/home.md")
 
@@ -1037,13 +1058,14 @@ async def read_home(request: Request):
             random_quote=ContentManager.get_random_quote(),
             github_stars=stars_result["stars"],
             github_error=stars_result["error"],
-            feature_flags=get_feature_flags(),
+            feature_flags=get_feature_flags()
         )
     )
 
 
 @app.get("/now", response_class=HTMLResponse)
 async def read_now(request: Request):
+    """Display the now page and return an ``HTMLResponse``."""
     template = env.get_template("content_page.html")
     now_content = ContentManager.render_markdown(f"{CONTENT_DIR}/pages/now.md")
     return HTMLResponse(
@@ -1053,14 +1075,14 @@ async def read_now(request: Request):
             metadata=now_content["metadata"],
             recent_how_tos=ContentManager.get_content("how_to", limit=5),
             recent_notes=ContentManager.get_content("notes", limit=5),
-            feature_flags=get_feature_flags(),
+            feature_flags=get_feature_flags()
         )
     )
 
 
 @app.get("/tags/{tag}", response_class=HTMLResponse)
-@app.get("/tags/{tag}", response_class=HTMLResponse)
 async def read_tag(request: Request, tag: str):
+    """Return posts tagged with ``tag`` as an ``HTMLResponse``."""
     # Get content type from query parameter, default to all
     content_type = request.query_params.get("type")
     content_types = [content_type] if content_type else None
@@ -1078,7 +1100,7 @@ async def read_tag(request: Request, tag: str):
             tag=tag,
             posts=posts,
             content_type=content_type,
-            feature_flags=get_feature_flags(),
+            feature_flags=get_feature_flags()
         )
     )
 
@@ -1090,7 +1112,6 @@ async def get_mixed_content_api(
     per_page: int = 10,
     content_types: Optional[List[str]] = None,
 ):
-    """API endpoint for retrieving mixed content with pagination"""
     with logfire.span("mixed_content_api", page=page, per_page=per_page):
         try:
             if page < 1:
@@ -1120,9 +1141,10 @@ async def get_mixed_content_api(
             with logfire.span("rendering_template"):
                 template = env.get_template("partials/mixed_content_page.html")
                 html_content = template.render(
-                    content=result["content"],
+                    mixed_content=result["content"],
                     next_page=result["next_page"],
-                    feature_flags=get_feature_flags(),
+                    request=request,
+                    feature_flags=get_feature_flags()
                 )
                 logfire.debug("template_rendered", html_length=len(html_content))
 
@@ -1138,6 +1160,7 @@ async def get_mixed_content_api(
 
 @app.get("/{content_type}/{page_name}", response_class=HTMLResponse)
 async def read_content(request: Request, content_type: str, page_name: str):
+    """Render a page for ``content_type`` and ``page_name`` as ``HTMLResponse``."""
     file_path = f"{CONTENT_DIR}/{content_type}/{page_name}.md"
     if not os.path.exists(file_path):
         raise HTTPException(status_code=404, detail="Content not found")
@@ -1162,7 +1185,7 @@ async def read_content(request: Request, content_type: str, page_name: str):
             content_type=content_type,
             recent_how_tos=ContentManager.get_content("how_to", limit=5),
             recent_notes=ContentManager.get_content("notes", limit=5),
-            feature_flags=get_feature_flags(),
+            feature_flags=get_feature_flags()
         )
     )
 
@@ -1182,7 +1205,7 @@ async def read_bookmarks(request: Request):
             ),  # Using a large number instead of None
             recent_how_tos=ContentManager.get_content("how_to", limit=5),
             recent_notes=ContentManager.get_content("notes", limit=5),
-            feature_flags=get_feature_flags(),
+            feature_flags=get_feature_flags()
         )
     )
 
@@ -1203,13 +1226,14 @@ async def read_stars(request: Request):
             error=result["error"],
             recent_how_tos=ContentManager.get_content("how_to", limit=5),
             recent_notes=ContentManager.get_content("notes", limit=5),
-            feature_flags=get_feature_flags(),
+            feature_flags=get_feature_flags()
         )
     )
 
 
 @app.get("/stars/page/{page}", response_class=HTMLResponse)
 async def read_stars_page(request: Request, page: int):
+    """Return a single page of GitHub stars as an ``HTMLResponse``."""
     result = await ContentManager.get_github_stars(page=page)
 
     # If there's an error, return it with appropriate styling
@@ -1243,7 +1267,7 @@ async def read_til(request: Request):
             next_page=result["next_page"],
             recent_how_tos=ContentManager.get_content("how_to", limit=5),
             recent_notes=ContentManager.get_content("notes", limit=5),
-            feature_flags=get_feature_flags(),
+            feature_flags=get_feature_flags()
         )
     )
 
@@ -1268,13 +1292,14 @@ async def read_til_tag(request: Request, tag: str):
             next_page=None,  # No pagination for tag views
             recent_how_tos=ContentManager.get_content("how_to", limit=5),
             recent_notes=ContentManager.get_content("notes", limit=5),
-            feature_flags=get_feature_flags(),
+            feature_flags=get_feature_flags()
         )
     )
 
 
 @app.get("/til/page/{page}", response_class=HTMLResponse)
 async def read_til_page(request: Request, page: int):
+    """Return paginated TIL posts as an ``HTMLResponse``."""
     result = ContentManager.get_til_posts(page=page)
 
     return HTMLResponse(
@@ -1286,6 +1311,7 @@ async def read_til_page(request: Request, page: int):
 
 @app.get("/til/{til_name}", response_class=HTMLResponse)
 async def read_til_post(request: Request, til_name: str):
+    """Render a single TIL post identified by ``til_name``."""
     file_path = f"{CONTENT_DIR}/til/{til_name}.md"
     if not os.path.exists(file_path):
         raise HTTPException(status_code=404, detail="TIL post not found")
@@ -1300,13 +1326,14 @@ async def read_til_post(request: Request, til_name: str):
             metadata=content_data["metadata"],
             recent_how_tos=ContentManager.get_content("how_to", limit=5),
             recent_notes=ContentManager.get_content("notes", limit=5),
-            feature_flags=get_feature_flags(),
+            feature_flags=get_feature_flags()
         )
     )
 
 
 @app.get("/projects", response_class=HTMLResponse)
 async def read_projects(request: Request):
+    """Render the projects page as an ``HTMLResponse``."""
     template = env.get_template("content_page.html")
     projects_content = ContentManager.render_markdown(
         f"{CONTENT_DIR}/pages/projects.md"
@@ -1318,14 +1345,14 @@ async def read_projects(request: Request):
             metadata=projects_content["metadata"],
             recent_how_tos=ContentManager.get_content("how_to", limit=5),
             recent_notes=ContentManager.get_content("notes", limit=5),
-            feature_flags=get_feature_flags(),
+            feature_flags=get_feature_flags()
         )
     )
 
 
 @app.get("/health")
 async def health_check():
-    """Health check endpoint for monitoring application status"""
+    """Health check endpoint returning a ``JSONResponse`` with status info."""
     try:
         # Basic application health check
         return JSONResponse(
