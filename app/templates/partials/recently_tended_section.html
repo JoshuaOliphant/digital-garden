@@ -1,0 +1,60 @@
+<!-- Recently Tended Content Card -->
+<div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm hover:shadow-md transition-all p-4 border border-gray-200 dark:border-gray-700">
+  <div class="flex items-start justify-between mb-2">
+    <span class="text-xs font-medium px-2 py-1 rounded-full 
+                {% if item.status == 'Evergreen' %}bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400
+                {% elif item.status == 'Growing' %}bg-lime-100 text-lime-800 dark:bg-lime-900/30 dark:text-lime-400
+                {% elif item.status == 'Budding' %}bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400
+                {% else %}bg-stone-100 text-stone-800 dark:bg-stone-900/30 dark:text-stone-400{% endif %}">
+      {% if item.status == 'Evergreen' %}🌳
+      {% elif item.status == 'Growing' %}🪴
+      {% elif item.status == 'Budding' %}🌿
+      {% else %}🌱{% endif %}
+      {{ item.status | default('Seedling') }}
+    </span>
+    <span class="text-xs text-gray-500 dark:text-gray-400">
+      {% if item.updated %}
+        Tended {{ item.updated }}
+      {% else %}
+        Planted {{ item.created }}
+      {% endif %}
+    </span>
+  </div>
+  
+  <h3 class="text-lg font-semibold mb-2">
+    <a href="{{ item.url | default('/' + item.content_type + '/' + item.name) }}" 
+       class="text-gray-900 dark:text-gray-100 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">
+      {{ item.title }}
+    </a>
+  </h3>
+  
+  {% if item.excerpt or item.description %}
+  <p class="text-sm text-gray-600 dark:text-gray-400 line-clamp-2 mb-3">
+    {{ item.excerpt | default(item.description) | truncate(120) }}
+  </p>
+  {% endif %}
+  
+  <div class="flex items-center justify-between">
+    <div class="flex flex-wrap gap-1">
+      {% for tag in item.tags[:3] %}
+      <span class="text-xs px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded">
+        {{ tag }}
+      </span>
+      {% endfor %}
+      {% if item.tags|length > 3 %}
+      <span class="text-xs px-2 py-1 text-gray-500 dark:text-gray-400">
+        +{{ item.tags|length - 3 }}
+      </span>
+      {% endif %}
+    </div>
+    
+    <span class="text-xs font-medium text-{{ item.content_type | replace('_', '-') }}-600 dark:text-{{ item.content_type | replace('_', '-') }}-400">
+      {% if item.content_type == 'notes' %}📝
+      {% elif item.content_type == 'how_to' %}🔧
+      {% elif item.content_type == 'til' %}💡
+      {% elif item.content_type == 'bookmarks' %}🔖
+      {% endif %}
+      {{ item.type_indicator | default(item.content_type | replace('_', ' ') | title) }}
+    </span>
+  </div>
+</div>

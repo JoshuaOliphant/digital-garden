@@ -16,7 +16,7 @@ import bleach
 import random
 import httpx
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import List, Optional, Dict, Any, TypeVar, Callable, Awaitable
 from functools import wraps
 from fastapi.responses import Response
@@ -1018,12 +1018,123 @@ class ContentManager:
 
         except Exception as e:
             raise ValueError(f"Error retrieving mixed content: {str(e)}")
+    
+    @staticmethod
+    @timed_lru_cache(maxsize=1, ttl_seconds=300)
+    def get_homepage_sections() -> Dict[str, Any]:
+        """Get structured content sections for the topographical homepage."""
+        from collections import defaultdict
+        
+        # Get all published content
+        all_content = []
+        
+        # Get content from each type
+        notes_result = ContentManager.get_content("notes")
+        notes = notes_result["content"] if isinstance(notes_result, dict) else notes_result
+        
+        how_tos_result = ContentManager.get_content("how_to")
+        how_tos = how_tos_result["content"] if isinstance(how_tos_result, dict) else how_tos_result
+        
+        til_result = ContentManager.get_til_posts(page=1, per_page=9999)
+        tils = til_result["tils"]
+        
+        bookmarks = ContentManager.get_bookmarks(limit=None)
+        
+        # Combine all content
+        for note in notes:
+            if note.get("status") != "draft":
+                note["content_type"] = "notes"
+                all_content.append(note)
+        
+        for how_to in how_tos:
+            if how_to.get("status") != "draft":
+                how_to["content_type"] = "how_to"
+                all_content.append(how_to)
+                
+        for til in tils:
+            if til.get("status") != "draft":
+                til["content_type"] = "til"
+                all_content.append(til)
+                
+        for bookmark in bookmarks:
+            if bookmark.get("status") != "draft":
+                bookmark["content_type"] = "bookmarks"
+                all_content.append(bookmark)
+        
+        sections = {
+            'garden_beds': {},
+            'recently_tended': [],
+            'featured': []
+        }
+        
+        # Calculate cutoff for recently tended (30 days)
+        thirty_days_ago = datetime.now() - timedelta(days=30)
+        
+        # Group content by topics for garden beds
+        topic_groups = defaultdict(list)
+        
+        for item in all_content:
+            # Skip draft content
+            if item.get('status') == 'draft':
+                continue
+                
+            # Check if recently tended (updated in last 30 days)
+            updated_str = item.get('updated', item.get('created', ''))
+            if updated_str:
+                try:
+                    if isinstance(updated_str, str):
+                        updated_date = datetime.strptime(updated_str, '%Y-%m-%d')
+                    else:
+                        updated_date = updated_str
+                    if updated_date.replace(tzinfo=None) > thirty_days_ago:
+                        sections['recently_tended'].append(item)
+                except (ValueError, TypeError, AttributeError):
+                    pass
+            
+            # Group by tags for garden beds
+            tags = item.get('tags', [])
+            if tags:
+                primary_tag = tags[0]  # Use first tag as primary grouping
+                topic_groups[primary_tag].append(item)
+        
+        # Convert topic groups to garden beds
+        sections['garden_beds'] = dict(topic_groups)
+        
+        # Sort recently tended by updated date (most recent first)
+        sections['recently_tended'].sort(
+            key=lambda x: x.get('updated', x.get('created', '')), 
+            reverse=True
+        )
+        
+        # Limit recently tended to reasonable number
+        sections['recently_tended'] = sections['recently_tended'][:12]
+        
+        # For featured content, take a few high-quality items
+        # Priority: Evergreen status, then by creation date
+        featured_candidates = [
+            item for item in all_content 
+            if item.get('status') not in ['draft', 'Budding']
+        ]
+        featured_candidates.sort(
+            key=lambda x: (
+                x.get('status') == 'Evergreen',  # Evergreen first
+                x.get('created', '')  # Then by date
+            ), 
+            reverse=True
+        )
+        sections['featured'] = featured_candidates[:3]  # Top 3
+        
+        return sections
 
 
 def generate_rss_feed():
     # Get all content
-    notes = ContentManager.get_content("notes")
-    how_tos = ContentManager.get_content("how_to")
+    notes_result = ContentManager.get_content("notes")
+    notes = notes_result["content"] if isinstance(notes_result, dict) else notes_result
+    
+    how_tos_result = ContentManager.get_content("how_to")
+    how_tos = how_tos_result["content"] if isinstance(how_tos_result, dict) else how_tos_result
+    
     til_result = ContentManager.get_til_posts(page=1, per_page=9999)
     tils = til_result["tils"]
 
@@ -1134,7 +1245,8 @@ def generate_sitemap() -> str:
         sitemap += "  </url>\n"
 
     # Add notes
-    notes = ContentManager.get_content("notes")
+    notes_result = ContentManager.get_content("notes")
+    notes = notes_result["content"] if isinstance(notes_result, dict) else notes_result
     for note in notes:
         metadata = note.get("metadata", {})
         # Only include content with appropriate status
@@ -1150,7 +1262,8 @@ def generate_sitemap() -> str:
             sitemap += "  </url>\n"
 
     # Add how-tos
-    how_tos = ContentManager.get_content("how_to")
+    how_tos_result = ContentManager.get_content("how_to")
+    how_tos = how_tos_result["content"] if isinstance(how_tos_result, dict) else how_tos_result
     for how_to in how_tos:
         metadata = how_to.get("metadata", {})
         # Only include content with appropriate status
@@ -1227,26 +1340,16 @@ Sitemap: {content_config.base_url}/sitemap.xml""",
 # Route handlers
 @app.get("/", response_class=HTMLResponse)
 async def read_home(request: Request):
-    """Render the home page and return an ``HTMLResponse``."""
+    """Render the home page with topographical garden layout."""
     template = env.get_template("index.html")
-    home_content = ContentManager.render_markdown(f"{CONTENT_DIR}/pages/home.md")
-
-    # Get mixed content for the home page
-    mixed_content = await ContentManager.get_mixed_content(page=1, per_page=10)
-
-    # Fetch GitHub stars asynchronously
-    stars_result = await ContentManager.get_github_stars(page=1, per_page=5)
+    
+    # Get structured content sections for topographical homepage
+    sections = ContentManager.get_homepage_sections()
 
     return HTMLResponse(
         content=template.render(
             request=request,
-            content=home_content["html"],
-            metadata=home_content["metadata"],
-            mixed_content=mixed_content["content"],
-            has_more=mixed_content["next_page"] is not None,
-            random_quote=ContentManager.get_random_quote(),
-            github_stars=stars_result["stars"],
-            github_error=stars_result["error"],
+            sections=sections,
             feature_flags=get_feature_flags(),
         )
     )
