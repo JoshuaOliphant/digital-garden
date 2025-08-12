@@ -16,9 +16,6 @@ class LogConfig(BaseModel):
 
     level: str = Field(default="INFO", description="Logging level")
     format: str = Field(default="json", description="Log format: 'json' or 'text'")
-    log_dir: Path = Field(default=Path("logs"), description="Directory for log files")
-    max_bytes: int = Field(default=10485760, description="Max size per log file (10MB)")
-    backup_count: int = Field(default=5, description="Number of backup files to keep")
 
     class Config:
         """Pydantic config."""
@@ -63,15 +60,13 @@ class JSONFormatter(logging.Formatter):
 def setup_logging(config: Optional[LogConfig] = None) -> None:
     """
     Set up application logging with the given configuration.
+    Logs only to stdout, no file output.
 
     Args:
         config: LogConfig instance or None for defaults
     """
     if config is None:
         config = LogConfig()
-
-    # Create logs directory if it doesn't exist
-    config.log_dir.mkdir(parents=True, exist_ok=True)
 
     # Set up root logger
     root_logger = logging.getLogger()
@@ -80,19 +75,11 @@ def setup_logging(config: Optional[LogConfig] = None) -> None:
     # Clear existing handlers
     root_logger.handlers.clear()
 
-    # Console handler
+    # Console handler (stdout only)
     console_handler = logging.StreamHandler(sys.stdout)
     console_handler.setLevel(getattr(logging, config.level))
 
-    # File handler with rotation
-    file_handler = logging.handlers.RotatingFileHandler(
-        config.log_dir / "app.log",
-        maxBytes=config.max_bytes,
-        backupCount=config.backup_count,
-    )
-    file_handler.setLevel(getattr(logging, config.level))
-
-    # Set formatters
+    # Set formatter
     if config.format == "json":
         formatter = JSONFormatter()
     else:
@@ -101,11 +88,9 @@ def setup_logging(config: Optional[LogConfig] = None) -> None:
         )
 
     console_handler.setFormatter(formatter)
-    file_handler.setFormatter(formatter)
 
-    # Add handlers
+    # Add handler (console only)
     root_logger.addHandler(console_handler)
-    root_logger.addHandler(file_handler)
 
     # Set specific loggers
     logging.getLogger("uvicorn.access").setLevel(logging.WARNING)

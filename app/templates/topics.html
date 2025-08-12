@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% import 'macros/garden.html' as garden %}
+{% import 'macros/layout.html' as layout %}
+
+{% block title %}Garden Topics - Digital Garden{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <!-- Page Header -->
+    <div class="mb-8">
+        <h1 class="text-4xl font-bold mb-4 text-gray-900 dark:text-gray-100">
+            🌱 Garden Topics
+        </h1>
+        <p class="text-lg text-gray-600 dark:text-gray-400">
+            Explore the garden by topic areas. Each bed contains related plants grouped by theme.
+        </p>
+        <div class="mt-4 flex gap-4 text-sm text-gray-500 dark:text-gray-500">
+            <span>🏷️ {{ total_tags }} topics</span>
+            <span>📝 {{ total_content }} plants</span>
+        </div>
+    </div>
+
+    <!-- Garden Beds Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+        {% for bed_name, bed_info in topics_data.items() %}
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100">
+                    {{ bed_info.icon }} {{ bed_name }}
+                </h2>
+                <span class="text-sm text-gray-500 dark:text-gray-400">
+                    {{ bed_info.total_count }} plants
+                </span>
+            </div>
+            
+            <div class="flex flex-wrap gap-2">
+                {% for tag in bed_info.tags %}
+                <a href="/topics/filter?tags={{ tag.name }}" 
+                   class="inline-flex items-center px-3 py-1 rounded-full text-sm {{ bed_info.color }} hover:opacity-80 transition-opacity"
+                   hx-get="/topics/filter?tags={{ tag.name }}"
+                   hx-target="#filtered-content"
+                   hx-push-url="true">
+                    {{ tag.name }}
+                    <span class="ml-1 text-xs opacity-75">({{ tag.count }})</span>
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Filter Interface -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-8">
+        <h2 class="text-2xl font-semibold mb-4 text-gray-900 dark:text-gray-100">
+            🔍 Filter by Topics
+        </h2>
+        <p class="text-gray-600 dark:text-gray-400 mb-4">
+            Select multiple topics to find content at their intersection.
+        </p>
+        
+        <form hx-post="/topics/filter" 
+              hx-target="#filtered-content" 
+              hx-trigger="change"
+              class="space-y-4">
+            {% for bed_name, bed_info in topics_data.items() %}
+            <div>
+                <h3 class="font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    {{ bed_info.icon }} {{ bed_name }}
+                </h3>
+                <div class="flex flex-wrap gap-2">
+                    {% for tag in bed_info.tags %}
+                    <label class="inline-flex items-center">
+                        <input type="checkbox" 
+                               name="tags" 
+                               value="{{ tag.name }}"
+                               class="mr-2 rounded text-green-600 focus:ring-green-500">
+                        <span class="text-sm text-gray-700 dark:text-gray-300">
+                            {{ tag.name }} ({{ tag.count }})
+                        </span>
+                    </label>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+        </form>
+    </div>
+
+    <!-- Filtered Content Results -->
+    <div id="filtered-content">
+        <!-- HTMX will inject filtered results here -->
+        <div class="text-center text-gray-500 dark:text-gray-400 py-8">
+            <p>Select topics above to explore related content</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Handle checkbox state for better UX
+    document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            if (this.checked) {
+                this.parentElement.classList.add('bg-green-50', 'dark:bg-green-900/20');
+            } else {
+                this.parentElement.classList.remove('bg-green-50', 'dark:bg-green-900/20');
+            }
+        });
+    });
+</script>
+{% endblock %}
