@@ -13,10 +13,25 @@ class FeatureFlags(BaseSettings):
     """Feature flags configuration for controlling application behavior."""
 
     use_compiled_css: bool = False
+    enable_garden_paths: bool = False  # Feature flag for Garden Paths functionality
 
     @field_validator("use_compiled_css", mode="before")
     @classmethod
     def validate_use_compiled_css(cls, v):
+        """Convert various string representations to boolean."""
+        if isinstance(v, bool):
+            return v
+        if isinstance(v, str):
+            # Empty string defaults to False
+            if v == "":
+                return False
+            # Handle common boolean string representations
+            return v.lower() in ("true", "1", "yes", "on")
+        return bool(v)
+    
+    @field_validator("enable_garden_paths", mode="before")
+    @classmethod
+    def validate_enable_garden_paths(cls, v):
         """Convert various string representations to boolean."""
         if isinstance(v, bool):
             return v

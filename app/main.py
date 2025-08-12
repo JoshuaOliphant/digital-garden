@@ -1455,6 +1455,12 @@ async def filter_topics_get(request: Request):
 @app.get("/garden-paths", response_class=HTMLResponse)
 async def garden_paths_index(request: Request):
     """Display all available garden paths."""
+    feature_flags = get_feature_flags()
+    
+    # Check if garden paths feature is enabled
+    if not feature_flags.enable_garden_paths:
+        raise HTTPException(status_code=404, detail="Garden Paths feature is not enabled")
+    
     garden_paths = ContentManager.get_garden_paths()
     
     # Validate each path and add validation status
@@ -1479,6 +1485,12 @@ async def garden_paths_index(request: Request):
 @app.get("/garden-path/{path_name}", response_class=HTMLResponse) 
 async def named_garden_path(request: Request, path_name: str):
     """Load a curated garden path by name and redirect to garden walk."""
+    feature_flags = get_feature_flags()
+    
+    # Check if garden paths feature is enabled
+    if not feature_flags.enable_garden_paths:
+        raise HTTPException(status_code=404, detail="Garden Paths feature is not enabled")
+    
     path_data = ContentManager.get_garden_path(path_name)
     
     if not path_data:
@@ -1507,6 +1519,12 @@ async def named_garden_path(request: Request, path_name: str):
 @app.get("/api/garden-path/{path_name}/progress")
 async def garden_path_progress(path_name: str, completed: str = ""):
     """Get progress through a garden path based on completed items."""
+    feature_flags = get_feature_flags()
+    
+    # Check if garden paths feature is enabled
+    if not feature_flags.enable_garden_paths:
+        raise HTTPException(status_code=404, detail="Garden Paths feature is not enabled")
+    
     completed_items = completed.split(",") if completed else []
     progress = ContentManager.get_path_progress(path_name, completed_items)
     

@@ -78,10 +78,12 @@
                class="inline-flex items-center px-6 py-3 bg-white dark:bg-gray-800 text-emerald-600 dark:text-emerald-400 rounded-lg shadow-sm hover:shadow-md transition-all">
               <span class="mr-2">🗺️</span> Browse Topics
             </a>
+            {% if feature_flags.enable_garden_paths %}
             <a href="/garden-paths" 
                class="inline-flex items-center px-6 py-3 bg-emerald-600 text-white rounded-lg shadow-sm hover:shadow-md hover:bg-emerald-700 transition-all">
               <span class="mr-2">🚶</span> Garden Paths
             </a>
+            {% endif %}
             <a href="/wander" 
                class="inline-flex items-center px-6 py-3 bg-white dark:bg-gray-800 text-emerald-600 dark:text-emerald-400 rounded-lg shadow-sm hover:shadow-md transition-all">
               <span class="mr-2">🎲</span> Wander
