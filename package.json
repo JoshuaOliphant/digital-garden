@@ -2,19 +2,12 @@
   "name": "digital_garden",
   "version": "1.0.0",
   "main": "index.js",
-  "scripts": {
-    "build:css": "tailwindcss -i ./app/static/css/styles.css -o ./app/static/css/output.css --minify",
-    "watch:css": "tailwindcss -i ./app/static/css/styles.css -o ./app/static/css/output.css --watch"
-  },
+  "scripts": {},
   "keywords": [],
   "author": "",
   "license": "ISC",
   "description": "",
   "devDependencies": {
-    "@flydotio/dockerfile": "^0.5.9",
-    "@tailwindcss/typography": "^0.5.15",
-    "autoprefixer": "^10.4.20",
-    "postcss": "^8.4.47",
-    "tailwindcss": "^3.4.13"
+    "@flydotio/dockerfile": "^0.5.9"
   }
 }
