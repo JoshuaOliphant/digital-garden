@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" x-data>
+<html lang="en">
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -40,6 +40,7 @@
             title="RSS Feed"
             href="/feed.xml"
         />
+        {% block head_extra %}{% endblock %}
     </head>
     <body class="bg-garden-bg text-garden-text-primary min-h-screen flex flex-col">
         <!-- Navigation -->
@@ -94,5 +95,48 @@
                 }, 300);
             });
         </script>
+        
+        <!-- Panel Navigation System -->
+        <script src="/static/js/panel-navigation.js"></script>
+        
+        <!-- Panel Styles -->
+        <style>
+            /* Panel system animations and transitions */
+            .panel {
+                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            
+            .panel-wrapper {
+                padding: 1rem;
+                gap: 1rem;
+            }
+            
+            /* Custom scrollbar for panel wrapper */
+            .panel-wrapper::-webkit-scrollbar {
+                height: 8px;
+            }
+            
+            .panel-wrapper::-webkit-scrollbar-track {
+                background: rgba(0, 0, 0, 0.1);
+                border-radius: 4px;
+            }
+            
+            .panel-wrapper::-webkit-scrollbar-thumb {
+                background: rgba(16, 185, 129, 0.5);
+                border-radius: 4px;
+            }
+            
+            .panel-wrapper::-webkit-scrollbar-thumb:hover {
+                background: rgba(16, 185, 129, 0.7);
+            }
+            
+            /* Fullscreen mode adjustments */
+            .panel.fullscreen .panel-content {
+                max-width: 1200px;
+                margin: 0 auto;
+            }
+        </style>
     </body>
 </html>

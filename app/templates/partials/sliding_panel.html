@@ -1,0 +1,221 @@
+<!-- Sliding Panel Interface with Alpine.js -->
+<div 
+    x-data="panelManager"
+    @keyup.escape.window="closeCurrentPanel()"
+    @keyup.arrow-left.window="navigateLeft()"
+    @keyup.arrow-right.window="navigateRight()"
+    class="panel-container flex flex-row overflow-x-scroll h-screen relative"
+    id="panel-container"
+    data-max-panels="5"
+>
+    <!-- Panels will be rendered here -->
+    <template x-for="(panel, index) in visiblePanels" :key="panel.id">
+        <div
+            :class="{
+                'panel': true,
+                'bg-white dark:bg-gray-800': true,
+                'border border-gray-200 dark:border-gray-700': true,
+                'rounded-lg shadow-lg': true,
+                'w-full lg:w-[500px]': true,
+                'flex-shrink-0': true,
+                'transition-all duration-300 ease-out': true,
+                'opacity-100': index === currentPanel,
+                'opacity-90': Math.abs(index - currentPanel) === 1,
+                'opacity-75': Math.abs(index - currentPanel) >= 2,
+                'z-10': index === currentPanel,
+                'z-0': index !== currentPanel
+            }"
+            :style="{
+                'will-change': 'transform',
+                'backface-visibility': 'hidden',
+                'z-index': 10 - Math.abs(index - currentPanel),
+                'flex-shrink': 0
+            }"
+            :aria-label="`Panel ${index + 1}: ${panel.title || 'Content'}`"
+            :aria-current="index === currentPanel ? 'true' : 'false'"
+            role="region"
+            :tabindex="index === currentPanel ? 0 : -1"
+        >
+            <!-- Panel Header -->
+            <div class="panel-header flex justify-between items-center p-4 border-b bg-white dark:bg-gray-800">
+                <h2 class="text-lg font-semibold truncate" x-text="panel.title || 'Untitled'"></h2>
+                <button
+                    @click="closePanel(index)"
+                    class="panel-close p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
+                    :aria-label="`Close panel ${index + 1}`"
+                >
+                    <span class="text-2xl leading-none">×</span>
+                </button>
+            </div>
+            
+            <!-- Panel Content -->
+            <div class="panel-content p-6 overflow-y-auto h-full bg-white dark:bg-gray-800">
+                <div class="prose prose-lg dark:prose-invert max-w-none" x-html="panel.content"></div>
+            </div>
+        </div>
+    </template>
+    
+    <!-- Empty State -->
+    <div x-show="panels.length === 0" class="flex items-center justify-center w-full h-full">
+        <div class="text-center p-8">
+            <h2 class="text-2xl font-semibold mb-4">Welcome to Garden Walk</h2>
+            <p class="text-gray-600 dark:text-gray-400">Click on any note link to start exploring</p>
+        </div>
+    </div>
+</div>
+
+<!-- Panel Styles -->
+<style>
+/* GPU-accelerated animations */
+.panel {
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                opacity 0.3s ease-out,
+                scale 0.3s ease-out;
+    will-change: transform, opacity, scale;
+    transform: translateZ(0); /* Force GPU layer */
+    backface-visibility: hidden; /* Prevent flickering */
+}
+
+/* Prose content styling for better markdown rendering */
+.panel-content .prose {
+    color: inherit;
+}
+
+.panel-content .prose h1,
+.panel-content .prose h2,
+.panel-content .prose h3,
+.panel-content .prose h4 {
+    margin-top: 1.5rem;
+    margin-bottom: 0.75rem;
+    font-weight: 600;
+}
+
+.panel-content .prose p {
+    margin-bottom: 1rem;
+    line-height: 1.75;
+}
+
+.panel-content .prose ul,
+.panel-content .prose ol {
+    margin: 1rem 0;
+    padding-left: 1.5rem;
+}
+
+.panel-content .prose li {
+    margin-bottom: 0.5rem;
+}
+
+.panel-content .prose code {
+    background-color: rgba(0, 0, 0, 0.05);
+    padding: 0.125rem 0.25rem;
+    border-radius: 0.25rem;
+    font-size: 0.875em;
+}
+
+.dark .panel-content .prose code {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.panel-content .prose pre {
+    background-color: #1e293b;
+    color: #e2e8f0;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    overflow-x: auto;
+    margin: 1rem 0;
+}
+
+.panel-content .prose a {
+    color: #2563eb;
+    text-decoration: underline;
+}
+
+.dark .panel-content .prose a {
+    color: #60a5fa;
+}
+
+.panel-content .prose blockquote {
+    border-left: 4px solid #e5e7eb;
+    padding-left: 1rem;
+    margin: 1rem 0;
+    font-style: italic;
+}
+
+.dark .panel-content .prose blockquote {
+    border-left-color: #4b5563;
+}
+
+/* Panel container layout */
+.panel-container {
+    display: flex;
+    flex-direction: row;
+    gap: 1rem;
+    padding: 1rem;
+    overflow-x: auto; /* Allow horizontal scroll */
+    position: relative;
+    scroll-behavior: smooth;
+}
+
+/* Panel sizing */
+@media (min-width: 1024px) {
+    .panel {
+        min-width: 400px;
+        max-width: 600px;
+        flex-shrink: 0;
+    }
+}
+
+@media (max-width: 1023px) {
+    .panel {
+        width: 100%;
+        min-width: 100%;
+    }
+}
+
+/* Smooth 60fps animations */
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideOut {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(-100%);
+        opacity: 0;
+    }
+}
+
+.panel.entering {
+    animation: slideIn 0.3s ease-out forwards;
+}
+
+.panel.leaving {
+    animation: slideOut 0.3s ease-out forwards;
+}
+
+/* Focus styles for accessibility */
+.panel:focus {
+    outline: 2px solid #4F46E5;
+    outline-offset: 2px;
+}
+
+.panel-close:focus {
+    outline: 2px solid #4F46E5;
+    outline-offset: -2px;
+}
+
+/* Depth shadow effects */
+.panel:nth-child(1) { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+.panel:nth-child(2) { box-shadow: 0 2px 4px -1px rgba(0, 0, 0, 0.06); }
+.panel:nth-child(3) { box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); }
+</style>
