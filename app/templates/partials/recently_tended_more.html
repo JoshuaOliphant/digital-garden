@@ -1,0 +1,47 @@
+<!-- More Recently Tended Items (HTMX Partial) -->
+{% for item in items %}
+<div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm hover:shadow-md transition-all p-4">
+  <div class="flex items-start justify-between">
+    <div class="flex-1">
+      <h3 class="text-base font-semibold mb-1">
+        <a href="/{{ item.content_type }}/{{ item.slug }}" 
+           class="text-gray-900 dark:text-gray-100 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">
+          {{ item.title }}
+        </a>
+      </h3>
+      {% if item.description %}
+      <p class="text-gray-600 dark:text-gray-400 text-sm mb-2">{{ item.description|truncate(100) }}</p>
+      {% endif %}
+      <div class="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-500">
+        <span class="flex items-center gap-1">
+          {% if item.status == 'Evergreen' %}
+            <span>🌳</span>
+          {% elif item.status == 'Growing' %}
+            <span>🪴</span>
+          {% elif item.status == 'Budding' %}
+            <span>🌿</span>
+          {% else %}
+            <span>🌱</span>
+          {% endif %}
+          <span>{{ item.status }}</span>
+        </span>
+        <span>{{ item.updated or item.created }}</span>
+      </div>
+    </div>
+  </div>
+</div>
+{% endfor %}
+
+{% if has_more %}
+<div class="mt-4 text-center">
+  <button 
+    hx-get="/api/recently-tended?page={{ page + 1 }}"
+    hx-target="#more-recently-tended"
+    hx-swap="outerHTML"
+    class="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
+  >
+    Load More
+  </button>
+  <div id="more-recently-tended"></div>
+</div>
+{% endif %}

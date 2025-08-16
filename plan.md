@@ -18,12 +18,12 @@ This plan transforms an existing FastAPI blog into a modern digital garden follo
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                        Frontend Layer                        │
-├─────────────────┬────────────────┬──────────────────────────┤
-│   HTMX Partials │  Alpine.js     │  Tailwind CSS           │
-│   (Server-side) │  (Client State) │  (Compiled)             │
-└────────┬────────┴────────┬────────┴────────┬────────────────┘
-         │                 │                  │
-         ▼                 ▼                  ▼
+├─────────────────┬─────────────────────────────────────────┤
+│   HTMX Partials │  Tailwind CSS (Compiled)                │
+│   (Server-side) │  + Pure CSS Interactions                 │
+└────────┬────────┴────────────────┬─────────────────────────┘
+         │                         │
+         ▼                         ▼
 ┌─────────────────────────────────────────────────────────────┐
 │                     FastAPI Application                      │
 ├──────────────┬─────────────┬────────────────────────────────┤
@@ -47,10 +47,10 @@ This plan transforms an existing FastAPI blog into a modern digital garden follo
    - Filter states: `?tags=python,htmx&status=evergreen`
    - View preferences: `?view=sliding&theme=dark`
 
-2. **Alpine.js State** (UI Reactivity)
-   - Panel stack management
-   - Animation states
-   - Gesture tracking
+2. **CSS State** (UI Interactions)
+   - Dropdown states via :checked pseudo-class
+   - Animation states with CSS transitions
+   - Focus management with :focus-within
 
 3. **Server State** (Content & Config)
    - Content cache with LRU eviction
@@ -102,31 +102,48 @@ This plan transforms an existing FastAPI blog into a modern digital garden follo
 - Implement progress tracking ✅
 **COMPLETED**: 2025-08-10
 
-#### Task 7: Enhanced Homepage Layout
+#### Task 7: Enhanced Homepage Layout ✅
 **Complexity**: 3/5 | **AI Rounds**: ~3 | **Test Coverage**: 4 units
-- Replace linear feed
-- Add topographical sections
-- Implement "Recently tended"
+- Replace linear feed ✅
+- Add topographical sections ✅
+- Implement "Recently tended" ✅
+**COMPLETED**: 2025-08-12
+**Key Discoveries**:
+- **Critical Bug Fix**: Fixed datetime serialization in JSON that prevented homepage from loading
+- **Architectural Decision**: Replaced Alpine.js client-side rendering with server-side Jinja2 rendering for reliability
+- **Layout Implementation**: Used CSS `column-count: 3` for masonry layout instead of JavaScript grid solutions
+- **Performance**: Server-side rendering eliminated Alpine.js initialization issues and improved perceived performance
 
 ### Phase 3: Sliding Notes Interface (5 tasks)
 
-#### Task 8: Alpine.js Integration
+#### Task 8: HTMX-Only Interactions ✅ [REVISED]
 **Complexity**: 3/5 | **AI Rounds**: ~3 | **Test Coverage**: 5 units
-- Set up Alpine.js
-- Create base components
-- Test HTMX coordination
+- Implement dropdowns with HTMX ✅
+- Create filter interactions server-side ✅
+- Add pagination with hx-get ✅
+**COMPLETED**: 2025-08-14
 
-#### Task 9: URL State Management
+#### Task 9: URL State Management ✅
 **Complexity**: 4/5 | **AI Rounds**: ~4 | **Test Coverage**: 8 units
-- Implement garden-walk endpoint
-- Create URL serialization
-- Add browser history support
+- Implement garden-walk endpoint ✅
+- Create URL serialization ✅
+- Add browser history support ✅
+**COMPLETED**: 2025-08-14
 
-#### Task 10: Sliding Panel UI
+#### Task 10: Sliding Panel UI ✅
 **Complexity**: 4/5 | **AI Rounds**: ~5 | **Test Coverage**: 7 units
-- Create panel components
-- Implement sliding animations
-- Add keyboard navigation
+- Create panel components ✅
+- Implement sliding animations ✅
+- Add keyboard navigation ✅
+**COMPLETED**: 2025-08-14
+**ARCHITECTURAL CHANGE**: Andy Matuschak-style accordion navigation
+- Internal hyperlinks open content in sliding panels automatically
+- Horizontal accordion layout with panels side-by-side (not overlapping)
+- Fixed-width panels (660px) that maintain size regardless of depth
+- Unlimited panels can be opened with horizontal scrolling
+- Clean minimal design inspired by notes.andymatuschak.org
+- Panels persist until explicitly closed by user
+- No dependency on predefined GARDEN_PATHS configuration
 
 #### Task 11: Mobile Adaptation
 **Complexity**: 3/5 | **AI Rounds**: ~3 | **Test Coverage**: 5 units
@@ -136,7 +153,7 @@ This plan transforms an existing FastAPI blog into a modern digital garden follo
 
 #### Task 12: Panel State Synchronization
 **Complexity**: 4/5 | **AI Rounds**: ~4 | **Test Coverage**: 6 units
-- HTMX + Alpine.js sync
+- HTMX server state sync
 - Smart stack replacement
 - Share functionality
 
@@ -514,46 +531,46 @@ Replace the linear chronological feed with a topographical layout featuring "Rec
 Remember: Write tests first, then implement only enough code to make them pass.
 ```
 
-### Task 8: Alpine.js Integration
+### Task 8: HTMX-Only Interactions
 
 ```text
-You are setting up Alpine.js for client-side state management following Test-Driven Development (TDD) principles.
+You are implementing pure HTMX interactions without client-side state libraries following Test-Driven Development (TDD) principles.
 
 **Context from Previous Tasks:**
 - Tasks 1-7: Foundation and topographical navigation complete
 
 **Your Objective:**
-Integrate Alpine.js (15KB) for managing sliding panel state and coordinating with HTMX.
+Implement all interactions using pure HTMX and server-side state management without client-side JavaScript libraries.
 
 **TDD Requirements - Write These Tests FIRST:**
 
-1. Test that Alpine.js loads from CDN or local file
-2. Test that Alpine.js initializes without errors
-3. Test that Alpine components can manage local state
-4. Test that Alpine x-data binds to elements correctly
-5. Test that Alpine event handlers (@click) work
-6. Test that Alpine can read/write from localStorage
-7. Test that Alpine state changes trigger DOM updates
-8. Test that Alpine works alongside HTMX without conflicts
-9. Test that Alpine components can communicate via events
-10. Test that Alpine performance impact is minimal (<50ms)
+1. Test that dropdowns work with hx-get and hx-target
+2. Test that dropdown state persists in URL parameters
+3. Test that filter changes trigger server requests
+4. Test that filtered content replaces correctly
+5. Test that pagination loads with hx-get
+6. Test that "Show More" appends content
+7. Test that topic selection works without JavaScript
+8. Test that all interactions are keyboard accessible
+9. Test that server maintains interaction state
+10. Test that response times are under 200ms
 
 **Implementation Approach:**
-- Add Alpine.js script to base.html
-- Create base Alpine components structure
-- Test state management patterns
-- Implement event bus for component communication
-- Ensure HTMX and Alpine coordinate properly
-- Use x-init for component initialization
+- Use hx-get for dropdown toggles
+- Implement server-side state tracking
+- Return partial HTML for UI updates
+- Use CSS for visual state changes
+- Leverage hx-swap for content replacement
+- Ensure all interactions work without JavaScript
 
 **Integration Steps:**
-1. Add Alpine.js to base.html
-2. Create garden-walk.js with Alpine components
-3. Test basic state management
-4. Implement localStorage utilities
-5. Create event handling patterns
-6. Verify HTMX compatibility
-7. Measure performance impact
+1. Create dropdown endpoints in FastAPI
+2. Implement partial templates for dropdowns
+3. Add hx-get attributes to triggers
+4. Create server-side filter logic
+5. Implement pagination endpoints
+6. Test keyboard navigation
+7. Measure server response times
 
 Remember: Write tests first, then implement only enough code to make them pass.
 ```

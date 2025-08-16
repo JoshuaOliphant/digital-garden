@@ -2,6 +2,38 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Project Knowledge Management
+
+This project uses a comprehensive knowledge management system located in `.claude/`:
+
+### Knowledge Structure
+```
+.claude/
+├── PROJECT_CLAUDE.md        # Detailed project configuration
+├── doc/                     # Documentation and plans
+│   ├── plans/              # Implementation plans
+│   ├── research/           # Research notes
+│   └── implementation/     # Implementation details
+├── sessions/               # Session management
+│   ├── active/            # Current session contexts
+│   └── archive/           # Historical sessions
+├── knowledge/             # Accumulated knowledge
+│   ├── patterns/          # Code patterns (HTMX, etc.)
+│   ├── decisions/         # Architecture decisions
+│   └── testing/           # Test strategies
+└── context/               # Project context
+    ├── TODO.md            # Active tasks
+    └── CONTEXT.md         # Current state
+```
+
+### Key Files
+- **PROJECT_CLAUDE.md**: Comprehensive project guide with all configurations
+- **TODO.md**: Current sprint tasks and backlog
+- **CONTEXT.md**: Project state, recent changes, and focus areas
+- **Knowledge Base**: Patterns, decisions, and testing strategies
+
+When starting a new session, Claude Code will automatically load this context.
+
 ## Development Commands
 
 ### Running the Application

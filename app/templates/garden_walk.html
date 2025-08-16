@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Garden Walk - {{ feature_flags.site_name }}</title>
+    
+    <!-- Tailwind CSS -->
+    {% if feature_flags.use_compiled_css %}
+        <link href="/static/css/output.css" rel="stylesheet">
+    {% else %}
+        <script src="https://cdn.tailwindcss.com"></script>
+    {% endif %}
+    
+    <!-- Alpine.js -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    
+    <!-- HTMX -->
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    
+    <!-- Custom Garden Walk Styles -->
+    <style>
+        /* Garden color palette */
+        :root {
+            --garden-sage: #87a878;
+            --garden-earth: #8b6b47;
+            --garden-sky: #87ceeb;
+            --garden-sunset: #ff6b6b;
+        }
+        
+        /* Dark mode support */
+        .dark {
+            --garden-sage: #6b8e5f;
+            --garden-earth: #6d5438;
+            --garden-sky: #5a8da8;
+            --garden-sunset: #cc5555;
+        }
+        
+        /* Custom scrollbar for panel container */
+        .panel-container::-webkit-scrollbar {
+            height: 8px;
+        }
+        
+        .panel-container::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+        
+        .panel-container::-webkit-scrollbar-thumb {
+            background: var(--garden-sage);
+            border-radius: 4px;
+        }
+        
+        .panel-container::-webkit-scrollbar-thumb:hover {
+            background: var(--garden-earth);
+        }
+    </style>
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+    <!-- Include the sliding panel interface -->
+    {% include 'partials/sliding_panel.html' %}
+    
+    <!-- Pass panel data to JavaScript -->
+    <script>
+        // Initialize with server-side data
+        window.gardenPanels = {{ panels | tojson | safe }};
+        window.gardenState = {{ history_state | safe }};
+        
+        // Handle browser back/forward
+        window.addEventListener('popstate', function(event) {
+            if (event.state) {
+                // Reload the page with new state
+                const params = new URLSearchParams();
+                if (event.state.path && event.state.path.length > 0) {
+                    params.set('path', event.state.path.join(','));
+                }
+                if (event.state.focus > 0) {
+                    params.set('focus', event.state.focus);
+                }
+                if (event.state.view && event.state.view !== 'default') {
+                    params.set('view', event.state.view);
+                }
+                window.location.search = params.toString();
+            }
+        });
+        
+        // Push initial state
+        if (window.gardenState && window.history.replaceState) {
+            window.history.replaceState(window.gardenState, '', window.location.href);
+        }
+    </script>
+    
+    <!-- Alpine.js extensions for panel content loading -->
+    <script>
+        document.addEventListener('alpine:init', () => {
+            Alpine.data('panelManager', () => ({
+                panels: window.gardenPanels || [],
+                currentPanel: window.gardenState?.focus || 0,
+                maxPanels: 5,
+                
+                init() {
+                    // Initialize from server data
+                    this.initFromURL(window.gardenState);
+                    
+                    // Set up HTMX handlers for dynamic content
+                    this.setupHTMXHandlers();
+                },
+                
+                initFromURL(state) {
+                    if (state && state.path && state.path.length > 0) {
+                        // Panels are already loaded from server
+                        this.currentPanel = state.focus || 0;
+                    }
+                },
+                
+                setupHTMXHandlers() {
+                    // Handle HTMX events for panel content loading
+                    document.body.addEventListener('htmx:afterSwap', (event) => {
+                        if (event.detail.target.classList.contains('panel-content')) {
+                            // Content loaded successfully
+                            console.log('Panel content loaded');
+                        }
+                    });
+                },
+                
+                get visiblePanels() {
+                    const start = Math.max(0, this.currentPanel - 2);
+                    const end = Math.min(this.panels.length, start + this.maxPanels);
+                    return this.panels.slice(start, end);
+                },
+                
+                openPanel(noteId) {
+                    // Load new panel content via HTMX
+                    fetch(`/api/note-content/${noteId}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            const newPanel = {
+                                id: noteId,
+                                title: data.title || noteId,
+                                content: data.content || '<p>Content not found</p>'
+                            };
+                            
+                            // Insert after current panel
+                            this.panels.splice(this.currentPanel + 1, 0, newPanel);
+                            this.currentPanel++;
+                            
+                            // Update URL
+                            this.updateURL();
+                        })
+                        .catch(error => {
+                            console.error('Failed to load panel:', error);
+                        });
+                },
+                
+                closePanel(index) {
+                    if (this.panels.length > 1) {
+                        this.panels.splice(index, 1);
+                        if (this.currentPanel >= this.panels.length) {
+                            this.currentPanel = this.panels.length - 1;
+                        }
+                        this.updateURL();
+                    }
+                },
+                
+                closeCurrentPanel() {
+                    if (this.panels.length > 1) {
+                        this.closePanel(this.currentPanel);
+                    }
+                },
+                
+                navigateLeft() {
+                    if (this.currentPanel > 0) {
+                        this.currentPanel--;
+                        this.updateURL();
+                        this.focusCurrentPanel();
+                    }
+                },
+                
+                navigateRight() {
+                    if (this.currentPanel < this.panels.length - 1) {
+                        this.currentPanel++;
+                        this.updateURL();
+                        this.focusCurrentPanel();
+                    }
+                },
+                
+                focusCurrentPanel() {
+                    // Focus management for accessibility
+                    this.$nextTick(() => {
+                        const panels = document.querySelectorAll('.panel');
+                        if (panels[this.currentPanel]) {
+                            panels[this.currentPanel].focus();
+                        }
+                    });
+                },
+                
+                updateURL() {
+                    const params = new URLSearchParams();
+                    if (this.panels.length > 0) {
+                        params.set('path', this.panels.map(p => p.id).join(','));
+                        params.set('focus', this.currentPanel);
+                    }
+                    
+                    const newURL = window.location.pathname + '?' + params.toString();
+                    window.history.pushState(
+                        { 
+                            path: this.panels.map(p => p.id), 
+                            focus: this.currentPanel,
+                            view: 'default'
+                        },
+                        '',
+                        newURL
+                    );
+                }
+            }));
+        });
+    </script>
+</body>
+</html>

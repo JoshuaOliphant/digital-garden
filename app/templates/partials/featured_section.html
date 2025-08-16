@@ -30,6 +30,7 @@
   </p>
   {% endif %}
   
+  {% if item.tags %}
   <div class="flex flex-wrap gap-2 mb-4">
     {% for tag in item.tags[:4] %}
     <a href="/tags/{{ tag }}" 
@@ -38,6 +39,7 @@
     </a>
     {% endfor %}
   </div>
+  {% endif %}
   
   <div class="flex items-center justify-between">
     <a href="{{ item.url | default('/' + item.content_type + '/' + item.name) }}" 

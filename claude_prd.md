@@ -57,18 +57,19 @@ Backend:
   - Markdown processing (existing)
 
 Frontend:
-  - HTMX (existing)
-  - Alpine.js (new - 15KB)
+  - HTMX (existing) - All interactions via hypermedia
   - Tailwind CSS (existing, needs unification)
   
 No Additional Requirements:
   - No build step
   - No Node.js runtime
   - No database changes
+  - No client-side state management libraries
 ```
 
 ### 3.2 Key Technical Decisions
-- **Alpine.js**: Minimal (15KB) library for client-side state management
+- **HTMX-Only**: Pure hypermedia-driven architecture without client-side state libraries
+- **Server-Side State**: All state managed server-side with URL parameters for bookmarkability
 - **No DaisyUI**: Custom components to maintain unique garden aesthetic
 - **CSS-first approach**: 90% visual work in pure CSS
 - **Progressive enhancement**: Features degrade gracefully
@@ -154,15 +155,21 @@ GROWTH_STAGES = {
 
 ### 4.3 Phase 3: Sliding Notes Interface (Week 3-4)
 
-#### 4.3.1 Core Sliding Mechanism
+#### 4.3.1 Core Sliding Mechanism (Andy Matuschak-style)
 ```javascript
 Features:
-  - Horizontal sliding panels (desktop)
-  - Vertical stack (mobile)
-  - Smart stacking logic (replace if revisiting)
-  - Smooth animations with Alpine.js
-  - History management
-  - Keyboard navigation
+  - Dynamic panel opening from internal hyperlinks
+  - No predefined "garden walks" - readers create their own paths
+  - Horizontal accordion layout (panels side-by-side, not overlapping)
+  - Fixed-width panels (660px) that don't shrink with depth
+  - Unlimited panels can be opened (no artificial limit)
+  - Horizontal scrolling to navigate between panels
+  - Smooth CSS transitions and scroll behavior
+  - History management via URL state
+  - Keyboard navigation (ESC to close, arrows to scroll between panels)
+  - Clean minimal design with focus on content
+  - Panels persist until explicitly closed
+  - Mobile: Vertical stack with swipe navigation
 ```
 
 #### 4.3.2 Implementation Details
@@ -229,78 +236,54 @@ GET /api/garden-walk/{name}                # Load named path
 GET /api/garden-walk/share                 # Generate shareable link
 ```
 
-##### Alpine.js State Synchronization
-```javascript
-function gardenWalk() {
-  return {
-    stack: [],
-    currentIndex: 0,
+##### HTMX-Only State Management
+```python
+@app.post("/api/panel/open")
+async def open_panel(
+    note_id: str,
+    current_path: str = Form(None),
+    from_panel: str = Form(None),
+    focus: int = Form(0)
+):
+    """Handle panel opening with server-side stack management"""
     
-    init() {
-      // Initialize from URL parameters
-      const params = new URLSearchParams(window.location.search);
-      const path = params.get('path');
-      if (path) {
-        this.stack = path.split(',');
-        this.currentIndex = parseInt(params.get('focus') || 0);
-      }
-    },
+    # Parse current path
+    stack = current_path.split(',') if current_path else []
     
-    openNote(noteId, fromPanel) {
-      // Update stack
-      const existingIndex = this.stack.findIndex(n => n.id === noteId);
-      
-      if (existingIndex >= 0) {
-        this.stack = this.stack.slice(0, existingIndex + 1);
-      } else {
-        const insertAt = this.stack.indexOf(fromPanel) + 1;
-        this.stack = this.stack.slice(0, insertAt);
-        this.stack.push(noteId);
-      }
-      
-      // Update URL without page reload
-      this.updateURL();
-      
-      // Scroll to new note
-      this.$nextTick(() => {
-        this.$refs.stack.scrollTo({
-          left: this.$refs.stack.scrollWidth,
-          behavior: 'smooth'
-        });
-      });
-    },
+    # Check if note already in stack
+    if note_id in stack:
+        # Truncate stack at existing position
+        stack = stack[:stack.index(note_id) + 1]
+    else:
+        # Insert after current panel
+        if from_panel and from_panel in stack:
+            insert_at = stack.index(from_panel) + 1
+            stack = stack[:insert_at]
+        stack.append(note_id)
     
-    updateURL() {
-      const params = new URLSearchParams({
-        path: this.stack.join(','),
-        focus: this.currentIndex,
-        view: 'sliding'
-      });
-      
-      // Use HTMX to update URL
-      htmx.ajax('GET', `/garden-walk?${params}`, {
-        target: '#url-state',
-        swap: 'none',
-        pushUrl: true
-      });
-    },
+    # Generate new URL
+    new_path = ','.join(stack)
+    new_focus = len(stack) - 1
     
-    shareCurrentPath() {
-      const url = new URL(window.location);
-      
-      if (navigator.share) {
-        navigator.share({
-          title: 'My Garden Walk',
-          text: `Follow my path: ${this.stack.map(id => id.replace('-', ' ')).join(' → ')}`,
-          url: url.href
-        });
-      } else {
-        navigator.clipboard.writeText(url.href);
-        // Show toast notification
-      }
+    # Return panel HTML with updated state
+    return templates.TemplateResponse(
+        "partials/sliding_note.html",
+        {
+            "note": get_note(note_id),
+            "stack": stack,
+            "focus": new_focus,
+            "current_path": new_path
+        }
+    )
+
+@app.get("/api/share-path")
+async def share_path(path: str = Query(...)):
+    """Generate shareable link for current garden walk"""
+    return {
+        "url": f"https://yourdomain.com/garden-walk?path={path}",
+        "title": "My Garden Walk",
+        "text": f"Follow my path: {' → '.join(path.split(','))}"
     }
-  }
-}
 ```
 
 #### 4.3.3 Visual Design
@@ -826,8 +809,8 @@ async def seo_dashboard():
 
 ### 8.2 Integration Tests
 - HTMX partial rendering
-- Alpine.js state synchronization
-- Navigation history management
+- Server-side state synchronization
+- URL-based navigation history
 - Mobile responsive behavior
 - **Schema.org structured data validation**
 - **Open Graph tag rendering**
@@ -884,7 +867,7 @@ async def seo_dashboard():
 ### 10.1 Technical Risks
 | Risk | Impact | Mitigation |
 |------|--------|------------|
-| Alpine.js conflicts with HTMX | High | Test integration early, have pure CSS fallback |
+| Complex state management without client-side JS | Medium | Server maintains state, URL parameters for persistence |
 | Performance with many panels | Medium | Implement panel limit, lazy loading |
 | Mobile gesture complexity | Medium | Progressive enhancement, simple fallback |
 | SEO impact from dynamic content | Low | Server-side rendering for initial load |
@@ -926,7 +909,6 @@ async def seo_dashboard():
 - [Andy Matuschak's Notes](https://notes.andymatuschak.org)
 - [Bookmarkable by Design: URL State with HTMX](https://www.lorenstew.art/blog/bookmarkable-by-design-url-state-htmx/)
 - [HTMX Documentation](https://htmx.org)
-- [Alpine.js Documentation](https://alpinejs.dev)
 
 ### 12.2 Design Assets Needed
 - Garden-themed icons (growth stages, tools, etc.)
@@ -940,8 +922,7 @@ async def seo_dashboard():
 {
   "dependencies": {
     "tailwindcss": "^3.x",
-    "@tailwindcss/typography": "^0.5.x",
-    "alpinejs": "^3.x"
+    "@tailwindcss/typography": "^0.5.x"
   },
   "devDependencies": {
     "postcss": "^8.x",
@@ -958,13 +939,14 @@ async def seo_dashboard():
 
 ---
 
-**Document Version:** 1.3  
-**Last Updated:** 2025-08-10  
+**Document Version:** 1.5  
+**Last Updated:** 2025-08-14  
 **Author:** Claude & LaBoeuf  
-**Status:** In Progress - Phase 1 Complete  
+**Status:** In Progress - Phase 2 Active  
 
 **Changes:**
 - **v1.1:** Added comprehensive URL state management based on "Bookmarkable by Design" principles
 - **v1.2:** Added complete SEO optimization strategy including technical SEO, content optimization, performance metrics, and digital garden-specific SEO features
 - **v1.3:** Phase 1 Foundation completed - CSS pipeline, growth stages, dark mode, and design system components all implemented with TDD approach
 - **v1.4:** Garden Paths system completed with path configuration, route implementation, template creation, and layout macro architecture standardized for consistent styling across all page types
+- **v1.5:** Architectural revision - Removed Alpine.js dependency in favor of pure HTMX implementation for all interactions, ensuring server-side state management and improved reliability

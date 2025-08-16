@@ -23,6 +23,7 @@ from fastapi.responses import Response
 from email.utils import format_datetime
 from pydantic import ValidationError
 import logfire
+import json
 
 from .models import BaseContent, Bookmark, TIL, Note
 from .config import ai_config, content_config
@@ -410,12 +411,26 @@ class ContentManager:
             excerpt = first_p.get_text() if first_p else ""
 
             # Create consistent content item structure
+            # Convert datetime objects in metadata to strings
+            def convert_dates_in_dict(obj):
+                if isinstance(obj, dict):
+                    return {k: convert_dates_in_dict(v) for k, v in obj.items()}
+                elif isinstance(obj, list):
+                    return [convert_dates_in_dict(item) for item in obj]
+                elif isinstance(obj, datetime):
+                    return obj.strftime("%Y-%m-%d")
+                else:
+                    return obj
+            
+            # Clean metadata of datetime objects
+            clean_metadata = convert_dates_in_dict(metadata)
+            
             content_item = {
                 "name": name,
-                "title": metadata.get("title", name.replace("-", " ").title()),
-                "created": metadata.get("created", ""),
-                "updated": metadata.get("updated", ""),
-                "metadata": metadata,
+                "title": clean_metadata.get("title", name.replace("-", " ").title()),
+                "created": clean_metadata.get("created", ""),
+                "updated": clean_metadata.get("updated", ""),
+                "metadata": clean_metadata,
                 "excerpt": excerpt,
                 "url": f"/{content_type}/{name}",
                 "content_type": content_type,
@@ -435,7 +450,7 @@ class ContentManager:
 
         # Log validation errors
         if validation_errors:
-            logfire.warning(
+            logfire.warn(
                 "content_validation_errors",
                 content_type=content_type,
                 errors=validation_errors,
@@ -467,8 +482,8 @@ class ContentManager:
         quote_text = blockquote.get_text() if blockquote else ""
 
         return {
-            "title": quote_content["metadata"].get("title", ""),
-            "content": quote_text,
+            "text": quote_text,
+            "author": quote_content["metadata"].get("author", quote_content["metadata"].get("title", "")),
         }
 
     @staticmethod
@@ -551,6 +566,7 @@ class ContentManager:
         return sorted(posts, key=lambda x: x.get("created", ""), reverse=True)
 
     @staticmethod
+    @staticmethod
     @timed_lru_cache(maxsize=1, ttl_seconds=3600)
     async def get_github_stars(page: int = 1, per_page: int = 30) -> dict:
         """
@@ -575,7 +591,7 @@ class ContentManager:
                 reset_time = int(response.headers["X-RateLimit-Reset"])
                 if remaining == 0:
                     reset_datetime = datetime.fromtimestamp(reset_time)
-                    logfire.warning(
+                    logfire.warn(
                         "github_rate_limit_exceeded",
                         reset_time=reset_datetime.isoformat(),
                     )
@@ -620,9 +636,10 @@ class ContentManager:
                         "name": repo["name"],
                         "full_name": repo["full_name"],
                         "description": repo["description"],
-                        "url": repo["html_url"],
+                        "html_url": repo["html_url"],  # Changed from "url" to "html_url"
                         "language": repo["language"],
-                        "stars": repo["stargazers_count"],
+                        "stargazers_count": repo["stargazers_count"],  # Changed from "stars"
+                        "forks_count": repo.get("forks_count", 0),  # Added forks_count
                         "starred_at": datetime.strptime(
                             repo["updated_at"], "%Y-%m-%dT%H:%M:%SZ"
                         ).strftime("%Y-%m-%d"),
@@ -850,6 +867,7 @@ class ContentManager:
                     "created": metadata.get("created", ""),
                     "updated": metadata.get("updated", ""),
                     "tags": metadata.get("tags", []),
+                    "status": metadata.get("status", "Evergreen"),
                     "excerpt": excerpt,
                     "url": f"/til/{name}",
                 }
@@ -884,6 +902,7 @@ class ContentManager:
                         "created": metadata.get("created", ""),
                         "updated": metadata.get("updated", ""),
                         "tags": metadata.get("tags", []),
+                        "status": metadata.get("status", "Evergreen"),
                         "excerpt": excerpt,
                         "url": f"/til/{name}",
                     }
@@ -1020,8 +1039,99 @@ class ContentManager:
             raise ValueError(f"Error retrieving mixed content: {str(e)}")
     
     @staticmethod
+    def get_all_garden_content() -> Dict[str, Any]:
+        """Get all content for the filterable garden homepage."""
+        all_content = []
+        all_tags = set()
+        
+        def convert_date_to_string(date_value):
+            """Convert datetime objects to strings."""
+            if isinstance(date_value, datetime):
+                return date_value.strftime("%Y-%m-%d")
+            return date_value or ""
+        
+        # Get content from each type
+        notes_result = ContentManager.get_content("notes")
+        notes = notes_result["content"] if isinstance(notes_result, dict) else notes_result
+        
+        how_tos_result = ContentManager.get_content("how_to")
+        how_tos = how_tos_result["content"] if isinstance(how_tos_result, dict) else how_tos_result
+        
+        til_result = ContentManager.get_til_posts(page=1, per_page=9999)
+        tils = til_result["tils"]
+        
+        bookmarks = ContentManager.get_bookmarks(limit=None)
+        
+        # Process and combine all content
+        for note in notes:
+            if note.get("metadata", {}).get("status") != "draft":
+                note["content_type"] = "notes"
+                note["type_label"] = "Note"
+                note["growth_stage"] = note.get("metadata", {}).get("status", "Seedling")
+                note["tags"] = note.get("metadata", {}).get("tags", [])
+                note["created"] = convert_date_to_string(note.get("metadata", {}).get("created", note.get("created", "")))
+                note["updated"] = convert_date_to_string(note.get("metadata", {}).get("updated", note.get("updated", "")))
+                all_content.append(note)
+                all_tags.update(note["tags"])
+        
+        for how_to in how_tos:
+            if how_to.get("metadata", {}).get("status") != "draft":
+                how_to["content_type"] = "how_to"
+                how_to["type_label"] = "How-To"
+                how_to["growth_stage"] = how_to.get("metadata", {}).get("status", "Seedling")
+                how_to["tags"] = how_to.get("metadata", {}).get("tags", [])
+                how_to["created"] = convert_date_to_string(how_to.get("metadata", {}).get("created", how_to.get("created", "")))
+                how_to["updated"] = convert_date_to_string(how_to.get("metadata", {}).get("updated", how_to.get("updated", "")))
+                all_content.append(how_to)
+                all_tags.update(how_to["tags"])
+                
+        for til in tils:
+            # TILs don't have metadata wrapper, status is at top level
+            if til.get("status") != "draft":
+                til["content_type"] = "til"
+                til["type_label"] = "TIL"
+                til["growth_stage"] = til.get("status", "Seedling")
+                # Add slug field for TILs
+                if 'name' in til and 'slug' not in til:
+                    til['slug'] = til['name']
+                # Convert dates for TILs
+                til["created"] = convert_date_to_string(til.get("created", ""))
+                til["updated"] = convert_date_to_string(til.get("updated", ""))
+                all_content.append(til)
+                all_tags.update(til.get("tags", []))
+                
+        for bookmark in bookmarks:
+            # Bookmarks don't have metadata wrapper, status is at top level
+            if bookmark.get("status") != "draft":
+                bookmark["content_type"] = "bookmarks"
+                bookmark["type_label"] = "Bookmark"
+                bookmark["growth_stage"] = bookmark.get("status", "Seedling")
+                # Convert dates for bookmarks
+                bookmark["created"] = convert_date_to_string(bookmark.get("created", ""))
+                bookmark["updated"] = convert_date_to_string(bookmark.get("updated", ""))
+                all_content.append(bookmark)
+                all_tags.update(bookmark.get("tags", []))
+        
+        # Sort by creation date (newest first)
+        all_content.sort(key=lambda x: x.get("created", ""), reverse=True)
+        
+        # Get unique growth stages
+        growth_stages = list(set(item.get("growth_stage", "Seedling") for item in all_content))
+        
+        # Get unique content types
+        content_types = list(set(item.get("type_label", "") for item in all_content))
+        
+        return {
+            "content": all_content,
+            "tags": sorted(list(all_tags)),
+            "growth_stages": sorted(growth_stages),
+            "content_types": sorted(content_types),
+            "total_count": len(all_content)
+        }
+    
+    @staticmethod
     @timed_lru_cache(maxsize=1, ttl_seconds=300)
-    def get_homepage_sections() -> Dict[str, Any]:
+    async def get_homepage_sections() -> Dict[str, Any]:
         """Get structured content sections for the topographical homepage."""
         from collections import defaultdict
         
@@ -1064,8 +1174,35 @@ class ContentManager:
         sections = {
             'garden_beds': {},
             'recently_tended': [],
-            'featured': []
+            'featured': [],
+            'recent_posts': [],
+            'github_stars': [],
+            'random_quote': None
         }
+        
+        # Get recent posts (all content sorted by date)
+        recent_posts = sorted(
+            [item for item in all_content if item.get('status') != 'draft' and item.get('content_type') in ['notes', 'how_to', 'til']],
+            key=lambda x: x.get('created', ''),
+            reverse=True
+        )[:10]  # Get 10 most recent posts
+        
+        # Add slug field (mapping from name) for template compatibility
+        for post in recent_posts:
+            if 'name' in post and 'slug' not in post:
+                post['slug'] = post['name']
+        
+        sections['recent_posts'] = recent_posts
+        
+        # Get GitHub stars (top 5)
+        try:
+            github_result = await ContentManager.get_github_stars(page=1, per_page=5)
+            sections['github_stars'] = github_result.get('stars', [])[:5]
+        except Exception:
+            sections['github_stars'] = []
+        
+        # Get random quote
+        sections['random_quote'] = ContentManager.get_random_quote()
         
         # Calculate cutoff for recently tended (30 days)
         thirty_days_ago = datetime.now() - timedelta(days=30)
@@ -1107,7 +1244,7 @@ class ContentManager:
         )
         
         # Limit recently tended to reasonable number
-        sections['recently_tended'] = sections['recently_tended'][:12]
+        sections['recently_tended'] = sections['recently_tended'][:6]  # Reduced to 6 to make room
         
         # For featured content, take a few high-quality items
         # Priority: Evergreen status, then by creation date
@@ -1337,19 +1474,150 @@ Sitemap: {content_config.base_url}/sitemap.xml""",
     )
 
 
+# URL State Management Helper Functions
+def serialize_garden_state(path: list, focus: int = 0, view: str = "default") -> str:
+    """
+    Serialize garden walk state to URL parameters.
+    
+    Args:
+        path: List of note IDs in the walk
+        focus: Index of the currently focused panel
+        view: Display mode (default, compact, expanded)
+    
+    Returns:
+        Query string for URL
+    """
+    params = []
+    
+    # Handle path - comma-separated for compactness
+    if path:
+        # Limit path length to prevent URL from exceeding 2000 chars
+        # Assuming average ID length of 20 chars + comma = 21 chars per item
+        # 2000 chars / 21 ≈ 95 items max
+        truncated_path = path[:95] if len(path) > 95 else path
+        params.append(f"path={','.join(truncated_path)}")
+    
+    # Add focus if not default
+    if focus > 0:
+        params.append(f"focus={focus}")
+    
+    # Add view if not default
+    if view != "default":
+        params.append(f"view={view}")
+    
+    return "&".join(params) if params else ""
+
+
+def deserialize_garden_state(query_params: dict) -> dict:
+    """
+    Deserialize URL parameters to garden walk state.
+    
+    Args:
+        query_params: Dictionary of query parameters
+    
+    Returns:
+        Dictionary with path, focus, and view
+    """
+    state = {
+        "path": [],
+        "focus": 0,
+        "view": "default"
+    }
+    
+    # Parse path parameter
+    path_param = query_params.get("path", "")
+    if path_param:
+        # Split by comma and validate each ID
+        raw_ids = path_param.split(",")
+        # Basic validation - remove empty strings and limit length
+        state["path"] = [id.strip() for id in raw_ids if id.strip()][:95]
+    
+    # Parse focus parameter
+    try:
+        focus_param = query_params.get("focus", "0")
+        state["focus"] = max(0, int(focus_param))
+    except (ValueError, TypeError):
+        state["focus"] = 0
+    
+    # Parse view parameter
+    view_param = query_params.get("view", "default")
+    if view_param in ["default", "compact", "expanded"]:
+        state["view"] = view_param
+    else:
+        state["view"] = "default"
+    
+    return state
+
+
 # Route handlers
 @app.get("/", response_class=HTMLResponse)
 async def read_home(request: Request):
-    """Render the home page with topographical garden layout."""
-    template = env.get_template("index.html")
+    """Render the home page with Maggie Appleton-inspired garden design."""
+    template = env.get_template("garden.html")
     
-    # Get structured content sections for topographical homepage
-    sections = ContentManager.get_homepage_sections()
-
+    # Get all content for filterable garden
+    try:
+        garden_data = ContentManager.get_all_garden_content()
+        print(f"DEBUG: garden_data returned, type: {type(garden_data)}")
+        print(f"DEBUG: content count: {len(garden_data.get('content', []))}")
+        print(f"DEBUG: tags: {garden_data.get('tags', [])[:5]}...")  # First 5 tags
+        
+        # Ensure garden_data has all required keys
+        if not garden_data or not isinstance(garden_data, dict):
+            garden_data = {}
+        
+        # Ensure all required keys exist with defaults
+        garden_data.setdefault("content", [])
+        garden_data.setdefault("tags", [])
+        garden_data.setdefault("growth_stages", [])
+        garden_data.setdefault("content_types", [])
+        garden_data.setdefault("total_count", 0)
+        
+        print(f"DEBUG: Final content count: {len(garden_data['content'])}")
+        
+    except Exception as e:
+        print(f"ERROR getting garden content: {e}")
+        import traceback
+        traceback.print_exc()
+        garden_data = {
+            "content": [],
+            "tags": [],
+            "growth_stages": [],
+            "content_types": [],
+            "total_count": 0
+        }
+    
     return HTMLResponse(
         content=template.render(
             request=request,
-            sections=sections,
+            garden_data=garden_data,
+            feature_flags=get_feature_flags(),
+        )
+    )
+
+
+@app.get("/garden", response_class=HTMLResponse)
+async def read_garden(request: Request):
+    """Render the enhanced garden homepage with Maggie Appleton-inspired design."""
+    template = env.get_template("garden.html")
+    
+    # Get all content for filterable garden
+    garden_data = ContentManager.get_all_garden_content()
+    
+    # Ensure garden_data has required keys
+    if not garden_data:
+        garden_data = {
+            "content": [],
+            "tags": [],
+            "growth_stages": [],
+            "content_types": [],
+            "total_count": 0
+        }
+    
+    return HTMLResponse(
+        content=template.render(
+            request=request,
+            garden_data=garden_data,
             feature_flags=get_feature_flags(),
         )
     )
@@ -1532,6 +1800,210 @@ async def garden_path_progress(path_name: str, completed: str = ""):
         raise HTTPException(status_code=404, detail="Garden path not found")
     
     return JSONResponse(content=progress)
+
+
+@app.get("/garden-walk", response_class=HTMLResponse)
+async def garden_walk(request: Request):
+    """
+    Render the garden walk interface with URL state management.
+    
+    Supports query parameters:
+    - path: Comma-separated list of note IDs
+    - focus: Index of the currently focused panel
+    - view: Display mode (default, compact, expanded)
+    """
+    # Deserialize URL state
+    state = deserialize_garden_state(dict(request.query_params))
+    
+    # Validate and load content for each note in the path
+    panels = []
+    for note_id in state["path"]:
+        # Try to load the note content
+        try:
+            # Check various content types for the note
+            content = None
+            
+            # Try notes first
+            file_path = f"{CONTENT_DIR}/notes/{note_id}.md"
+            if os.path.exists(file_path):
+                rendered = ContentManager.render_markdown(file_path)
+                content = {
+                    "title": rendered.get("metadata", {}).get("title", note_id),
+                    "content": rendered.get("html", "<p>Loading...</p>"),
+                    "slug": note_id,
+                    "type": "notes"
+                }
+            
+            # Try TIL if not found
+            if not content:
+                file_path = f"{CONTENT_DIR}/til/{note_id}.md"
+                if os.path.exists(file_path):
+                    rendered = ContentManager.render_markdown(file_path)
+                    content = {
+                        "title": rendered.get("metadata", {}).get("title", note_id),
+                        "content": rendered.get("html", "<p>Loading...</p>"),
+                        "slug": note_id,
+                        "type": "til"
+                    }
+            
+            # Try how-to if not found
+            if not content:
+                file_path = f"{CONTENT_DIR}/how_to/{note_id}.md"
+                if os.path.exists(file_path):
+                    rendered = ContentManager.render_markdown(file_path)
+                    content = {
+                        "title": rendered.get("metadata", {}).get("title", note_id),
+                        "content": rendered.get("html", "<p>Loading...</p>"),
+                        "slug": note_id,
+                        "type": "how_to"
+                    }
+            
+            if content:
+                panels.append(content)
+        except Exception as e:
+            # Log error but continue with other panels
+            logfire.error(f"Error loading note {note_id}: {e}")
+    
+    # If no valid panels and no path specified, show default content
+    if not panels and not state["path"]:
+        # Load a default starting note or landing page
+        default_notes = ContentManager.get_content("notes")
+        if default_notes and isinstance(default_notes, dict) and default_notes.get("content"):
+            panels = [default_notes["content"][0]] if default_notes["content"] else []
+    
+    # Ensure focus is within bounds
+    state["focus"] = min(state["focus"], len(panels) - 1) if panels else 0
+    
+    # Prepare history state for browser navigation
+    history_state = {
+        "path": state["path"],
+        "focus": state["focus"],
+        "view": state["view"]
+    }
+    
+    # Format panels for template
+    formatted_panels = []
+    for panel in panels:
+        formatted_panels.append({
+            "id": panel.get("slug", panel.get("title", "untitled")),
+            "title": panel.get("title", "Untitled"),
+            "content": panel.get("content", "<p>No content available</p>")
+        })
+    
+    # Use the new garden_walk.html template
+    template = env.get_template("garden_walk.html")
+    return HTMLResponse(
+        content=template.render(
+            request=request,
+            panels=formatted_panels,
+            state=state,
+            history_state=json.dumps(history_state),
+            feature_flags=get_feature_flags(),
+        )
+    )
+
+@app.get("/api/garden-bed/{topic}/items", response_class=HTMLResponse)
+async def get_garden_bed_items(request: Request, topic: str, expanded: bool = False):
+    """Return all items for a garden bed topic (for dropdown expansion)."""
+    with logfire.span("garden_bed_items", topic=topic, expanded=expanded):
+        try:
+            # Get all content for this topic
+            garden_data = ContentManager.get_all_garden_content()
+            all_content = garden_data.get("all_content", [])
+            
+            # Filter by topic
+            topic_items = [
+                item for item in all_content
+                if topic.lower() in [tag.lower() for tag in item.get("tags", [])]
+            ]
+            
+            # Sort by status priority (Evergreen > Growing > Budding > Seedling)
+            status_priority = {"Evergreen": 0, "Growing": 1, "Budding": 2}
+            topic_items.sort(
+                key=lambda x: (
+                    status_priority.get(x.get("status", "Seedling"), 3),
+                    x.get("title", "")
+                )
+            )
+            
+            # Render the partial template
+            template = env.get_template("partials/garden_bed_items.html")
+            html_content = template.render(
+                topic=topic,
+                items=topic_items,
+                expanded=expanded,
+                request=request,
+            )
+            
+            return HTMLResponse(content=html_content)
+        except Exception as e:
+            logfire.error("garden_bed_items_error", error=str(e))
+            raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/topics/filter", response_class=HTMLResponse)
+async def filter_topics_htmx(request: Request):
+    """Filter content by selected topics via HTMX."""
+    form = await request.form()
+    selected_topics = form.getlist("topics")
+    search_query = form.get("search", "").strip()
+    
+    with logfire.span("filter_topics", topics=selected_topics, search=search_query):
+        try:
+            # Get all content
+            garden_data = ContentManager.get_all_garden_content()
+            all_content = garden_data.get("all_content", [])
+            
+            # Filter by selected topics
+            if selected_topics:
+                filtered_content = [
+                    item for item in all_content
+                    if any(
+                        topic.lower() in [tag.lower() for tag in item.get("tags", [])]
+                        for topic in selected_topics
+                    )
+                ]
+            else:
+                filtered_content = all_content
+            
+            # Apply search filter if provided
+            if search_query:
+                query_lower = search_query.lower()
+                filtered_content = [
+                    item for item in filtered_content
+                    if query_lower in item.get("title", "").lower()
+                    or query_lower in item.get("description", "").lower()
+                    or any(query_lower in tag.lower() for tag in item.get("tags", []))
+                ]
+            
+            # Group by status
+            grouped_content = {
+                "Evergreen": [],
+                "Growing": [],
+                "Budding": [],
+                "Seedling": []
+            }
+            
+            for item in filtered_content:
+                status = item.get("status", "Seedling")
+                if status not in grouped_content:
+                    status = "Seedling"
+                grouped_content[status].append(item)
+            
+            # Render the filtered results
+            template = env.get_template("partials/topics_filtered.html")
+            html_content = template.render(
+                grouped_content=grouped_content,
+                selected_topics=selected_topics,
+                search_query=search_query,
+                total_results=len(filtered_content),
+                request=request,
+            )
+            
+            return HTMLResponse(content=html_content)
+        except Exception as e:
+            logfire.error("filter_topics_error", error=str(e))
+            raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.get("/api/mixed-content", response_class=HTMLResponse)
