@@ -43,6 +43,7 @@ build-backend = "hatchling.build"
 dev = [
     "playwright>=1.54.0",
     "pytest-playwright>=0.7.0",
+    "ruff>=0.12.9",
 ]
 
 [tool.pytest.ini_options]
