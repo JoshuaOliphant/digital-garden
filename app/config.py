@@ -126,32 +126,32 @@ def validate_config() -> Optional[str]:
 GARDEN_BEDS = {
     "Technology": {
         "tags": ["python", "javascript", "typescript", "react", "fastapi", "htmx", "alpine", "tailwind", "api", "web", "frontend", "backend", "programming", "code", "development", "software", "tech"],
-        "color": "bg-blue-100 text-blue-800 border-blue-200",
+        "color": "bg-blue-200 text-blue-800",
         "icon": "⚡"
     },
     "Creative": {
         "tags": ["design", "ui", "ux", "creativity", "art", "writing", "storytelling", "visual", "graphics", "photography", "music", "drawing"],
-        "color": "bg-purple-100 text-purple-800 border-purple-200", 
+        "color": "bg-garden-sage/20 text-garden-sage-dark", 
         "icon": "🎨"
     },
     "Learning": {
         "tags": ["education", "learning", "study", "course", "tutorial", "book", "knowledge", "skill", "training", "teaching", "academic", "research"],
-        "color": "bg-green-100 text-green-800 border-green-200",
+        "color": "bg-green-200 text-green-800",
         "icon": "📚"
     },
     "Research": {
         "tags": ["science", "data", "analysis", "experiment", "methodology", "statistics", "ai", "ml", "machine-learning", "artificial-intelligence", "nlp"],
-        "color": "bg-orange-100 text-orange-800 border-orange-200",
+        "color": "bg-garden-accent/20 text-garden-accent",
         "icon": "🔬"
     },
     "Process": {
         "tags": ["productivity", "workflow", "process", "methodology", "organization", "planning", "management", "strategy", "efficiency", "automation", "tools"],
-        "color": "bg-yellow-100 text-yellow-800 border-yellow-200",
+        "color": "bg-yellow-200 text-yellow-800",
         "icon": "⚙️"
     },
     "Lifestyle": {
         "tags": ["life", "personal", "health", "wellness", "mindfulness", "habits", "growth", "philosophy", "reflection", "thoughts", "experience"],
-        "color": "bg-emerald-100 text-emerald-800 border-emerald-200",
+        "color": "bg-garden-accent/10 text-garden-accent",
         "icon": "🌱"
     }
 }
