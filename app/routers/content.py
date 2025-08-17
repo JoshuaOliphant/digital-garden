@@ -5,14 +5,19 @@ Handles main content display routes with service injection.
 
 from fastapi import APIRouter, Request, HTTPException, Depends
 from fastapi.responses import HTMLResponse
+from jinja2 import Environment, FileSystemLoader
 
-from ..services.dependencies import (
+from app.services.dependencies import (
     get_content_service,
     get_backlink_service,
     get_growth_stage_renderer,
 )
-from ..interfaces import IContentProvider, IBacklinkService
-from ..services.growth_stage_renderer import GrowthStageRenderer
+from app.services.growth_stage_renderer import GrowthStageRenderer
+from app.interfaces import IContentProvider, IBacklinkService
+# ContentManager is in main.py for now - will be refactored later
+
+# Initialize Jinja2 environment
+env = Environment(loader=FileSystemLoader("app/templates"))
 
 router = APIRouter()
 

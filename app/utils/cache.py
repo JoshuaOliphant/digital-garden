@@ -1,54 +1,39 @@
-"""
-Caching utilities for the digital garden application.
-Extracted from main.py to improve modularity.
-"""
+"""Cache utilities for the application."""
 
 import time
-from typing import Dict, Any, TypeVar, Callable, Awaitable
-from functools import wraps
-
-T = TypeVar("T")
+from functools import lru_cache, wraps
+from typing import Any, Callable, Optional
 
 
 class timed_lru_cache:
-    """Decorator that adds time-based expiration to an in-memory LRU cache.
-
-    The cache uses regular Python dictionaries and is **not** thread safe.
-    It is intended for single-threaded use such as development servers or
-    scripts. Use an external cache if you need multi-process or multi-threaded
-    safety.
-    """
-
-    def __init__(self, maxsize: int = 128, ttl_seconds: int = 3600):
+    """LRU cache decorator with time-based expiration."""
+    
+    def __init__(self, seconds: int = 300, maxsize: int = 128):
+        self.seconds = seconds
         self.maxsize = maxsize
-        self.ttl_seconds = ttl_seconds
-        self.cache: Dict[str, Any] = {}
-        self.last_refresh: Dict[str, float] = {}
-
-    def __call__(
-        self, func: Callable[..., Awaitable[T]]
-    ) -> Callable[..., Awaitable[T]]:
-
+    
+    def __call__(self, func: Callable) -> Callable:
+        # Apply LRU cache
+        cached_func = lru_cache(maxsize=self.maxsize)(func)
+        cached_func.expiration = time.time() + self.seconds
+        
         @wraps(func)
-        async def wrapped(*args: Any, **kwargs: Any) -> T:
-            key = str((args, sorted(kwargs.items())))
+        def wrapper(*args, **kwargs):
+            # Check if cache has expired
+            if time.time() >= cached_func.expiration:
+                cached_func.cache_clear()
+                cached_func.expiration = time.time() + self.seconds
+            return cached_func(*args, **kwargs)
+        
+        # Expose cache_clear method
+        wrapper.cache_clear = cached_func.cache_clear
+        wrapper.cache_info = cached_func.cache_info
+        
+        return wrapper
 
-            # Check if cache needs refresh
-            now = time.time()
-            if (
-                key not in self.cache
-                or now - self.last_refresh.get(key, 0) > self.ttl_seconds
-            ):
-                self.cache[key] = await func(*args, **kwargs)
-                self.last_refresh[key] = now
 
-                # LRU eviction if cache is full
-                if len(self.cache) > self.maxsize:
-                    # Remove oldest entry
-                    oldest_key = min(self.last_refresh, key=self.last_refresh.get)
-                    del self.cache[oldest_key]
-                    del self.last_refresh[oldest_key]
-
-            return self.cache[key]
-
-        return wrapped
+def cache_key(*args, **kwargs) -> str:
+    """Generate a cache key from function arguments."""
+    key_parts = [str(arg) for arg in args]
+    key_parts.extend(f"{k}={v}" for k, v in sorted(kwargs.items()))
+    return ":".join(key_parts)
