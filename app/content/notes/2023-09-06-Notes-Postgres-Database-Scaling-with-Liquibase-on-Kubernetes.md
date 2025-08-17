@@ -17,6 +17,7 @@ tags:
 title: Scaling Postgres Databases with Liquibase on Kubernetes
 updated: 2025-02-12 19:43:37.092847
 visibility: public
+growth_stage: evergreen
 ---
 I recently dived into scaling stateful applications in Kubernetes, focusing particularly on Postgres databases. My current project also integrates Liquibase for database migrations, which led me to explore its impact on scaling. Here are the consolidated notes from my research.
 

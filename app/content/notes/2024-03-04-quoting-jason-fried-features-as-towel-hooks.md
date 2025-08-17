@@ -1,9 +1,15 @@
 ---
 title: Quoting Jason Fried - Features as towel hooks
-status: "Evergreen"
-created: "2024-03-04"
-updated: "2024-09-27"
-tags: [features, product design, software development, user experience, innovation]
+status: Evergreen
+created: '2024-03-04'
+updated: '2024-09-27'
+tags:
+- features
+- product design
+- software development
+- user experience
+- innovation
+growth_stage: evergreen
 ---
 
 https://world.hey.com/jason/hooks-towel-bars-and-software-14c66c8c

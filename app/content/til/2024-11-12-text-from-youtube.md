@@ -1,9 +1,11 @@
 ---
-title: "How to get text from YouTube videos"
-status: "Budding"
-created: "2023-11-12"
-updated: "2024-11-12"
-tags: [ai]
+title: How to get text from YouTube videos
+status: Budding
+created: '2023-11-12'
+updated: '2024-11-12'
+tags:
+- ai
+growth_stage: budding
 ---
 Yesterday, I was reading a blog post about writing for a tech audience, which is [here](https://rmoff.net/2023/07/19/blog-writing-for-developers/?utm_source=changelog-news) if you're curious. It linked out to a YouTube video that is quite long (I haven't actually watched it yet) but I wanted to get the text from it.
 

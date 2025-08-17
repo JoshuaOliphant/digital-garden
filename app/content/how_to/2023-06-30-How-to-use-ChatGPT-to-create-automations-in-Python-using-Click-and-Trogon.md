@@ -1,9 +1,15 @@
 ---
-title: "How to use ChatGPT to create automations in Python using Click and Trogon"
-status: "Evergreen"
-created: "2023-06-30"
-updated: "2023-06-30"
-tags: [python, click, trogon, automation, command line interface]
+title: How to use ChatGPT to create automations in Python using Click and Trogon
+status: Evergreen
+created: '2023-06-30'
+updated: '2023-06-30'
+tags:
+- python
+- click
+- trogon
+- automation
+- command line interface
+growth_stage: evergreen
 ---
 I've been using ChatGPT to create automations in Python using the Click and Trogon. For example, I might say:
 

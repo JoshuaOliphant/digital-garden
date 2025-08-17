@@ -1,9 +1,15 @@
 ---
-title: "Markdown Link Content Scraper"
-status: "Evergreen"
-created: "2024-12-26"
-updated: "2024-12-26"
-tags: [web-scraping, notebookllm, fastapi, claude, ai]
+title: Markdown Link Content Scraper
+status: Evergreen
+created: '2024-12-26'
+updated: '2024-12-26'
+tags:
+- web-scraping
+- notebookllm
+- fastapi
+- claude
+- ai
+growth_stage: evergreen
 ---
 I've been using NotebookLLM for a few months now, which I quite enjoy. Sometimes
 I have a main source that is a website, and then I also want to add all of the linked

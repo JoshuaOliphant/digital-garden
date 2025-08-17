@@ -1,9 +1,15 @@
 ---
-title: "Chickadee"
-status: "Evergreen"
-created: "2024-07-12"
-updated: "2024-07-12"
-tags: [python, reusable prompts, chatgpt, technical troubleshooting, code review]
+title: Chickadee
+status: Evergreen
+created: '2024-07-12'
+updated: '2024-07-12'
+tags:
+- python
+- reusable prompts
+- chatgpt
+- technical troubleshooting
+- code review
+growth_stage: evergreen
 ---
 So far, it hasn't been my habit to save questions that I ask ChatGPT of Claude.
 I've seen recommendeations for doing this, to create reusable prompts. Well,

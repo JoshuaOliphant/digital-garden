@@ -1,9 +1,15 @@
 ---
-title: "Deep Dive into GraphQL"
-status: "Evergreen"
-created: "2024-03-29"
-updated: "2024-03-29"
-tags: [graphql, api, data retrieval, microservices, e-commerce]
+title: Deep Dive into GraphQL
+status: Evergreen
+created: '2024-03-29'
+updated: '2024-03-29'
+tags:
+- graphql
+- api
+- data retrieval
+- microservices
+- e-commerce
+growth_stage: evergreen
 ---
 These notes are the result of some research that I was asked to do for my job on GraphQL.
 

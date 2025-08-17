@@ -1,9 +1,11 @@
 ---
-title: "now"
-created: "2024-04-01"
-updated: "2024-09-29"
-tags: ["now"]
-status: "Budding"
+title: now
+created: '2024-04-01'
+updated: '2024-09-29'
+tags:
+- now
+status: Budding
+growth_stage: budding
 ---
 **What am I up to now?**
 

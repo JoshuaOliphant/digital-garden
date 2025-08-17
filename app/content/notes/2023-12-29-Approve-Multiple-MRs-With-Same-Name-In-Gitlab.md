@@ -1,9 +1,16 @@
 ---
-title: "Script to Approve Multiple MRs with the Same Branch Name Across Multiple Gitlab Projects"
-status: "Evergreen"
-created: "2023-12-29"
-updated: "2023-12-29"
-tags: [python, gitlab, click, merge-requests, automation]
+title: Script to Approve Multiple MRs with the Same Branch Name Across Multiple Gitlab
+  Projects
+status: Evergreen
+created: '2023-12-29'
+updated: '2023-12-29'
+tags:
+- python
+- gitlab
+- click
+- merge-requests
+- automation
+growth_stage: evergreen
 ---
 [Gist here](https://gist.github.com/JoshuaOliphant/72013ca894377883535f35967ab25028)
 

@@ -1,16 +1,13 @@
 ---
-# Required fields for all content types (BaseContent)
-title: "Quoting Elizabeth Filips"
+title: Quoting Elizabeth Filips
 created: 2025-03-16
 updated: 2025-03-16
-tags: 
-  - productivity
-  - chaos
-
-# Common optional fields with defaults (BaseContent)
-status: "Evergreen"  # Default value
-visibility: "public" # Default value
-
+tags:
+- productivity
+- chaos
+status: Evergreen
+visibility: public
+growth_stage: evergreen
 ---
 https://www.youtube.com/watch?v=A2sS00egAzg&t=10s
 

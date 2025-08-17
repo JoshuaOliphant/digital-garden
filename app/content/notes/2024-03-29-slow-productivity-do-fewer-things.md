@@ -1,9 +1,15 @@
 ---
-title: "Slow Productivity: do fewer things"
-status: "Evergreen"
-created: "2024-03-29"
-updated: "2024-03-29"
-tags: [slow productivity, focus, time management, personal development, project management]
+title: 'Slow Productivity: do fewer things'
+status: Evergreen
+created: '2024-03-29'
+updated: '2024-03-29'
+tags:
+- slow productivity
+- focus
+- time management
+- personal development
+- project management
+growth_stage: evergreen
 ---
 Last night I read the proposition in Slow Productivity on doing fewer things. This morning, the ideas that stick with me are:
 - No more than 2 or 3 missions at any given time. Missions are very high level, and may have no real end. To me, missions seem like focus areas, like "Learn to play guitar" or "Become an AI Engineer".

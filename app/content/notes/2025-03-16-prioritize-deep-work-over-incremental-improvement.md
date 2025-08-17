@@ -1,22 +1,17 @@
 ---
-# Required fields for all content types (BaseContent)
-title: "Prioritize deep work over incremental improvement"
+title: Prioritize deep work over incremental improvement
 created: 2025-03-16
 updated: 2025-03-16
-tags: 
-  - productivity
-  - deep work
-
-# Common optional fields with defaults (BaseContent)
-status: "Budding"
-visibility: "public" 
-
-# Common optional fields (BaseContent)
-series: null  # Optional string
-difficulty: null  # Optional string
-prerequisites:  null
-related_content:  null
-
+tags:
+- productivity
+- deep work
+status: Budding
+visibility: public
+series: null
+difficulty: null
+prerequisites: null
+related_content: null
+growth_stage: budding
 ---
 
 This resonated with me because I also struggle to make incremental improvements. My natural tendency is to work hard on projects that I'm deeply interested in, and then likely not touch them for a long time (if ever). But the knowledge that I gain from working deeply like this tends to be very useful in other projects, conversations, etc.

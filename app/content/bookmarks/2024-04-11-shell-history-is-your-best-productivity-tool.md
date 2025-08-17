@@ -1,10 +1,16 @@
 ---
-title: "Shell history is your best productivity tool"
-status: "Evergreen"
-created: "2024-04-11"
-updated: "2024-04-11"
-tags: [zsh, shell history, atuin, configuration, productivity]
-url: "https://martinheinz.dev/blog/110"
+title: Shell history is your best productivity tool
+status: Evergreen
+created: '2024-04-11'
+updated: '2024-04-11'
+tags:
+- zsh
+- shell history
+- atuin
+- configuration
+- productivity
+url: https://martinheinz.dev/blog/110
+growth_stage: evergreen
 ---
 This is a [very good blog post](https://martinheinz.dev/blog/110) by Martin Heinz on how to configure zsh to take better advantage of your shell history.
 

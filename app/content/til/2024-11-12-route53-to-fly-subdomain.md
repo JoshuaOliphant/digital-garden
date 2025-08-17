@@ -1,9 +1,17 @@
 ---
-title: "Setting Up a Custom Subdomain with Route53 and Fly.io"
-status: "Evergreen"
-created: "2023-11-21"
-updated: "2024-11-21"
-tags: [aws, route53, fly, subdomain, dns-configuration, custom-domain, web-hosting]
+title: Setting Up a Custom Subdomain with Route53 and Fly.io
+status: Evergreen
+created: '2023-11-21'
+updated: '2024-11-21'
+tags:
+- aws
+- route53
+- fly
+- subdomain
+- dns-configuration
+- custom-domain
+- web-hosting
+growth_stage: evergreen
 ---
 
 I built this face shape identifier tool that helps people get personalized hairstyle recommendations based on their face shape, after looking up information on how to choose the right hairstyle for my own face shape. After deploying it to [fly.io](https://fly.io), I wanted to make it accessible through a subdomain of my main website [anoliphantneverforgets.com](https://anoliphantneverforgets.com).

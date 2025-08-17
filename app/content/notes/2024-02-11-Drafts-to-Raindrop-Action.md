@@ -1,9 +1,15 @@
 ---
-title: "Drafts to Raindrop Action"
-status: "Evergreen"
-created: "2024-02-11"
-updated: "2024-09-27"
-tags: [drafts, raindrop, javascript, chatgpt, workflow]
+title: Drafts to Raindrop Action
+status: Evergreen
+created: '2024-02-11'
+updated: '2024-09-27'
+tags:
+- drafts
+- raindrop
+- javascript
+- chatgpt
+- workflow
+growth_stage: evergreen
 ---
 I've been working on making Drafts the central component of my workflow. Today, I went to the [Drafts directory](https://directory.getdrafts.com/) to look for an Action to send a link to [Raindrop](https://raindrop.io/) (where I store bookmark links) and found that there wasn't one. I decided it was time to create my first custom Action, which turned out to be pretty easy.
 

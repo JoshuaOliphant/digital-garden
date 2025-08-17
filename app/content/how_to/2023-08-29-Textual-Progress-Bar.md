@@ -1,9 +1,15 @@
 ---
-title: "Textual Progress Bar"
-status: "Evergreen"
-created: "2023-08-29"
-updated: "2023-08-29"
-tags: [progress-bar, avocet, sqlalchemy, raindrop api, python]
+title: Textual Progress Bar
+status: Evergreen
+created: '2023-08-29'
+updated: '2023-08-29'
+tags:
+- progress-bar
+- avocet
+- sqlalchemy
+- raindrop api
+- python
+growth_stage: evergreen
 ---
 I recently worked out how to get a progress bar in my Avocet bookmark app. Feel free to check it out if you want to see the full code (or even use it). I found that the first time the app loads can take a while, close to 30 seconds, and I didn't want anyone who uses it to think the it was stuck. After looking through the Textual documentation, I found that they already had a progress bar widget, so I didn't need to build it from scratch.
 
