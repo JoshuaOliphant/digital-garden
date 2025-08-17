@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+
+{% block title %}#{{ tag }} - Digital Garden{% endblock %}
+
+{% block content %}
+{% from 'macros/layout.html' import page_container, content_layout %}
+
+{% call page_container(title="Content tagged with #" ~ tag, subtitle=total ~ " posts found") %}
+  {% call content_layout() %}
+    
+    <!-- Tagged Content List -->
+    {% if posts %}
+    <div class="space-y-6">
+      {% for post in posts %}
+      <article class="border-b border-garden-border pb-6">
+        <div class="flex items-start gap-3">
+          <!-- Growth Stage Symbol (from server-side service) -->
+          <span class="text-lg mt-1" title="Growth Stage: {{ post.growth_stage|default('seedling')|title }}">
+            {{ post.growth_symbol }}
+          </span>
+          
+          <div class="flex-1">
+            <!-- Post Title -->
+            <h2 class="text-xl font-semibold mb-1">
+              {% if post.content_type == 'bookmarks' and post.url %}
+              <a href="{{ post.url }}" 
+                 target="_blank"
+                 rel="noopener noreferrer"
+                 class="text-garden-text-primary hover:text-garden-accent transition-colors">
+                {{ post.title }}
+                <span class="ml-1 text-sm text-garden-text-muted">↗</span>
+              </a>
+              {% else %}
+              <a href="/{{ post.content_type }}/{{ post.slug }}" 
+                 class="text-garden-text-primary hover:text-garden-accent transition-colors">
+                {{ post.title }}
+              </a>
+              {% endif %}
+            </h2>
+            
+            <!-- Post Meta -->
+            <div class="flex items-center gap-4 text-sm text-garden-text-muted mb-2">
+              <time datetime="{{ post.created }}">{{ post.created }}</time>
+              <span class="capitalize">{{ post.content_type }}</span>
+              {% if post.tags %}
+              <div class="flex gap-2">
+                {% for tag_item in post.tags[:3] %}
+                <a href="/tags/{{ tag_item }}" class="text-garden-accent hover:underline">#{{ tag_item }}</a>
+                {% endfor %}
+                {% if post.tags|length > 3 %}
+                <span class="text-garden-text-muted">+{{ post.tags|length - 3 }} more</span>
+                {% endif %}
+              </div>
+              {% endif %}
+            </div>
+            
+            <!-- Excerpt if available -->
+            {% if post.excerpt %}
+            <p class="text-garden-text-secondary leading-relaxed">
+              {{ post.excerpt[:200] }}{% if post.excerpt|length > 200 %}...{% endif %}
+            </p>
+            {% endif %}
+          </div>
+        </div>
+      </article>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="text-center py-12">
+      <p class="text-garden-text-muted text-lg">No content found with the tag <span class="font-semibold">#{{ tag }}</span></p>
+      <p class="text-garden-text-muted mt-2">
+        <a href="/topics" class="text-garden-accent hover:underline">Browse all topics</a> to find related content.
+      </p>
+    </div>
+    {% endif %}
+    
+    <!-- Related tags based on co-occurrence -->
+    {% if related_tags %}
+    <div class="mt-12 pt-8 border-t border-garden-border">
+      <h3 class="text-lg font-semibold mb-4">Related Tags</h3>
+      <p class="text-sm text-garden-text-muted mb-4">Tags that frequently appear together with #{{ tag }}</p>
+      <div class="flex flex-wrap gap-2">
+        {% for tag_name, count in related_tags %}
+        <a href="/tags/{{ tag_name }}" 
+           class="inline-block px-3 py-1 text-sm rounded-full bg-garden-sage/10 text-garden-sage-dark hover:bg-garden-accent/20 hover:text-garden-accent transition-colors">
+          #{{ tag_name }} ({{ count }})
+        </a>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+    
+  {% endcall %}
+{% endcall %}
+{% endblock %}

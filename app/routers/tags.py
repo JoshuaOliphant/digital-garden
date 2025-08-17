@@ -45,8 +45,22 @@ async def read_tag(
             post["growth_symbol"] = growth_renderer.render_stage_symbol(GrowthStage.SEEDLING)
             post["growth_css_class"] = growth_renderer.render_stage_css_class(GrowthStage.SEEDLING)
 
-    # Get tag counts for sidebar
-    tag_counts = content_service.get_tag_counts()
+    # Calculate related tags based on co-occurrence
+    related_tags = {}
+    
+    # Count how often other tags appear with the current tag
+    for post in posts:
+        post_tags = post.get("tags", [])
+        for other_tag in post_tags:
+            if other_tag != tag:  # Don't include the current tag
+                related_tags[other_tag] = related_tags.get(other_tag, 0) + 1
+    
+    # Sort by co-occurrence frequency and limit to top 15 most related
+    sorted_related_tags = sorted(
+        related_tags.items(), 
+        key=lambda x: x[1], 
+        reverse=True
+    )[:15]
 
     return HTMLResponse(
         content=env.get_template(template_name).render(
@@ -54,7 +68,7 @@ async def read_tag(
             posts=posts,
             tag=tag,
             total=total,
-            tag_counts=tag_counts,
+            related_tags=sorted_related_tags,
             feature_flags=get_feature_flags(),
         )
     )
