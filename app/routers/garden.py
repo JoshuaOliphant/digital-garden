@@ -30,12 +30,37 @@ async def garden_view(
     # Get all content for garden visualization
     result = content_service.get_all_garden_content()
     
+    # Add growth symbols to each content item using the service
+    from app.models import GrowthStage
+    for item in result["content"]:
+        growth_stage_str = item.get("growth_stage", "seedling")
+        try:
+            growth_stage = GrowthStage(growth_stage_str.lower())
+            item["growth_symbol"] = growth_renderer.render_stage_symbol(growth_stage)
+            item["growth_css_class"] = growth_renderer.render_stage_css_class(growth_stage)
+        except (ValueError, KeyError):
+            # Fallback to seedling if invalid stage
+            item["growth_symbol"] = growth_renderer.render_stage_symbol(GrowthStage.SEEDLING)
+            item["growth_css_class"] = growth_renderer.render_stage_css_class(GrowthStage.SEEDLING)
+    
+    # Get all tags from content
+    all_tags = set()
+    for item in result["content"]:
+        if item.get("tags"):
+            all_tags.update(item["tags"])
+    
+    # Create garden_data object expected by template
+    garden_data = {
+        "content": result["content"],
+        "by_stage": result["by_stage"],
+        "total_count": result["total"],
+        "tags": sorted(list(all_tags)),
+    }
+    
     return HTMLResponse(
         content=env.get_template(template_name).render(
             request=request,
-            content=result["content"],
-            by_stage=result["by_stage"],
-            total=result["total"],
+            garden_data=garden_data,
             growth_renderer=growth_renderer,
             feature_flags=get_feature_flags(),
         )

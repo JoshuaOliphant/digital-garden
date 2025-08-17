@@ -24,13 +24,20 @@ async def read_til(
         else "til.html"
     )
     result = content_service.get_til_posts(page=1)
+    
+    # Get tags from TIL content with counts
+    til_tags = {}
+    for post in result["posts"]:
+        if post.get("tags"):
+            for tag in post["tags"]:
+                til_tags[tag] = til_tags.get(tag, 0) + 1
 
     return HTMLResponse(
         content=env.get_template(template_name).render(
             request=request,
-            tils=result["tils"],
-            til_tags=result["til_tags"],
-            next_page=result["next_page"],
+            tils=result["posts"],
+            til_tags=til_tags,
+            next_page=result.get("total_pages", 1) > result.get("page", 1),
             recent_how_tos=content_service.get_content("how_to", limit=5)["content"],
             recent_notes=content_service.get_content("notes", limit=5)["content"],
             feature_flags=get_feature_flags(),

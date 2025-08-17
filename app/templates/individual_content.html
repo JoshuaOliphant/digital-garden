@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% from 'macros/layout.html' import page_container, content_layout, prose_content %}
+
+{% block title %}{{ metadata.title }}{% endblock %}
+
+{% block content %}
+{% call page_container(title="Digital Garden", subtitle="A place for growing ideas") %}
+  {% call content_layout() %}
+    
+    <!-- Content Header with Growth Stage (matches homepage style) -->
+    <article class="border-b border-garden-border pb-6">
+      <div class="flex items-start gap-3">
+        <!-- Growth Stage Symbol (from server-side service) -->
+        <span class="text-lg mt-1" title="Growth Stage: {{ metadata.growth_stage|title }}">
+          {{ growth_symbol }}
+        </span>
+        
+        <div class="flex-1">
+          <!-- Post Title -->
+          <h1 class="text-2xl font-semibold mb-1 text-garden-text-primary">
+            {{ metadata.title }}
+          </h1>
+          
+          <!-- Post Meta -->
+          <div class="flex items-center gap-4 text-sm text-garden-text-muted mb-4">
+            <time datetime="{{ metadata.created }}">{{ metadata.created }}</time>
+            <span class="capitalize">{{ content_type }}</span>
+            {% if metadata.tags %}
+            <div class="flex gap-2">
+              {% for tag in metadata.tags %}
+              <a href="/tags/{{ tag }}" class="text-garden-accent hover:underline">#{{ tag }}</a>
+              {% endfor %}
+            </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </article>
+    
+    <!-- Main Content -->
+    <div class="mt-6">
+      {% call prose_content() %}
+        {{ content | safe }}
+      {% endcall %}
+    </div>
+    
+    <!-- Backlinks -->
+    {% if backlinks %}
+    <div class="mt-8 pt-6 border-t border-garden-border">
+      <h3 class="text-lg font-semibold mb-3 text-garden-text-primary">Backlinks</h3>
+      <ul class="space-y-2">
+        {% for backlink in backlinks %}
+        <li>
+          <a href="/{{ backlink.content_type }}/{{ backlink.source_slug }}"
+             class="text-garden-accent hover:underline">
+            {{ backlink.source_title }}
+          </a>
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endif %}
+    
+    <!-- Content Metadata -->
+    <div class="mt-8 pt-6 border-t border-garden-border">
+      <div class="text-sm text-garden-text-secondary">
+        <p>Created: {{ metadata.created }}</p>
+        {% if metadata.updated and metadata.updated != metadata.created %}
+          <p>Updated: {{ metadata.updated }}</p>
+        {% endif %}
+      </div>
+    </div>
+    
+  {% endcall %}
+{% endcall %}
+{% endblock %}

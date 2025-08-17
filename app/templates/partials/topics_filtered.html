@@ -1,68 +1,73 @@
 <!-- Filtered Topics Results (HTMX Partial) -->
-<div id="topics-filtered-results">
+<div id="filtered-content">
   {% if total_results == 0 %}
   <div class="text-center py-8">
-    <p class="text-gray-500 dark:text-gray-400">No content found matching your filters.</p>
+    <p class="text-garden-text-muted">
+      {% if selected_tags %}
+        No content found matching {{ selected_tags|join(', ') }}.
+      {% else %}
+        Select topics above to find related content.
+      {% endif %}
+    </p>
   </div>
   {% else %}
   <div class="mb-4 flex items-center justify-between">
-    <p class="text-sm text-gray-600 dark:text-gray-400">
+    <p class="text-sm text-garden-text-secondary">
       Found {{ total_results }} item{{ 's' if total_results != 1 else '' }}
-      {% if selected_topics %}
-        in {{ selected_topics|join(', ') }}
-      {% endif %}
-      {% if search_query %}
-        matching "{{ search_query }}"
+      {% if selected_tags %}
+        matching {{ selected_tags|join(', ') }}
       {% endif %}
     </p>
     <button 
-      hx-post="/api/topics/filter"
-      hx-target="#topics-filtered-results"
-      hx-swap="outerHTML"
-      hx-vals='{"topics": [], "search": ""}'
-      class="text-sm text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300"
+      onclick="document.querySelectorAll('input[type=checkbox]').forEach(cb => cb.checked = false); this.parentElement.parentElement.innerHTML = '<div class=&quot;text-center py-8&quot;><p class=&quot;text-garden-text-muted&quot;>Select topics above to find related content.</p></div>';"
+      class="text-sm text-garden-accent hover:underline"
     >
       Clear filters
     </button>
   </div>
   
-  <div class="space-y-8">
-    {% for status, items in grouped_content.items() if items %}
-    <div>
-      <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center">
-        {% if status == 'Evergreen' %}
-          <span class="mr-2">🌳</span> Evergreen
-        {% elif status == 'Growing' %}
-          <span class="mr-2">🪴</span> Growing
-        {% elif status == 'Budding' %}
-          <span class="mr-2">🌿</span> Budding
-        {% else %}
-          <span class="mr-2">🌱</span> Seedling
-        {% endif %}
-        <span class="ml-2 text-sm text-gray-500 dark:text-gray-400">({{ items|length }})</span>
-      </h3>
-      
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {% for item in items %}
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm hover:shadow-md transition-all p-4">
-          <h4 class="font-medium mb-2">
-            <a href="/{{ item.content_type }}/{{ item.slug }}" 
-               class="text-gray-900 dark:text-gray-100 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">
-              {{ item.title }}
+  <div class="space-y-4">
+    {% for post in filtered_posts %}
+    <article class="bg-garden-surface rounded-lg shadow-sm hover:shadow-md transition-all p-4">
+      <div class="flex items-start gap-3">
+        <!-- Growth Stage Symbol -->
+        <span class="text-lg mt-1" title="Growth Stage: {{ post.growth_stage|default('seedling')|title }}">
+          {% set stage = post.growth_stage|default('seedling') %}
+          {% if stage == 'evergreen' %}■{% elif stage == 'growing' %}●{% elif stage == 'budding' %}◐{% else %}•{% endif %}
+        </span>
+        
+        <div class="flex-1">
+          <!-- Post Title -->
+          <h3 class="text-lg font-semibold mb-1">
+            <a href="/{{ post.content_type }}/{{ post.slug }}" 
+               class="text-garden-text-primary hover:text-garden-accent transition-colors">
+              {{ post.title }}
             </a>
-          </h4>
-          {% if item.description %}
-          <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">{{ item.description|truncate(100) }}</p>
+          </h3>
+          
+          <!-- Post Meta -->
+          <div class="flex items-center gap-4 text-sm text-garden-text-muted mb-2">
+            <time datetime="{{ post.created }}">{{ post.created }}</time>
+            <span class="capitalize">{{ post.content_type }}</span>
+          </div>
+          
+          <!-- Post Description -->
+          {% if post.description %}
+          <p class="text-garden-text-secondary text-sm mb-3 leading-relaxed">{{ post.description|truncate(150) }}</p>
           {% endif %}
-          <div class="flex flex-wrap gap-1">
-            {% for tag in item.tags[:3] %}
-            <span class="text-xs px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded">{{ tag }}</span>
+          
+          <!-- Tags -->
+          <div class="flex flex-wrap gap-2">
+            {% for tag in post.tags %}
+            <span class="text-xs px-2 py-1 bg-garden-accent/10 text-garden-accent rounded-full
+                       {% if tag in selected_tags %}bg-garden-accent text-white{% endif %}">
+              {{ tag }}
+            </span>
             {% endfor %}
           </div>
         </div>
-        {% endfor %}
       </div>
-    </div>
+    </article>
     {% endfor %}
   </div>
   {% endif %}

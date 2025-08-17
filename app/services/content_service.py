@@ -243,7 +243,7 @@ class ContentService(IContentProvider):
         
         # Iterate through all content directories
         for content_dir in self._content_dir.iterdir():
-            if content_dir.is_dir():
+            if content_dir.is_dir() and content_dir.name not in ["unpublished", "pages"]:
                 # Get all markdown files in this directory
                 for file_path in content_dir.glob("*.md"):
                     try:
@@ -497,19 +497,16 @@ class ContentService(IContentProvider):
         """Get content sections for homepage display.
         
         Returns:
-            Dictionary with organized content sections
+            Dictionary with recent posts for simple blog-style homepage
         """
-        # Get recent content from each type
-        notes = self.get_content("notes", limit=5)
-        til = self.get_content("til", limit=5)
-        bookmarks = self.get_bookmarks(limit=5)
+        # Get recent content from all types, sorted by date
+        all_content = self.get_all_content()
+        
+        # Take the most recent 10 posts for homepage
+        recent_posts = all_content[:10]
         
         return {
-            "sections": {
-                "recent_notes": notes.get("content", []),
-                "recent_til": til.get("content", []),
-                "recent_bookmarks": bookmarks
-            }
+            "recent_posts": recent_posts
         }
     
     def get_all_garden_content(self) -> Dict[str, Any]:

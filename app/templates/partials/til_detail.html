@@ -1,0 +1,32 @@
+{% from 'macros/layout.html' import content_card_container, prose_content, metadata_badges, tag_list %}
+{% from 'macros/garden.html' import growth_indicator %}
+
+{% call content_card_container() %}
+  <!-- Metadata and Status -->
+  {{ metadata_badges(til) }}
+  
+  <!-- Growth Stage -->
+  {% if til.growth_stage %}
+    {{ growth_indicator(til.growth_stage) }}
+  {% endif %}
+  
+  <!-- Tags -->
+  {{ tag_list(til.tags, 'til') }}
+  
+  <!-- Main Content -->
+  <div class="mt-6">
+    {% call prose_content() %}
+      {{ til.html | safe }}
+    {% endcall %}
+  </div>
+  
+  <!-- TIL Metadata -->
+  <div class="mt-6 pt-4 border-t border-garden-border">
+    <div class="text-sm text-garden-text-secondary">
+      <p>Created: {{ til.created }}</p>
+      {% if til.updated and til.updated != til.created %}
+        <p>Updated: {{ til.updated }}</p>
+      {% endif %}
+    </div>
+  </div>
+{% endcall %}

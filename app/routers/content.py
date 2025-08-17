@@ -42,32 +42,42 @@ async def read_content(
         backlinks = backlink_service.get_backlinks(page_name)
 
         # Get growth stage information
-        growth_stage = content_data.get("growth_stage", "seedling")
+        growth_stage_str = content_data.get("growth_stage", "seedling")
+        # Convert string to GrowthStage enum
+        from app.models import GrowthStage
+        growth_stage = GrowthStage(growth_stage_str.lower())
         growth_symbol = growth_renderer.render_stage_symbol(growth_stage)
-        growth_css_class = growth_renderer.get_css_class(growth_stage)
+        growth_css_class = growth_renderer.render_stage_css_class(growth_stage)
 
-    except Exception:
-        raise HTTPException(status_code=404, detail="Content not found")
+    except Exception as e:
+        print(f"Content router error: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Internal error: {str(e)}")
 
-    # Template rendering logic (will be updated with proper template setup)
+    # Template rendering logic
     is_htmx = request.headers.get("HX-Request") == "true"
-    template_name = "partials/content.html" if is_htmx else "content_page.html"
+    template_name = "partials/content.html" if is_htmx else "individual_content.html"
 
-    # Import will be updated when main.py template setup is accessible
-    # For now, return a simple HTML response to make tests pass
-    html_content = f"""
-    <html>
-    <head><title>{content_data.get('title', 'Content')}</title></head>
-    <body>
-        <h1>{content_data.get('title', 'Content')}</h1>
-        <div class="content">{content_data.get('html', '')}</div>
-        <div class="growth-stage {growth_css_class}">{growth_symbol}</div>
-        <div class="backlinks">
-            <h3>Backlinks</h3>
-            {''.join([f'<a href="/{bl.get("content_type", "")}/{bl.get("source_slug", "")}">{bl.get("source_title", "")}</a>' for bl in backlinks])}
-        </div>
-    </body>
-    </html>
-    """
+    # Prepare template context
+    context = {
+        "request": request,
+        "metadata": {
+            "title": content_data.get("title", "Content"),
+            "created": content_data.get("created"),
+            "updated": content_data.get("updated"),
+            "tags": content_data.get("tags", []),
+            "status": content_data.get("status", ""),
+            "growth_stage": content_data.get("growth_stage", "seedling"),
+        },
+        "content": content_data.get("html", ""),
+        "content_type": content_type,
+        "growth_symbol": growth_symbol,
+        "growth_css_class": growth_css_class,
+        "backlinks": backlinks,
+        "feature_flags": {"use_compiled_css": True},  # Add feature flags
+    }
 
-    return HTMLResponse(content=html_content)
+    return HTMLResponse(
+        content=env.get_template(template_name).render(context)
+    )

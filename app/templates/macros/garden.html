@@ -1,12 +1,13 @@
 {% macro growth_indicator(status) -%}
   {% set growth_stages = {
-    'Seedling': {'emoji': '🌱', 'class': 'text-garden-sage'},
-    'Budding': {'emoji': '🌿', 'class': 'text-garden-sage-dark'},
-    'Evergreen': {'emoji': '🌳', 'class': 'text-garden-accent'},
-    'draft': {'emoji': '📝', 'class': 'text-garden-text-muted'}
+    'seedling': {'symbol': '•', 'class': 'text-garden-text-muted'},
+    'budding': {'symbol': '◐', 'class': 'text-garden-text-secondary'},
+    'growing': {'symbol': '●', 'class': 'text-garden-text-primary'},
+    'evergreen': {'symbol': '■', 'class': 'text-garden-accent'},
+    'draft': {'symbol': '•', 'class': 'text-garden-text-muted'}
   } %}
-  {% set stage = growth_stages.get(status, {'emoji': '🌱', 'class': 'text-garden-sage'}) %}
-  <span class="{{ stage.class }}" aria-label="Growth stage: {{ status }}">{{ stage.emoji }}</span>
+  {% set stage = growth_stages.get(status|lower, growth_stages.get('seedling')) %}
+  <span class="{{ stage.class }} text-lg" aria-label="Growth stage: {{ status }}" title="Growth Stage: {{ status|title }}">{{ stage.symbol }}</span>
 {%- endmacro %}
 
 {% macro garden_date(date_str) -%}

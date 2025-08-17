@@ -1,5 +1,4 @@
-{% from 'macros/layout.html' import page_container, content_layout, content_card_container, tag_list %}
-{% from 'macros/garden.html' import growth_indicator %}
+{% from 'macros/layout.html' import page_container, content_layout %}
 
 {% call page_container(title='Today I Learned') %}
   {% call content_layout() %}
@@ -9,12 +8,8 @@
     <div class="mb-8">
       <div class="flex flex-wrap gap-2">
         {% for tag, count in til_tags.items() %}
-        <a href="/tags/{{ tag }}?type=til"
-           class="inline-flex items-center px-3 py-1 rounded-full text-sm bg-garden-sage/10 text-garden-sage-dark hover:bg-garden-sage/20 transition-colors"
-           hx-get="/tags/{{ tag }}?type=til"
-           hx-target="#content-area"
-           hx-swap="innerHTML"
-           hx-push-url="true">
+        <a href="/tags/{{ tag }}"
+           class="text-garden-accent hover:underline">
           #{{ tag }} ({{ count }})
         </a>
         {% endfor %}
@@ -22,55 +17,56 @@
     </div>
     {% endif %}
 
-    <!-- TIL Entries -->
-    <div class="grid gap-6">
+    <!-- TIL Entries - Simple Blog Style like Homepage -->
+    {% if tils %}
+    <div class="space-y-6">
       {% for til in tils %}
-      {% call content_card_container() %}
-        <div class="flex justify-between items-start mb-2">
-          <a href="{{ til.url }}"
-             class="text-xl font-semibold text-garden-sage hover:text-garden-sage-dark hover:underline transition-colors"
-             hx-get="{{ til.url }}"
-             hx-target="#content-area"
-             hx-swap="innerHTML"
-             hx-push-url="true">
-            {{ til.title }}
-          </a>
-          <span class="text-sm text-garden-text-muted">{{ til.created }}</span>
-        </div>
-
-        <div class="text-garden-text-secondary mb-3">{{ til.excerpt }}</div>
-
-        <div class="flex items-center gap-4 text-sm">
-          {% if til.tags %}
-          <span class="text-garden-text-muted">
-            <a href="/til/tag/{{ til.tags[0] }}"
-               class="text-garden-sage hover:text-garden-sage-dark hover:underline"
-               hx-get="/til/tag/{{ til.tags[0] }}"
-               hx-target="#content-area"
-               hx-swap="innerHTML"
-               hx-push-url="true">
-              #{{ til.tags[0] }}
-            </a>
+      <article class="border-b border-garden-border pb-6">
+        <div class="flex items-start gap-3">
+          <!-- Growth Stage Symbol -->
+          <span class="text-lg mt-1" title="Growth Stage: {{ til.growth_stage|default('seedling')|title }}">
+            {% set stage = til.growth_stage|default('seedling') %}
+            {% if stage == 'evergreen' %}■{% elif stage == 'growing' %}●{% elif stage == 'budding' %}◐{% else %}•{% endif %}
           </span>
-          {% endif %}
-          {% if til.updated != til.created %}
-          <span class="text-garden-text-muted">
-            Updated: {{ til.updated }}
-          </span>
-          {% endif %}
+          
+          <div class="flex-1">
+            <!-- Post Title -->
+            <h2 class="text-xl font-semibold mb-1">
+              <a href="/til/{{ til.slug }}" 
+                 class="text-garden-text-primary hover:text-garden-accent transition-colors">
+                {{ til.title }}
+              </a>
+            </h2>
+            
+            <!-- Post Meta -->
+            <div class="flex items-center gap-4 text-sm text-garden-text-muted mb-2">
+              <time datetime="{{ til.created }}">{{ til.created }}</time>
+              <span>TIL</span>
+              {% if til.tags %}
+              <div class="flex gap-2">
+                {% for tag in til.tags[:3] %}
+                <a href="/tags/{{ tag }}" class="text-garden-accent hover:underline">#{{ tag }}</a>
+                {% endfor %}
+              </div>
+              {% endif %}
+            </div>
+            
+            <!-- Post Description/Excerpt -->
+            {% if til.excerpt %}
+            <p class="text-garden-text-secondary leading-relaxed">{{ til.excerpt|truncate(200) }}</p>
+            {% endif %}
+          </div>
         </div>
-      {% endcall %}
+      </article>
       {% endfor %}
-      
-      {% if next_page %}
-      <div hx-get="/til/page/{{ next_page }}"
-           hx-trigger="intersect once"
-           hx-swap="afterend"
-           class="bg-garden-surface p-6 rounded-lg shadow text-center border border-garden-border">
-        <div class="animate-spin inline-block w-8 h-8 border-4 border-garden-sage border-t-transparent rounded-full"></div>
-      </div>
-      {% endif %}
     </div>
+    {% else %}
+    <!-- Empty State -->
+    <div class="text-center py-12">
+      <p class="text-garden-text-muted mb-4">No TIL posts found yet.</p>
+      <p class="text-sm text-garden-text-muted">Start learning to see your posts here.</p>
+    </div>
+    {% endif %}
     
   {% endcall %}
 {% endcall %}

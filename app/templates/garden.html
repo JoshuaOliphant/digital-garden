@@ -212,11 +212,8 @@
                     <!-- Growth stage indicator -->
                     <div class="flex items-center justify-between mb-4">
                         <div class="flex items-center gap-2">
-                            <span class="text-2xl">
-                                {% if item.growth_stage == 'Budding' %}🌿
-                                {% elif item.growth_stage == 'Growing' %}🪴  
-                                {% elif item.growth_stage == 'Evergreen' %}🌳
-                                {% else %}🌱{% endif %}
+                            <span class="text-2xl" title="Growth Stage: {{ item.growth_stage|title }}">
+                                {{ item.growth_symbol }}
                             </span>
                             <span class="text-xs font-medium uppercase tracking-wider text-garden-text-muted">
                                 {{ item.type_label or item.content_type }}

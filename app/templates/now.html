@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block title %}Now{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <h1 class="text-3xl font-serif text-garden-text-primary mb-8">Now</h1>
+    
+    {% if content %}
+        <article class="prose prose-garden max-w-none">
+            {{ content.html|safe }}
+        </article>
+        
+        <div class="mt-8 pt-8 border-t border-garden-border">
+            <p class="text-sm text-garden-text-muted">
+                Last updated: {{ content.updated or content.created }}
+            </p>
+        </div>
+    {% else %}
+        <div class="text-center py-12">
+            <p class="text-garden-text-muted">
+                The /now page is coming soon. Check back later to see what I'm currently working on.
+            </p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
