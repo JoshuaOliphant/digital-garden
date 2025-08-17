@@ -5,6 +5,24 @@ These interfaces define contracts for dependency injection and testability.
 
 from abc import ABC, abstractmethod
 from typing import Dict, List, Optional, Set, Any
+from dataclasses import dataclass
+
+
+@dataclass
+class PathValidationResult:
+    """Result of path validation operation."""
+    success: bool
+    errors: List[str]
+    valid_slugs: List[str]
+    invalid_slugs: List[str]
+
+
+@dataclass  
+class CircularReferenceResult:
+    """Result of circular reference detection."""
+    has_cycle: bool
+    cycle_position: Optional[int] = None
+    cycle_slug: Optional[str] = None
 
 
 class IContentProvider(ABC):
@@ -238,4 +256,32 @@ class IBacklinkService(ABC):
     @abstractmethod
     def refresh_cache(self) -> None:
         """Refresh the backlink cache after content changes."""
+        pass
+
+
+class IPathNavigationService(ABC):
+    """Abstract interface for path navigation and validation."""
+
+    @abstractmethod
+    def validate_exploration_path(self, path_string: str) -> PathValidationResult:
+        """Validate exploration path with comprehensive checks.
+
+        Args:
+            path_string: Comma-separated string of note slugs (e.g., "note1,note2,note3")
+
+        Returns:
+            PathValidationResult with validation details
+        """
+        pass
+
+    @abstractmethod
+    def check_circular_references(self, path_notes: List[str]) -> CircularReferenceResult:
+        """Check if path contains circular references.
+
+        Args:
+            path_notes: List of note slugs to check for cycles
+
+        Returns:
+            CircularReferenceResult with cycle detection details
+        """
         pass
