@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="explore-container">
+    <h1>{{ page_title }}</h1>
+    
+    {% if is_empty_path %}
+        <!-- Empty path state - exploration landing -->
+        <div class="explore-landing">
+            <p>Welcome to the exploration interface. Start your journey by selecting content to explore.</p>
+            <p>Add content slugs to the URL like: <code>/explore?path=note1,note2,note3</code></p>
+        </div>
+    {% else %}
+        <!-- Path navigation breadcrumb -->
+        <nav class="explore-breadcrumb">
+            <span>Path: </span>
+            {% for slug in path_slugs %}
+                {% if not loop.last %}
+                    <a href="/explore?path={{ path_slugs[:loop.index]|join(',') }}">{{ slug }}</a>
+                    <span> → </span>
+                {% else %}
+                    <strong>{{ slug }}</strong>
+                {% endif %}
+            {% endfor %}
+        </nav>
+        
+        <!-- Validation errors if any -->
+        {% if errors %}
+        <div class="explore-errors">
+            <h3>Validation Issues:</h3>
+            <ul>
+                {% for error in errors %}
+                    <li>{{ error }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+        
+        <!-- Current content display -->
+        {% if current_content %}
+        <article class="explore-content">
+            <h2>{{ current_content.title }}</h2>
+            
+            {% if current_content.growth_stage %}
+            <div class="content-meta">
+                <span class="growth-stage">{{ current_content.growth_stage }}</span>
+                {% if current_content.tags %}
+                    {% for tag in current_content.tags %}
+                        <span class="tag">{{ tag }}</span>
+                    {% endfor %}
+                {% endif %}
+            </div>
+            {% endif %}
+            
+            <div class="content-body">
+                {{ current_content.html|safe if current_content.html else current_content.content|safe }}
+            </div>
+        </article>
+        {% else %}
+            <p>No content found for the current path.</p>
+        {% endif %}
+        
+        <!-- Navigation suggestions -->
+        <div class="explore-navigation">
+            <h3>Continue Exploring:</h3>
+            <p>Add more content to your path or start a new exploration.</p>
+        </div>
+    {% endif %}
+</div>
+
+<style>
+    .explore-container {
+        max-width: 65ch;
+        margin: 0 auto;
+        padding: 2rem;
+    }
+    
+    .explore-breadcrumb {
+        padding: 1rem;
+        background: rgba(255, 255, 255, 0.05);
+        margin-bottom: 2rem;
+        border-radius: 0.25rem;
+    }
+    
+    .explore-breadcrumb a {
+        color: var(--color-text-secondary);
+        text-decoration: none;
+    }
+    
+    .explore-breadcrumb a:hover {
+        text-decoration: underline;
+    }
+    
+    .explore-errors {
+        background: rgba(255, 0, 0, 0.1);
+        border: 1px solid rgba(255, 0, 0, 0.3);
+        padding: 1rem;
+        margin-bottom: 2rem;
+        border-radius: 0.25rem;
+    }
+    
+    .explore-content {
+        margin-bottom: 2rem;
+    }
+    
+    .content-meta {
+        margin: 1rem 0;
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+    
+    .growth-stage {
+        padding: 0.25rem 0.5rem;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 0.25rem;
+        font-size: 0.875rem;
+    }
+    
+    .tag {
+        padding: 0.25rem 0.5rem;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 0.25rem;
+        font-size: 0.875rem;
+    }
+    
+    .explore-navigation {
+        margin-top: 3rem;
+        padding-top: 2rem;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+</style>
+{% endblock %}

@@ -1,0 +1,96 @@
+<!-- HTMX partial for dynamic exploration updates -->
+<div id="explore-path-content">
+    <!-- Path navigation breadcrumb -->
+    <nav class="explore-breadcrumb">
+        <span>Path: </span>
+        {% for slug in path_slugs %}
+            {% if not loop.last %}
+                <a href="/explore?path={{ path_slugs[:loop.index]|join(',') }}" 
+                   hx-get="/explore?path={{ path_slugs[:loop.index]|join(',') }}"
+                   hx-target="#explore-path-content"
+                   hx-push-url="true">{{ slug }}</a>
+                <span> → </span>
+            {% else %}
+                <strong>{{ slug }}</strong>
+            {% endif %}
+        {% endfor %}
+    </nav>
+    
+    <!-- Validation errors if any -->
+    {% if errors %}
+    <div class="explore-errors">
+        <h3>Validation Issues:</h3>
+        <ul>
+            {% for error in errors %}
+                <li>{{ error }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+    
+    <!-- Current content display -->
+    {% if current_content %}
+    <article class="explore-content">
+        <h2>{{ current_content.title }}</h2>
+        
+        {% if current_content.growth_stage %}
+        <div class="content-meta">
+            <span class="growth-stage">{{ current_content.growth_stage }}</span>
+            {% if current_content.tags %}
+                {% for tag in current_content.tags %}
+                    <span class="tag">{{ tag }}</span>
+                {% endfor %}
+            {% endif %}
+        </div>
+        {% endif %}
+        
+        <div class="content-body">
+            {{ current_content.html|safe if current_content.html else current_content.content|safe }}
+        </div>
+    </article>
+    {% else %}
+        <p>No content found for the current path.</p>
+    {% endif %}
+    
+    <!-- Navigation suggestions with HTMX -->
+    <div class="explore-navigation">
+        <h3>Continue Exploring:</h3>
+        <div class="explore-suggestions">
+            <p>Add more content to extend your path:</p>
+            <div class="suggestion-links">
+                <!-- Example suggestions - in real implementation, these would be dynamic -->
+                <button hx-get="/explore?path={{ path_string }},new-content"
+                        hx-target="#explore-path-content"
+                        hx-push-url="true"
+                        class="explore-suggestion">
+                    + Add "new-content"
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .explore-suggestion {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        color: var(--color-text);
+        padding: 0.5rem 1rem;
+        margin: 0.25rem;
+        border-radius: 0.25rem;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    
+    .explore-suggestion:hover {
+        background: rgba(255, 255, 255, 0.1);
+        border-color: rgba(255, 255, 255, 0.3);
+    }
+    
+    .suggestion-links {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-top: 1rem;
+    }
+</style>

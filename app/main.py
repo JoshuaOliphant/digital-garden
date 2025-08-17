@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Request, HTTPException
+from fastapi import FastAPI, Request, HTTPException, Query, Depends
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from jinja2 import Environment, FileSystemLoader
@@ -28,6 +28,10 @@ from .models import BaseContent, Bookmark, TIL, Note
 from .config import ai_config, content_config
 from .logging_config import setup_logging, get_logger, LogConfig
 from .middleware.logging_middleware import LoggingMiddleware
+from .services.dependencies import get_content_service, get_path_navigation_service
+from .interfaces import IContentProvider, IPathNavigationService
+from .services.dependencies import get_content_service, get_path_navigation_service
+from .interfaces import IContentProvider, IPathNavigationService
 
 # Constants
 CONTENT_DIR = "app/content"
@@ -1544,6 +1548,27 @@ async def read_garden(request: Request):
             garden_data=garden_data,
             feature_flags=get_feature_flags(),
         )
+    )
+
+
+@app.get("/explore", response_class=HTMLResponse)
+async def explore(
+    request: Request,
+    path: Optional[str] = Query(None, max_length=500, description="Comma-separated content slugs"),
+    content_service: IContentProvider = Depends(get_content_service),
+    path_navigation_service: IPathNavigationService = Depends(get_path_navigation_service),
+) -> HTMLResponse:
+    """
+    Handle exploration of content through path accumulation.
+    """
+    from .explore_route import explore_route
+    return await explore_route(
+        request=request,
+        env=env,
+        get_feature_flags=get_feature_flags,
+        path=path,
+        content_service=content_service,
+        path_navigation_service=path_navigation_service
     )
 
 
