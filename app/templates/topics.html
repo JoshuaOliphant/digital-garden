@@ -8,13 +8,13 @@
 <div class="container mx-auto px-4 py-8">
     <!-- Page Header -->
     <div class="mb-8">
-        <h1 class="text-4xl font-bold mb-4 text-gray-900 dark:text-gray-100">
+        <h1 class="text-4xl font-bold mb-4 text-garden-text-primary">
             🌱 Garden Topics
         </h1>
-        <p class="text-lg text-gray-600 dark:text-gray-400">
+        <p class="text-lg text-garden-text-muted">
             Explore the garden by topic areas. Each bed contains related plants grouped by theme.
         </p>
-        <div class="mt-4 flex gap-4 text-sm text-gray-500 dark:text-gray-500">
+        <div class="mt-4 flex gap-4 text-sm text-garden-text-muted">
             <span>🏷️ {{ total_tags }} topics</span>
             <span>📝 {{ total_content }} plants</span>
         </div>
@@ -23,12 +23,12 @@
     <!-- Garden Beds Grid -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
         {% for bed_name, bed_info in topics_data.items() %}
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
+        <div class="bg-garden-surface rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
             <div class="flex items-center justify-between mb-4">
-                <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100">
+                <h2 class="text-xl font-semibold text-garden-text-primary">
                     {{ bed_info.icon }} {{ bed_name }}
                 </h2>
-                <span class="text-sm text-gray-500 dark:text-gray-400">
+                <span class="text-sm text-garden-text-muted">
                     {{ bed_info.total_count }} plants
                 </span>
             </div>
@@ -50,11 +50,11 @@
     </div>
 
     <!-- Filter Interface -->
-    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-8">
-        <h2 class="text-2xl font-semibold mb-4 text-gray-900 dark:text-gray-100">
+    <div class="bg-garden-surface rounded-lg shadow-md p-6 mb-8">
+        <h2 class="text-2xl font-semibold mb-4 text-garden-text-primary">
             🔍 Filter by Topics
         </h2>
-        <p class="text-gray-600 dark:text-gray-400 mb-4">
+        <p class="text-garden-text-muted mb-4">
             Select multiple topics to find content at their intersection.
         </p>
         
@@ -64,7 +64,7 @@
               class="space-y-4">
             {% for bed_name, bed_info in topics_data.items() %}
             <div>
-                <h3 class="font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <h3 class="font-medium text-garden-text-secondary mb-2">
                     {{ bed_info.icon }} {{ bed_name }}
                 </h3>
                 <div class="flex flex-wrap gap-2">
@@ -73,8 +73,8 @@
                         <input type="checkbox" 
                                name="tags" 
                                value="{{ tag.name }}"
-                               class="mr-2 rounded text-green-600 focus:ring-green-500">
-                        <span class="text-sm text-gray-700 dark:text-gray-300">
+                               class="mr-2 rounded text-garden-accent focus:ring-garden-accent">
+                        <span class="text-sm text-garden-text-secondary">
                             {{ tag.name }} ({{ tag.count }})
                         </span>
                     </label>
@@ -88,7 +88,7 @@
     <!-- Filtered Content Results -->
     <div id="filtered-content">
         <!-- HTMX will inject filtered results here -->
-        <div class="text-center text-gray-500 dark:text-gray-400 py-8">
+        <div class="text-center text-garden-text-muted py-8">
             <p>Select topics above to explore related content</p>
         </div>
     </div>
@@ -101,9 +101,9 @@
     document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
         checkbox.addEventListener('change', function() {
             if (this.checked) {
-                this.parentElement.classList.add('bg-green-50', 'dark:bg-green-900/20');
+                this.parentElement.classList.add('bg-garden-accent/10');
             } else {
-                this.parentElement.classList.remove('bg-green-50', 'dark:bg-green-900/20');
+                this.parentElement.classList.remove('bg-garden-accent/10');
             }
         });
     });
