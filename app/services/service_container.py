@@ -10,7 +10,7 @@ from contextlib import asynccontextmanager
 import threading
 from fastapi import FastAPI
 
-from app.config import ContentConfig
+from app.config import CONTENT_DIR
 from app.interfaces import IContentProvider, IBacklinkService, IPathNavigationService
 from app.services.content_service import ContentService
 from app.services.backlink_service import BacklinkService
@@ -158,27 +158,18 @@ class ServiceContainer:
 
 
 # Service factory functions
-def create_content_service(config: Optional[ContentConfig] = None) -> IContentProvider:
+def create_content_service(content_dir: Optional[str] = None, cache_ttl: int = 300) -> IContentProvider:
     """Create ContentService instance with configuration.
 
     Args:
-        config: Content configuration
+        content_dir: Path to content directory
+        cache_ttl: Cache time-to-live in seconds
 
     Returns:
         ContentService instance
-
-    Raises:
-        ServiceInitializationError: If config is invalid
     """
-    if config is None:
-        config = ContentConfig()
-
-    if not isinstance(config, ContentConfig):
-        raise ServiceInitializationError("Invalid ContentConfig provided")
-
-    # Extract config values
-    content_dir = getattr(config, "content_dir", "app/content")
-    cache_ttl = getattr(config, "cache_ttl", 300)
+    if content_dir is None:
+        content_dir = CONTENT_DIR
 
     return ContentService(content_dir=content_dir, cache_ttl=cache_ttl)
 
@@ -231,12 +222,9 @@ def setup_container() -> ServiceContainer:
     """
     container = ServiceContainer()
 
-    # Get configuration
-    config = ContentConfig()
-
     # Register ContentService (singleton)
     container.register_singleton(
-        "content_service", lambda: create_content_service(config)
+        "content_service", lambda: create_content_service(CONTENT_DIR, 300)
     )
 
     # Register BacklinkService (singleton, depends on ContentService)

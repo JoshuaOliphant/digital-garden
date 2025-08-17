@@ -1,6 +1,6 @@
 import pytest
 from datetime import datetime
-from app.main import ContentManager
+from app.content_manager import ContentManager
 
 
 @pytest.mark.asyncio

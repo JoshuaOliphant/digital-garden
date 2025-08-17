@@ -10,7 +10,7 @@ from datetime import datetime
 
 import pytest
 
-from app.main import ContentManager
+from app.content_manager import ContentManager
 
 
 class TestContentManagerLogging:

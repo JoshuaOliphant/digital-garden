@@ -7,7 +7,8 @@ import os
 from pathlib import Path
 from typing import Optional
 from functools import lru_cache
-from pydantic import BaseSettings, Field
+from pydantic_settings import BaseSettings
+from pydantic import Field
 
 # Base paths
 BASE_DIR = Path(__file__).resolve().parent.parent

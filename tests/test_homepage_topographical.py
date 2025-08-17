@@ -398,7 +398,7 @@ class TestHomepageContentManager:
     @pytest.fixture
     def content_manager(self):
         """Create ContentManager instance for testing."""
-        from app.main import ContentManager
+        from app.content_manager import ContentManager
         return ContentManager()
 
     def test_get_homepage_sections_method_exists(self, content_manager):

@@ -25,7 +25,7 @@ from pydantic import ValidationError
 import logfire
 
 from .models import BaseContent, Bookmark, TIL, Note
-from .config import ai_config, content_config
+from .config import get_settings, configure_logfire, CONTENT_DIR, TEMPLATE_DIR, SITE_URL
 from .logging_config import setup_logging, get_logger, LogConfig
 from .middleware.logging_middleware import LoggingMiddleware
 from .services.dependencies import get_content_service, get_path_navigation_service, get_backlink_service, get_growth_stage_renderer
@@ -269,17 +269,17 @@ def generate_rss_feed():
 
     rss += '<channel>\n'
     rss += '<title>An Oliphant Never Forgets</title>\n'
-    rss += f'<link>{content_config.base_url}</link>\n'
+    rss += f'<link>{SITE_URL}</link>\n'
     rss += '<description>Latest content from An Oliphant Never Forgets</description>\n'
     rss += '<language>en-us</language>\n'
     rss += '<managingEditor>joshua.oliphant@gmail.com (Joshua Oliphant)</managingEditor>\n'
     rss += '<webMaster>joshua.oliphant@gmail.com (Joshua Oliphant)</webMaster>\n'
-    rss += f'<atom:link href="{content_config.base_url}/feed.xml" rel="self" type="application/rss+xml" />\n'
+    rss += f'<atom:link href="{SITE_URL}/feed.xml" rel="self" type="application/rss+xml" />\n'
 
     for item, content_type in all_content:
         rss += "<item>\n"
         rss += f'<title>{item["title"]}</title>\n'
-        rss += f'<link>{content_config.base_url}/{content_type}/{item["name"]}</link>\n'
+        rss += f'<link>{SITE_URL}/{content_type}/{item["name"]}</link>\n'
         rss += '<author>joshua.oliphant@gmail.com (Joshua Oliphant)</author>\n'
 
         # Add description/excerpt if available
@@ -308,7 +308,7 @@ def generate_rss_feed():
         for tag in tags:
             rss += f"<category>{tag}</category>\n"
 
-        rss += f'<guid>{content_config.base_url}/{content_type}/{item["name"]}</guid>\n'
+        rss += f'<guid>{SITE_URL}/{content_type}/{item["name"]}</guid>\n'
         rss += '</item>\n'
 
     rss += "</channel>\n"
@@ -319,7 +319,7 @@ def generate_rss_feed():
 def generate_sitemap() -> str:
     """Generate XML sitemap for the site"""
     # Base URL for the site
-    base_url = content_config.base_url
+    base_url = SITE_URL
     
     # Start XML sitemap
     sitemap = '<?xml version="1.0" encoding="UTF-8"?>\n'
@@ -422,7 +422,7 @@ async def robots():
     return Response(
         content=f"""User-agent: *
 Allow: /
-Sitemap: {content_config.base_url}/sitemap.xml""",
+Sitemap: {SITE_URL}/sitemap.xml""",
         media_type="text/plain"
     )
 

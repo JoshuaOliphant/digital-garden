@@ -19,14 +19,14 @@ from markdown.extensions.fenced_code import FencedCodeExtension
 from markdown.extensions.codehilite import CodeHiliteExtension
 from bs4 import BeautifulSoup
 from pydantic import ValidationError
-from logfire import get_logger
+import logging
 
 from app.models import BaseContent, Bookmark, TIL, Note
 from app.utils.cache import timed_lru_cache
 
 
 class ContentManager:
-    logger = get_logger(__name__)
+    logger = logging.getLogger(__name__)
     CONTENT_TYPE_MAP = {
         "bookmarks": Bookmark,
         "til": TIL,
@@ -377,7 +377,7 @@ class ContentManager:
 
     @staticmethod
     @staticmethod
-    @timed_lru_cache(maxsize=1, ttl_seconds=3600)
+    @timed_lru_cache(maxsize=1, seconds=3600)
     async def get_github_stars(page: int = 1, per_page: int = 30) -> dict:
         """
         Fetch starred GitHub repositories asynchronously with pagination.
@@ -721,7 +721,7 @@ class ContentManager:
         return sorted(tils, key=lambda x: x["created"], reverse=True)
 
     @staticmethod
-    @timed_lru_cache(maxsize=10, ttl_seconds=300)  # Cache for 5 minutes
+    @timed_lru_cache(maxsize=10, seconds=300)  # Cache for 5 minutes
     async def get_mixed_content(page: int = 1, per_page: int = 10) -> dict:
         """Get mixed content (notes, how-tos, bookmarks, TILs) sorted by date"""
         try:
@@ -940,7 +940,7 @@ class ContentManager:
         }
     
     @staticmethod
-    @timed_lru_cache(maxsize=1, ttl_seconds=300)
+    @timed_lru_cache(maxsize=1, seconds=300)
     async def get_homepage_sections() -> Dict[str, Any]:
         """Get structured content sections for the topographical homepage."""
         from collections import defaultdict
