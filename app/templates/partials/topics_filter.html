@@ -4,19 +4,19 @@
 {% if filtered_content %}
 <div class="space-y-4">
     <div class="flex items-center justify-between mb-4">
-        <h3 class="text-xl font-semibold text-gray-900 dark:text-gray-100">
+        <h3 class="text-xl font-semibold text-garden-text-primary">
             🌿 Filtered Results
         </h3>
-        <span class="text-sm text-gray-500 dark:text-gray-400">
+        <span class="text-sm text-garden-text-muted">
             {{ total_results }} plant{{ 's' if total_results != 1 else '' }} found
         </span>
     </div>
     
     {% if selected_tags %}
     <div class="mb-4">
-        <span class="text-sm text-gray-600 dark:text-gray-400 mr-2">Active filters:</span>
+        <span class="text-sm text-garden-text-muted mr-2">Active filters:</span>
         {% for tag in selected_tags %}
-        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-200 text-green-800">
             {{ tag }}
         </span>
         {% endfor %}
@@ -25,15 +25,15 @@
     
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {% for content in filtered_content %}
-        <article class="bg-white dark:bg-gray-800 rounded-lg shadow hover:shadow-md transition-shadow p-4">
+        <article class="bg-garden-surface rounded-lg shadow hover:shadow-md transition-shadow p-4">
             <!-- Content Type Badge -->
             <div class="flex items-start justify-between mb-2">
                 <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium
-                    {% if content.type == 'bookmarks' %}bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200
-                    {% elif content.type == 'til' %}bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200
-                    {% elif content.type == 'notes' %}bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200
-                    {% elif content.type == 'how_to' %}bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200
-                    {% else %}bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200{% endif %}">
+                    {% if content.type == 'bookmarks' %}bg-blue-200 text-blue-800
+                    {% elif content.type == 'til' %}bg-garden-sage/20 text-garden-sage-dark
+                    {% elif content.type == 'notes' %}bg-green-200 text-green-800
+                    {% elif content.type == 'how_to' %}bg-yellow-200 text-yellow-800
+                    {% else %}bg-garden-surface text-garden-text-primary{% endif %}">
                     {{ content.type.replace('_', ' ').title() }}
                 </span>
                 
@@ -49,7 +49,7 @@
                 <a href="{{ content.url }}" 
                    target="_blank" 
                    rel="noopener noreferrer"
-                   class="text-blue-600 dark:text-blue-400 hover:underline">
+                   class="text-garden-accent hover:underline">
                     {{ content.title }}
                     <svg class="inline-block w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
@@ -58,7 +58,7 @@
                 </a>
                 {% else %}
                 <a href="/{{ content.type }}/{{ content.slug }}" 
-                   class="text-gray-900 dark:text-gray-100 hover:text-green-600 dark:hover:text-green-400">
+                   class="text-garden-text-primary hover:text-garden-accent">
                     {{ content.title }}
                 </a>
                 {% endif %}
@@ -66,13 +66,13 @@
             
             <!-- Description/Excerpt -->
             {% if content.description %}
-            <p class="text-sm text-gray-600 dark:text-gray-400 mb-3 line-clamp-2">
+            <p class="text-sm text-garden-text-muted mb-3 line-clamp-2">
                 {{ content.description[:150] }}{% if content.description|length > 150 %}...{% endif %}
             </p>
             {% endif %}
             
             <!-- Metadata -->
-            <div class="flex items-center justify-between text-xs text-gray-500 dark:text-gray-500">
+            <div class="flex items-center justify-between text-xs text-garden-text-muted">
                 {% if content.created %}
                 <time datetime="{{ content.created }}">
                     {{ content.created }}
@@ -80,7 +80,7 @@
                 {% endif %}
                 
                 {% if content.difficulty %}
-                <span class="px-2 py-1 rounded bg-gray-100 dark:bg-gray-700">
+                <span class="px-2 py-1 rounded bg-garden-surface">
                     {{ content.difficulty }}
                 </span>
                 {% endif %}
@@ -90,12 +90,12 @@
             {% if content.tags %}
             <div class="mt-3 flex flex-wrap gap-1">
                 {% for tag in content.tags[:3] %}
-                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400">
+                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs bg-garden-surface text-garden-text-muted">
                     {{ tag }}
                 </span>
                 {% endfor %}
                 {% if content.tags|length > 3 %}
-                <span class="text-xs text-gray-400">+{{ content.tags|length - 3 }}</span>
+                <span class="text-xs text-garden-text-muted">+{{ content.tags|length - 3 }}</span>
                 {% endif %}
             </div>
             {% endif %}
@@ -105,13 +105,13 @@
 </div>
 {% else %}
 <div class="text-center py-12">
-    <div class="text-gray-400 dark:text-gray-500 mb-4">
+    <div class="text-garden-text-muted mb-4">
         <svg class="mx-auto h-12 w-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
                   d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
         </svg>
     </div>
-    <p class="text-gray-600 dark:text-gray-400">
+    <p class="text-garden-text-muted">
         {% if selected_tags %}
         No content found with the selected topics.
         {% else %}
