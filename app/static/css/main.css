@@ -1,3 +1,19 @@
+/* JetBrains Mono Font Import with Performance Optimization */
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400;1,500;1,700&display=swap');
+
+/* CSS Custom Properties for Typography System */
+:root {
+    --font-mono: "JetBrains Mono", "SF Mono", Monaco, "Cascadia Code", "Roboto Mono", Consolas, "Courier New", monospace;
+    --color-bg: #1a1a1a;
+    --color-surface: #2d2d2d;
+    --color-text-primary: #ffffff;
+    --color-text-secondary: #e9ecef;
+    --color-text-muted: #f8f9fa;
+    --color-border: #4a5568;
+    --reading-width: 65ch;
+    --focus-ring: 0 0 0 2px #10b981;
+}
+
 /* Reset and base styles */
 *, ::before, ::after {
     box-sizing: border-box;
@@ -9,7 +25,7 @@
 body {
     margin: 0;
     line-height: inherit;
-    font-family: Inter, sans-serif;
+    font-family: var(--font-mono);
 }
 
 /* Container */
@@ -122,17 +138,17 @@ body {
 .text-blue-800 { color: #1e40af; }
 .text-emerald-500 { color: #10b981; }
 
-/* Garden theme colors */
-.bg-garden-bg { background-color: #f8fafc; }
-.bg-garden-surface { background-color: #ffffff; }
-.text-garden-text-primary { color: #1e293b; }
-.text-garden-text-muted { color: #64748b; }
+/* Garden theme colors - Dark Theme */
+.bg-garden-bg { background-color: var(--color-bg); }
+.bg-garden-surface { background-color: var(--color-surface); }
+.text-garden-text-primary { color: var(--color-text-primary); }
+.text-garden-text-muted { color: var(--color-text-muted); }
 
 /* Borders */
 .border { border-width: 1px; }
 .border-b { border-bottom-width: 1px; }
 .border-t { border-top-width: 1px; }
-.border-garden-border { border-color: #e2e8f0; }
+.border-garden-border { border-color: var(--color-border); }
 .rounded { border-radius: 0.25rem; }
 .rounded-full { border-radius: 9999px; }
 .rounded-lg { border-radius: 0.5rem; }
@@ -205,10 +221,10 @@ body {
     }
 }
 
-/* Prose styling for content */
+/* Prose styling for content - Dark Theme with CSS Variables */
 .prose {
-    color: #374151;
-    max-width: 65ch;
+    color: var(--color-text-secondary);
+    max-width: var(--reading-width);
 }
 
 .prose p {
@@ -216,8 +232,11 @@ body {
     margin-bottom: 1.25em;
 }
 
+.prose h1, .prose h2, .prose h3 {
+    color: var(--color-text-primary);
+}
+
 .prose h1 {
-    color: #111827;
     font-weight: 800;
     font-size: 2.25em;
     margin-top: 0;
@@ -226,7 +245,6 @@ body {
 }
 
 .prose h2 {
-    color: #111827;
     font-weight: 700;
     font-size: 1.5em;
     margin-top: 2em;
@@ -235,7 +253,6 @@ body {
 }
 
 .prose h3 {
-    color: #111827;
     font-weight: 600;
     font-size: 1.25em;
     margin-top: 1.6em;
@@ -244,9 +261,14 @@ body {
 }
 
 .prose a {
-    color: #111827;
+    color: var(--color-text-primary);
     text-decoration: underline;
     font-weight: 500;
+}
+
+.prose a:focus {
+    outline: none;
+    box-shadow: var(--focus-ring);
 }
 
 .prose ul {
@@ -264,7 +286,7 @@ body {
 }
 
 .prose code {
-    color: #111827;
+    color: var(--color-text-primary);
     font-weight: 600;
     font-size: 0.875em;
 }
@@ -285,9 +307,9 @@ body {
 .prose blockquote {
     font-weight: 500;
     font-style: italic;
-    color: #111827;
+    color: var(--color-text-primary);
     border-left-width: 0.25rem;
-    border-left-color: #e5e7eb;
+    border-left-color: var(--color-border);
     margin-top: 1.6em;
     margin-bottom: 1.6em;
     padding-left: 1em;
