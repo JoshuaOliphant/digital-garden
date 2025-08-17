@@ -32,7 +32,7 @@
             {% for how_to in recent_how_tos.content[:5] %}
             <li>
               <a href="/how_to/{{ how_to.name }}"
-                 class="text-garden-sage hover:text-garden-sage-dark hover:underline transition-colors"
+                 class="text-garden-accent hover:text-garden-accent hover:underline transition-colors"
                  hx-get="/how_to/{{ how_to.name }}"
                  hx-target="#content-area"
                  hx-swap="innerHTML"
@@ -52,7 +52,7 @@
             {% for note in recent_notes.content[:5] %}
             <li>
               <a href="/notes/{{ note.name }}"
-                 class="text-garden-sage hover:text-garden-sage-dark hover:underline transition-colors"
+                 class="text-garden-accent hover:text-garden-accent hover:underline transition-colors"
                  hx-get="/notes/{{ note.name }}"
                  hx-target="#content-area"
                  hx-swap="innerHTML"

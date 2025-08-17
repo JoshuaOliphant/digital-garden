@@ -28,10 +28,10 @@ from .models import BaseContent, Bookmark, TIL, Note
 from .config import ai_config, content_config
 from .logging_config import setup_logging, get_logger, LogConfig
 from .middleware.logging_middleware import LoggingMiddleware
-from .services.dependencies import get_content_service, get_path_navigation_service
-from .interfaces import IContentProvider, IPathNavigationService
-from .services.dependencies import get_content_service, get_path_navigation_service
-from .interfaces import IContentProvider, IPathNavigationService
+from .services.dependencies import get_content_service, get_path_navigation_service, get_backlink_service, get_growth_stage_renderer
+from .interfaces import IContentProvider, IPathNavigationService, IBacklinkService
+from .services.growth_stage_renderer import GrowthStageRenderer
+from .routers import til, bookmarks, tags
 
 # Constants
 CONTENT_DIR = "app/content"
@@ -121,6 +121,12 @@ app.add_middleware(
 )
 
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+
+# Register routers with service injection
+app.include_router(til.router)
+app.include_router(bookmarks.router)
+app.include_router(tags.router)
+
 env = Environment(loader=FileSystemLoader(TEMPLATE_DIR))
 
 # Configure Logfire with proper token validation
@@ -1862,6 +1868,7 @@ async def get_mixed_content_api(
     page: int = 1,
     per_page: int = 10,
     content_types: Optional[List[str]] = None,
+    content_service: IContentProvider = Depends(get_content_service),
 ):
     """Return paginated mixed content as an ``HTMLResponse``."""
     with logfire.span("mixed_content_api", page=page, per_page=per_page):
@@ -1880,7 +1887,7 @@ async def get_mixed_content_api(
                 )
 
             with logfire.span("fetching_mixed_content"):
-                result = await ContentManager.get_mixed_content(
+                result = await content_service.get_mixed_content(
                     page=page, per_page=per_page
                 )
                 logfire.debug(
@@ -1911,13 +1918,24 @@ async def get_mixed_content_api(
 
 
 @app.get("/{content_type}/{page_name}", response_class=HTMLResponse)
-async def read_content(request: Request, content_type: str, page_name: str):
+async def read_content(
+    request: Request, 
+    content_type: str, 
+    page_name: str,
+    content_service: IContentProvider = Depends(get_content_service),
+    backlink_service: IBacklinkService = Depends(get_backlink_service),
+    growth_renderer: GrowthStageRenderer = Depends(get_growth_stage_renderer)
+):
     """Render a page for ``content_type`` and ``page_name`` as ``HTMLResponse``."""
-    file_path = f"{CONTENT_DIR}/{content_type}/{page_name}.md"
-    if not os.path.exists(file_path):
+    try:
+        content_data = content_service.get_content_by_slug(content_type, page_name)
+        if not content_data:
+            raise HTTPException(status_code=404, detail="Content not found")
+        
+        # Get backlinks for this content
+        backlinks = backlink_service.get_backlinks(page_name)
+    except Exception as e:
         raise HTTPException(status_code=404, detail="Content not found")
-
-    content_data = ContentManager.render_markdown(file_path)
     is_htmx = request.headers.get("HX-Request") == "true"
     template_name = "partials/content.html" if is_htmx else "content_page.html"
 
@@ -2005,14 +2023,17 @@ async def read_stars_page(request: Request, page: int):
 
 
 @app.get("/til", response_class=HTMLResponse)
-async def read_til(request: Request):
+async def read_til(
+    request: Request,
+    content_service: IContentProvider = Depends(get_content_service),
+):
     """Render the TIL index page as an ``HTMLResponse``."""
     template_name = (
         "partials/til.html"
         if request.headers.get("HX-Request") == "true"
         else "til.html"
     )
-    result = ContentManager.get_til_posts(page=1)
+    result = content_service.get_til_posts(page=1)
 
     return HTMLResponse(
         content=env.get_template(template_name).render(
@@ -2020,8 +2041,8 @@ async def read_til(request: Request):
             tils=result["tils"],
             til_tags=result["til_tags"],
             next_page=result["next_page"],
-            recent_how_tos=ContentManager.get_content("how_to", limit=5),
-            recent_notes=ContentManager.get_content("notes", limit=5),
+            recent_how_tos=content_service.get_content("how_to", limit=5)["content"],
+            recent_notes=content_service.get_content("notes", limit=5)["content"],
             feature_flags=get_feature_flags(),
         )
     )

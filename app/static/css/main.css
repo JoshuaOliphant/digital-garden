@@ -164,9 +164,11 @@ body {
 /* Garden theme colors - Dark Theme */
 .bg-garden-bg { background-color: var(--color-bg); }
 .bg-garden-surface { background-color: var(--color-surface); }
+.bg-garden-surface-alt { background-color: #353535; }
 .text-garden-text-primary { color: var(--color-text-primary); }
 .text-garden-text-secondary { color: var(--color-text-secondary); }
 .text-garden-text-muted { color: var(--color-text-muted); }
+.text-white { color: #ffffff; }
 
 /* Garden sage and accent colors with opacity variants */
 .bg-garden-sage { background-color: var(--color-garden-sage); }
@@ -242,6 +244,7 @@ body {
 
 /* Hover states */
 .hover\:text-garden-accent:hover { color: var(--color-garden-accent); }
+.hover\:text-white:hover { color: #ffffff; }
 .hover\:underline:hover { text-decoration-line: underline; }
 .hover\:bg-garden-accent:hover { background-color: var(--color-garden-accent); }
 .hover\:shadow-lg:hover { box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1); }
