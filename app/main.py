@@ -23,7 +23,6 @@ from fastapi.responses import Response
 from email.utils import format_datetime
 from pydantic import ValidationError
 import logfire
-import json
 
 from .models import BaseContent, Bookmark, TIL, Note
 from .config import ai_config, content_config
