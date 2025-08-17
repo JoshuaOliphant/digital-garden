@@ -1,7 +1,7 @@
 """RSS feed and sitemap generation utilities."""
 
 from datetime import datetime
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from email.utils import format_datetime
 import xml.etree.ElementTree as ET
 from xml.dom import minidom
@@ -9,14 +9,35 @@ from xml.dom import minidom
 from app.interfaces import IContentProvider
 
 
-def generate_rss_feed(content_service: IContentProvider) -> str:
-    """Generate RSS feed XML from content service."""
+def generate_rss_feed(content_service: IContentProvider, growth_stage: Optional[str] = None) -> str:
+    """Generate RSS feed XML from content service.
+    
+    Args:
+        content_service: The content provider service
+        growth_stage: Optional filter by growth stage (seedling, budding, growing, evergreen)
+    """
     # Get all content from service
     posts = content_service.get_all_content()
     
     # Filter out drafts and sort by date
     published_posts = [p for p in posts if p.get("status") != "draft"]
-    published_posts.sort(key=lambda x: x.get("created", datetime.min), reverse=True)
+    
+    # Filter by growth stage if specified
+    if growth_stage:
+        valid_stages = ["seedling", "budding", "growing", "evergreen"]
+        if growth_stage.lower() in valid_stages:
+            published_posts = [p for p in published_posts if p.get("growth_stage", "seedling").lower() == growth_stage.lower()]
+    
+    # Sort by date with proper type handling
+    def get_sort_key(item):
+        created = item.get("created", "")
+        if isinstance(created, str):
+            return created
+        if hasattr(created, 'isoformat'):
+            return created.isoformat()
+        return str(created)
+    
+    published_posts.sort(key=get_sort_key, reverse=True)
     
     base_url = "https://joshuaoliph.com"
     title = "Joshua Oliphant's Digital Garden"
@@ -45,7 +66,7 @@ def generate_rss_feed(content_service: IContentProvider) -> str:
         slug = post.get("slug", post.get("name", ""))
         ET.SubElement(item, "link").text = f"{base_url}/{content_type}/{slug}"
         
-        # Description
+        # Description with growth stage info
         description = post.get("description", "")
         if not description and "html" in post:
             # Extract first paragraph from HTML
@@ -53,12 +74,46 @@ def generate_rss_feed(content_service: IContentProvider) -> str:
             match = re.search(r'<p>(.*?)</p>', post["html"])
             if match:
                 description = match.group(1)
+        
+        # Add growth stage information to description
+        growth_stage = post.get("growth_stage", "seedling")
+        growth_indicator = {
+            "seedling": "🌱 Seedling",
+            "budding": "🌿 Budding", 
+            "growing": "🌳 Growing",
+            "evergreen": "🌲 Evergreen"
+        }.get(growth_stage.lower(), "🌱 Seedling")
+        
+        if description:
+            description = f"[{growth_indicator}] {description}"
+        else:
+            description = f"[{growth_indicator}] {post.get('title', 'Untitled')}"
+            
         ET.SubElement(item, "description").text = description
         
-        # Publication date
-        pub_date = post.get("created", datetime.now().isoformat())
+        # Publication date - handle multiple date formats
+        pub_date = post.get("created", datetime.now())
+        
+        # Convert to datetime object if needed
         if isinstance(pub_date, str):
-            pub_date = datetime.fromisoformat(pub_date.replace("Z", "+00:00"))
+            try:
+                # Try standard ISO format first
+                pub_date = datetime.fromisoformat(pub_date.replace("Z", "+00:00"))
+            except ValueError:
+                try:
+                    # Try simple date format like "2025-1-14"
+                    pub_date = datetime.strptime(pub_date, "%Y-%m-%d")
+                except ValueError:
+                    # Fallback to current date
+                    pub_date = datetime.now()
+        elif hasattr(pub_date, 'date') and not hasattr(pub_date, 'time'):
+            # Handle datetime.date objects by converting to datetime
+            from datetime import time
+            pub_date = datetime.combine(pub_date, time.min)
+        elif not isinstance(pub_date, datetime):
+            # Fallback for any other type
+            pub_date = datetime.now()
+            
         ET.SubElement(item, "pubDate").text = format_datetime(pub_date)
         
         # GUID
