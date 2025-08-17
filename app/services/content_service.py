@@ -254,8 +254,18 @@ class ContentService(IContentProvider):
                         # Skip files with validation errors
                         continue
         
-        # Sort by created date (newest first)
-        all_content.sort(key=lambda x: x.get("created", ""), reverse=True)
+        # Sort by created date (newest first) - handle both datetime and string formats
+        def get_sort_key(item):
+            created = item.get("created", "")
+            # If it's already a string, return it
+            if isinstance(created, str):
+                return created
+            # If it's a datetime/date object, convert to ISO string
+            if hasattr(created, 'isoformat'):
+                return created.isoformat()
+            return str(created)
+        
+        all_content.sort(key=get_sort_key, reverse=True)
         
         # Cache the result
         self._set_cache(cache_key, all_content)
@@ -307,8 +317,18 @@ class ContentService(IContentProvider):
                     # Skip files with validation errors
                     continue
         
-        # Sort by created date
-        content_list.sort(key=lambda x: x.get("created", ""), reverse=True)
+        # Sort by created date - handle both datetime and string formats
+        def get_sort_key(item):
+            created = item.get("created", "")
+            # If it's already a string, return it
+            if isinstance(created, str):
+                return created
+            # If it's a datetime/date object, convert to ISO string
+            if hasattr(created, 'isoformat'):
+                return created.isoformat()
+            return str(created)
+        
+        content_list.sort(key=get_sort_key, reverse=True)
         
         # Apply limit if specified
         if limit:
