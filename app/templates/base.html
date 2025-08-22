@@ -29,11 +29,33 @@
                     <span class="text-xl font-semibold text-garden-text-primary">An Oliphant Never Forgets</span>
                 </a>
                 <div class="flex items-center space-x-6">
-                    <ul class="flex space-x-6">
-                        <li><a href="/" class="text-white hover:text-garden-accent transition-colors">Home</a></li>
-                        <li><a href="/now" class="text-white hover:text-garden-accent transition-colors">Now</a></li>
-                        <li><a href="/til" class="text-white hover:text-garden-accent transition-colors">TIL</a></li>
-                        <li><a href="/projects" class="text-white hover:text-garden-accent transition-colors">Projects</a></li>
+                    <!-- Mobile menu toggle button -->
+                    <button 
+                        class="mobile-menu-toggle md:hidden flex items-center px-3 py-2 border border-garden-border rounded text-white hover:text-garden-accent"
+                        aria-label="Toggle mobile menu"
+                        onclick="document.getElementById('mobile-nav').classList.toggle('hidden')"
+                    >
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                        </svg>
+                    </button>
+                    
+                    <!-- Desktop navigation - hidden on mobile -->
+                    <ul class="hidden md:flex space-x-6">
+                        <li><a href="/" class="text-white hover:text-garden-accent transition-colors touch-target">Home</a></li>
+                        <li><a href="/now" class="text-white hover:text-garden-accent transition-colors touch-target">Now</a></li>
+                        <li><a href="/til" class="text-white hover:text-garden-accent transition-colors touch-target">TIL</a></li>
+                        <li><a href="/projects" class="text-white hover:text-garden-accent transition-colors touch-target">Projects</a></li>
+                    </ul>
+                </div>
+                
+                <!-- Mobile navigation menu - hidden by default -->
+                <div id="mobile-nav" class="hidden md:hidden absolute top-full left-0 w-full bg-garden-surface shadow-lg z-40">
+                    <ul class="flex flex-col py-2">
+                        <li><a href="/" class="block px-4 py-3 text-white hover:text-garden-accent hover:bg-garden-surface-alt transition-colors touch-target">Home</a></li>
+                        <li><a href="/now" class="block px-4 py-3 text-white hover:text-garden-accent hover:bg-garden-surface-alt transition-colors touch-target">Now</a></li>
+                        <li><a href="/til" class="block px-4 py-3 text-white hover:text-garden-accent hover:bg-garden-surface-alt transition-colors touch-target">TIL</a></li>
+                        <li><a href="/projects" class="block px-4 py-3 text-white hover:text-garden-accent hover:bg-garden-surface-alt transition-colors touch-target">Projects</a></li>
                     </ul>
                 </div>
             </div>

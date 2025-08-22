@@ -35,6 +35,13 @@
     border-color: #e5e7eb;
 }
 
+html, body {
+    margin: 0;
+    line-height: inherit;
+    font-family: var(--font-mono);
+    overflow-x: hidden; /* Prevent horizontal scrolling */
+}
+
 body {
     margin: 0;
     line-height: inherit;
@@ -259,6 +266,52 @@ body {
 .hover\:bg-garden-accent:hover { background-color: var(--color-garden-accent); }
 .hover\:shadow-lg:hover { box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1); }
 
+/* Touch Target Classes - 44px minimum for mobile accessibility */
+.touch-target {
+    min-height: 44px;
+    min-width: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.touch-44 {
+    min-height: 44px;
+    min-width: 44px;
+}
+
+.min-touch {
+    min-height: 44px;
+    min-width: 44px;
+}
+
+.mobile-touch {
+    min-height: 44px;
+    min-width: 44px;
+    padding: 0.75rem 1rem;
+}
+
+/* Ensure buttons and interactive elements meet touch requirements */
+button, .btn {
+    min-height: 44px;
+    min-width: 44px;
+}
+
+/* Navigation link touch targets */
+nav a {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    padding: 0.5rem 1rem;
+}
+
+@media (max-width: 768px) {
+    nav a {
+        padding: 0.75rem 1rem;
+        min-height: 44px;
+    }
+}
+
 /* Responsive */
 @media (min-width: 640px) {
     .sm\:px-6 { padding-left: 1.5rem; padding-right: 1.5rem; }
@@ -371,6 +424,9 @@ body {
     color: #e5e7eb;
     background-color: #1f2937;
     overflow-x: auto;
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+    white-space: pre-wrap;
     font-weight: 400;
     font-size: 0.875em;
     line-height: 1.7142857;
