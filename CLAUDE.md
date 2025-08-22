@@ -4,33 +4,62 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Knowledge Management
 
-This project uses a comprehensive knowledge management system located in `.claude/`:
+This project uses a two-tier knowledge management system with specialized agents.
 
-### Knowledge Structure
+### Two-Tier Knowledge Structure
 ```
-.claude/
-├── PROJECT_CLAUDE.md        # Detailed project configuration
-├── doc/                     # Documentation and plans
-│   ├── plans/              # Implementation plans
-│   ├── research/           # Research notes
-│   └── implementation/     # Implementation details
-├── sessions/               # Session management
-│   ├── active/            # Current session contexts
-│   └── archive/           # Historical sessions
-├── knowledge/             # Accumulated knowledge
-│   ├── patterns/          # Code patterns (HTMX, etc.)
-│   ├── decisions/         # Architecture decisions
-│   └── testing/           # Test strategies
-└── context/               # Project context
-    ├── TODO.md            # Active tasks
-    └── CONTEXT.md         # Current state
+knowledge/                      # Main knowledge directory (NEW LOCATION)
+├── capture/                   # Tier 1: Raw, immediate insights
+│   ├── daily/                # Daily capture logs
+│   ├── insights.md           # Current session insights
+│   ├── plans/                # Implementation plans
+│   ├── research/             # Research notes
+│   └── implementation/       # Implementation details
+├── refined/                   # Tier 2: Processed, validated knowledge
+│   ├── patterns/             # Generalizable patterns (HTMX, etc.)
+│   ├── principles/           # Core principles and decisions
+│   └── solutions/            # Proven solutions and strategies
+├── archive/                   # Historical processed knowledge
+├── sessions/                  # Session management
+│   ├── active/               # Current session contexts
+│   └── archive/              # Historical sessions
+└── context/                   # Project context
+    ├── TODO.md               # Active tasks
+    └── CONTEXT.md            # Current state
+
+.claude/                        # Claude Code settings only
+└── settings.local.json        # Permissions configuration
 ```
+
+### Knowledge Workflow
+
+1. **During Tasks**: Knowledge is automatically captured by agents
+2. **After Tasks**: Use `/knowledge-capture` to explicitly capture insights
+3. **Periodically**: Use `/knowledge-consolidate` to refine raw knowledge
+
+### Specialized Knowledge Agents
+
+- **knowledge-capturer**: Captures raw insights during or after tasks
+- **knowledge-refiner**: Consolidates and refines raw knowledge into patterns
+- **investigator**: Stores research findings in capture/research
+- **planner**: Saves plans in capture/plans
+- **coder**: Tracks implementation progress
+
+### Quality Gates for Refinement
+
+Knowledge moves from capture to refined only if it is:
+- ✓ Generalizable beyond single instance
+- ✓ Actionable with clear application
+- ✓ Validated through successful use
+- ✓ Non-redundant with existing knowledge
 
 ### Key Files
-- **PROJECT_CLAUDE.md**: Comprehensive project guide with all configurations
-- **TODO.md**: Current sprint tasks and backlog
-- **CONTEXT.md**: Project state, recent changes, and focus areas
-- **Knowledge Base**: Patterns, decisions, and testing strategies
+
+- **CLAUDE.md**: This file - main project configuration and guidance
+- **knowledge/context/TODO.md**: Current sprint tasks and backlog
+- **knowledge/context/CONTEXT.md**: Project state, recent changes, and focus areas
+- **knowledge/refined/**: Validated patterns, principles, and solutions
+- **.claude/settings.local.json**: Permissions and tool configurations only
 
 When starting a new session, Claude Code will automatically load this context.
 

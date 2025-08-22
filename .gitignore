@@ -41,3 +41,11 @@ node_modules/
 .claude/*.log
 .claude/context/TODO.md
 .claude/context/CONTEXT.md 
+
+# Claude Code knowledge management
+knowledge/capture/daily/
+knowledge/archive/*.log
+knowledge/sessions/active/
+.claude/sessions/
+.claude/private/
+.claude.backup.*/

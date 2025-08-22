@@ -3,8 +3,9 @@ Feed routes for the digital garden application.
 Handles RSS feeds, sitemap, and robots.txt.
 """
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from fastapi.responses import Response, PlainTextResponse
+from typing import Optional
 
 from app.services.dependencies import get_content_service
 from app.interfaces import IContentProvider
@@ -16,10 +17,18 @@ router = APIRouter()
 @router.get("/feed.xml")
 @router.get("/feed")
 async def rss_feed(
-    content_service: IContentProvider = Depends(get_content_service)
+    content_service: IContentProvider = Depends(get_content_service),
+    growth_stage: Optional[str] = Query(None, description="Filter by growth stage: seedling, budding, growing, evergreen")
 ):
-    """Return the RSS feed as an XML ``Response``."""
-    rss_content = generate_rss_feed(content_service)
+    """Return the RSS feed as an XML ``Response``.
+    
+    Optional growth_stage parameter allows filtering by growth stage:
+    - seedling: New, developing ideas
+    - budding: Ideas taking shape
+    - growing: Maturing concepts 
+    - evergreen: Polished, stable content
+    """
+    rss_content = generate_rss_feed(content_service, growth_stage=growth_stage)
     return Response(content=rss_content, media_type="application/xml")
 
 

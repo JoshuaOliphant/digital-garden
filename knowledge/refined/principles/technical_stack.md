@@ -1,6 +1,8 @@
-# PROJECT_CLAUDE.md - Digital Garden Project Configuration
+# Technical Stack and Configuration
 
-This file provides comprehensive project-specific guidance for Claude Code when working with the Digital Garden application.
+This document captures the comprehensive technical decisions and stack configuration for the Digital Garden application.
+
+*Note: This content was migrated from .claude/PROJECT_CLAUDE.md during the knowledge management system upgrade on 2025-08-17.*
 
 ## Project Overview
 
