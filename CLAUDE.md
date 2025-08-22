@@ -61,6 +61,64 @@ Knowledge moves from capture to refined only if it is:
 - **knowledge/refined/**: Validated patterns, principles, and solutions
 - **.claude/settings.local.json**: Permissions and tool configurations only
 
+### How to Use Knowledge in Development
+
+#### Quick Start for New Sessions
+1. **Check active work**: Review `knowledge/sessions/active/` for any ongoing tasks
+2. **Load context**: Check `knowledge/context/TODO.md` for current priorities
+3. **Review patterns**: Consult `knowledge/refined/patterns/` for established solutions
+4. **Check decisions**: See `knowledge/refined/principles/` for architectural guidelines
+
+#### During Development
+- **Before implementing features**: Check `knowledge/refined/patterns/htmx_patterns.md` for HTMX patterns
+- **When making architectural choices**: Document in `knowledge/capture/insights.md` first, refine later
+- **After solving complex problems**: Capture solution in `knowledge/capture/` for future refinement
+- **When tests fail**: Check `knowledge/refined/solutions/testing/test_strategies.md`
+
+#### Project-Specific Patterns for Digital Garden
+
+**Content Management**:
+- ContentService patterns are documented in `knowledge/refined/patterns/`
+- Growth stage rendering follows single source of truth principle
+- YAML frontmatter validation uses Pydantic models
+
+**Frontend Development**:
+- HTMX patterns for server-side rendering with dynamic updates
+- Tailwind CSS with dark theme (#1a1a1a background)
+- Typography handled via prose class wrapper
+
+**Testing Approach**:
+- TDD with RED-GREEN-REFACTOR cycle
+- Comprehensive test coverage before implementation
+- Test files follow `test_*.py` naming convention
+
+**Python/FastAPI Conventions**:
+- Use `uv` for all package management (never pip directly)
+- Async/await for all route handlers
+- Dependency injection via FastAPI's `Depends()`
+
+#### Best Practices
+- ✅ Always check active sessions before starting new work
+- ✅ Document "why" decisions in `knowledge/capture/insights.md`
+- ✅ Move validated patterns from capture/ to refined/ only after proven use
+- ✅ Reference previous implementations to maintain consistency
+- ✅ Use `/knowledge-capture` after completing significant tasks
+- ✅ Run `/knowledge-consolidate` weekly to refine insights
+
+### Knowledge System Commands
+
+- `/knowledge-capture` - Explicitly capture insights after completing tasks
+- `/knowledge-consolidate` - Refine raw knowledge into validated patterns (run weekly)
+- `/project-init` - Initialize knowledge structure if not present (already done for this project)
+
+### Cross-References
+
+- **Technical Stack Details**: See `knowledge/refined/principles/technical_stack.md`
+- **HTMX Patterns**: See `knowledge/refined/patterns/htmx_patterns.md`
+- **Architecture Decisions**: See `knowledge/refined/principles/architecture_decisions.md`
+- **Testing Strategies**: See `knowledge/refined/solutions/testing/test_strategies.md`
+- **Recent Implementation Plans**: See `knowledge/capture/plans/`
+
 When starting a new session, Claude Code will automatically load this context.
 
 ## Development Commands
