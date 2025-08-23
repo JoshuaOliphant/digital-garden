@@ -1,6 +1,9 @@
 # Current Insights
 <!-- Raw insights from current work session -->
 
+<!-- Previous insights processed and archived on 2025-08-23 -->
+<!-- See knowledge/archive/2025-08-23-consolidated.md for processed entries -->
+
 ## Date: 2025-08-17
 
 ### Syntax Highlighting Implementation (Task 19)
