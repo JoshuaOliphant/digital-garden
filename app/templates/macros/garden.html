@@ -10,6 +10,30 @@
   <span class="{{ stage.class }} text-lg" aria-label="Growth stage: {{ status }}" title="Growth Stage: {{ status|title }}">{{ stage.symbol }}</span>
 {%- endmacro %}
 
+{% macro growth_stage_legend() -%}
+<div class="text-center py-6 border-t border-garden-border mt-8">
+  <h3 class="text-sm font-medium text-garden-text-secondary mb-3">Growth Stages</h3>
+  <div class="flex flex-wrap justify-center gap-6 text-sm">
+    <div class="flex items-center gap-2">
+      <span class="text-garden-text-muted text-lg">•</span>
+      <span class="text-garden-text-muted">Seedling - New ideas</span>
+    </div>
+    <div class="flex items-center gap-2">
+      <span class="text-garden-text-secondary text-lg">◐</span>
+      <span class="text-garden-text-muted">Budding - Developing thoughts</span>
+    </div>
+    <div class="flex items-center gap-2">
+      <span class="text-garden-text-primary text-lg">●</span>
+      <span class="text-garden-text-muted">Growing - Maturing content</span>
+    </div>
+    <div class="flex items-center gap-2">
+      <span class="text-garden-accent text-lg">■</span>
+      <span class="text-garden-text-muted">Evergreen - Established knowledge</span>
+    </div>
+  </div>
+</div>
+{%- endmacro %}
+
 {% macro garden_date(date_str) -%}
   {% if date_str %}
     {% if date_str is string %}

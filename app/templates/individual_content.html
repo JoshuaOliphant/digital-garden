@@ -61,6 +61,46 @@
     </div>
     {% endif %}
     
+    <!-- Recent Content Section -->
+    {% if recent_how_tos or recent_notes %}
+    <div class="mt-8 pt-6 border-t border-garden-border">
+      <h2 class="text-xl font-semibold mb-4 text-garden-text-primary">Recent Content</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {% if recent_how_tos and recent_how_tos.content %}
+        <div>
+          <h3 class="text-lg font-medium mb-3 text-garden-text-primary">Recent How-to's</h3>
+          <ul class="space-y-2">
+            {% for how_to in recent_how_tos.content[:5] %}
+            <li>
+              <a href="/how_to/{{ how_to.name }}"
+                 class="text-garden-accent hover:underline">
+                {{ how_to.title }}
+              </a>
+            </li>
+            {% endfor %}
+          </ul>
+        </div>
+        {% endif %}
+        
+        {% if recent_notes and recent_notes.content %}
+        <div>
+          <h3 class="text-lg font-medium mb-3 text-garden-text-primary">Recent Notes</h3>
+          <ul class="space-y-2">
+            {% for note in recent_notes.content[:5] %}
+            <li>
+              <a href="/notes/{{ note.name }}"
+                 class="text-garden-accent hover:underline">
+                {{ note.title }}
+              </a>
+            </li>
+            {% endfor %}
+          </ul>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+    
     <!-- Content Metadata -->
     <div class="mt-8 pt-6 border-t border-garden-border">
       <div class="text-sm text-garden-text-secondary">

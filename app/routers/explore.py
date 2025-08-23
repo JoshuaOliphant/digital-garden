@@ -2,10 +2,11 @@
 Explore routes for path-based navigation in the digital garden.
 """
 
+import random
 from typing import Optional
 
 from fastapi import APIRouter, Depends, Request, HTTPException
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 from jinja2 import Environment, FileSystemLoader
 
 from app.services.dependencies import (
@@ -51,6 +52,43 @@ async def explore_landing(
         recent_notes=recent_notes,
         title="Explore the Garden"
     )
+
+
+@router.get("/wander")
+async def wander(
+    content_service: IContentProvider = Depends(get_content_service)
+):
+    """Redirect to a random content page."""
+    # Get all available content
+    all_content = content_service.get_all_content()
+    
+    # Filter out drafts and empty content
+    valid_content = [
+        c for c in all_content 
+        if c.get("slug") and c.get("content_type") 
+        and c.get("status", "").lower() != "draft"
+    ]
+    
+    if not valid_content:
+        # If no content available, redirect to homepage
+        return RedirectResponse(url="/", status_code=303)
+    
+    # Select a random piece of content
+    random_content = random.choice(valid_content)
+    
+    # Build the URL based on content type
+    content_type = random_content.get("content_type", "notes")
+    slug = random_content.get("slug", "")
+    
+    # Handle special content types
+    if content_type == "bookmarks" and random_content.get("url"):
+        # For bookmarks with external URLs, redirect to the bookmark page
+        url = f"/bookmarks/{slug}"
+    else:
+        # For all other content types
+        url = f"/{content_type}/{slug}"
+    
+    return RedirectResponse(url=url, status_code=303)
 
 
 @router.get("/explore/{path:path}", response_class=HTMLResponse)

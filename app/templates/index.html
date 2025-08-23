@@ -4,6 +4,7 @@
 
 {% block content %}
 {% from 'macros/layout.html' import page_container, content_layout, prose_content %}
+{% from 'macros/garden.html' import growth_stage_legend %}
 
 {% call page_container(title="Digital Garden", subtitle="A place for growing ideas") %}
   {% call content_layout() %}
@@ -108,6 +109,9 @@
         </a>
       </div>
     </div>
+
+    <!-- Growth Stage Legend -->
+    {{ growth_stage_legend() }}
 
   {% endcall %}
 {% endcall %}

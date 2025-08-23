@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% from 'macros/layout.html' import page_container, content_layout %}
+{% from 'macros/garden.html' import growth_stage_legend %}
 
 {% block content %}
 {% call page_container(title='Today I Learned') %}
@@ -69,6 +70,9 @@
       <p class="text-sm text-garden-text-muted">Start learning to see your posts here.</p>
     </div>
     {% endif %}
+
+    <!-- Growth Stage Legend -->
+    {{ growth_stage_legend() }}
     
   {% endcall %}
 {% endcall %}

@@ -59,6 +59,10 @@ async def read_content(
     is_htmx = request.headers.get("HX-Request") == "true"
     template_name = "partials/content.html" if is_htmx else "individual_content.html"
 
+    # Get recent content for the sidebar
+    recent_how_tos = content_service.get_content("how_to", limit=5)
+    recent_notes = content_service.get_content("notes", limit=5)
+    
     # Prepare template context
     context = {
         "request": request,
@@ -75,6 +79,8 @@ async def read_content(
         "growth_symbol": growth_symbol,
         "growth_css_class": growth_css_class,
         "backlinks": backlinks,
+        "recent_how_tos": recent_how_tos,
+        "recent_notes": recent_notes,
         "feature_flags": {"use_compiled_css": True},  # Add feature flags
     }
 

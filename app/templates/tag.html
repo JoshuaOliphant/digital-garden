@@ -4,6 +4,7 @@
 
 {% block content %}
 {% from 'macros/layout.html' import page_container, content_layout %}
+{% from 'macros/garden.html' import growth_stage_legend %}
 
 {% call page_container(title="Content tagged with #" ~ tag, subtitle=total ~ " posts found") %}
   {% call content_layout() %}
@@ -89,6 +90,9 @@
       </div>
     </div>
     {% endif %}
+
+    <!-- Growth Stage Legend -->
+    {{ growth_stage_legend() }}
     
   {% endcall %}
 {% endcall %}
