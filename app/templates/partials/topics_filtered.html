@@ -18,12 +18,12 @@
         matching {{ selected_tags|join(', ') }}
       {% endif %}
     </p>
-    <button 
-      onclick="document.querySelectorAll('input[type=checkbox]').forEach(cb => cb.checked = false); this.parentElement.parentElement.innerHTML = '<div class=&quot;text-center py-8&quot;><p class=&quot;text-garden-text-muted&quot;>Select topics above to find related content.</p></div>';"
+    <a 
+      href="/topics"
       class="text-sm text-garden-accent hover:underline"
     >
       Clear filters
-    </button>
+    </a>
   </div>
   
   <div class="space-y-4">

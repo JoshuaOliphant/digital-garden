@@ -7,7 +7,22 @@
     <h1 class="text-3xl font-serif text-garden-text-primary mb-8">Now</h1>
     
     {% if content %}
-        <article class="prose prose-garden max-w-none">
+        <article class="prose prose-lg
+                 prose-p:text-garden-text-primary 
+                 prose-li:text-garden-text-primary 
+                 prose-strong:text-garden-text-primary prose-strong:font-bold
+                 prose-h1:text-garden-text-primary prose-h1:font-serif
+                 prose-h2:text-garden-text-primary prose-h2:font-serif
+                 prose-h3:text-garden-text-primary prose-h3:font-serif
+                 prose-h4:text-garden-text-primary
+                 prose-h5:text-garden-text-primary
+                 prose-h6:text-garden-text-primary
+                 prose-code:bg-garden-sage/10 
+                 prose-code:text-garden-sage-dark 
+                 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded 
+                 prose-code:before:content-[''] prose-code:after:content-[''] 
+                 prose-a:text-garden-accent prose-a:hover:text-garden-accent
+                 max-w-none">
             {{ content.html|safe }}
         </article>
         

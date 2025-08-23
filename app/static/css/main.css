@@ -319,10 +319,17 @@ nav a {
 }
 
 @media (min-width: 768px) {
+    .md\:hidden { display: none !important; }
+    .md\:flex { display: flex; }
     .md\:grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .md\:grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
     .md\:px-6 { padding-left: 1.5rem; padding-right: 1.5rem; }
     .md\:text-3xl { font-size: 1.875rem; line-height: 2.25rem; }
+    
+    /* Hide mobile menu button on desktop screens - multiple selectors for higher specificity */
+    .mobile-menu-toggle.md\:hidden,
+    button.mobile-menu-toggle,
+    .mobile-menu-toggle { display: none !important; }
 }
 
 @media (min-width: 1024px) {
@@ -334,6 +341,33 @@ nav a {
 @media (min-width: 1280px) {
     .xl\:grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
+
+/* Mobile Menu Button Visibility Fix */
+.mobile-menu-toggle {
+    background-color: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: var(--color-text-primary);
+    transition: all 0.2s ease;
+}
+
+.mobile-menu-toggle:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+    border-color: var(--color-garden-accent);
+    color: var(--color-garden-accent);
+    transform: scale(1.05);
+}
+
+.mobile-menu-toggle:focus {
+    outline: none;
+    box-shadow: var(--focus-ring);
+    border-color: var(--color-garden-accent);
+}
+
+.mobile-menu-toggle svg {
+    stroke-width: 2.5;
+    filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.3));
+}
+
 
 /* Mobile responsive adjustments */
 @media (max-width: 768px) {

@@ -79,6 +79,7 @@
              style="display: none;">
         </div>
         <script>
+            // HTMX Loading Indicator
             document.body.addEventListener('htmx:beforeRequest', function() {
                 document.getElementById('loading-indicator').style.display = 'block';
                 document.getElementById('loading-indicator').style.transform = 'scaleX(0.3)';
@@ -90,6 +91,7 @@
                     document.getElementById('loading-indicator').style.transform = 'scaleX(0)';
                 }, 300);
             });
+
         </script>
     </body>
 </html>

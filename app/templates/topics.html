@@ -69,7 +69,7 @@
                 </h3>
                 <div class="flex flex-wrap gap-2">
                     {% for tag in bed_info.tags %}
-                    <label class="inline-flex items-center">
+                    <label class="inline-flex items-center p-2 rounded transition-colors has-[:checked]:bg-garden-accent/10">
                         <input type="checkbox" 
                                name="tags" 
                                value="{{ tag.name }}"
@@ -95,17 +95,3 @@
 </div>
 {% endblock %}
 
-{% block extra_js %}
-<script>
-    // Handle checkbox state for better UX
-    document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
-        checkbox.addEventListener('change', function() {
-            if (this.checked) {
-                this.parentElement.classList.add('bg-garden-accent/10');
-            } else {
-                this.parentElement.classList.remove('bg-garden-accent/10');
-            }
-        });
-    });
-</script>
-{% endblock %}
