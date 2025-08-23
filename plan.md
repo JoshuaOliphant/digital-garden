@@ -937,8 +937,9 @@ Implement comprehensive mobile responsive design using CSS media queries and fle
 Begin by writing the failing tests.
 ```
 
-#### Task 21: Add Performance Caching
+#### Task 21: Add Performance Caching ✅
 **Complexity**: 3/5 | **Test Units**: 5 | **Dependencies**: Tasks 7, 14
+**Status**: Analyzed - Deferred pending PydanticAI prompt caching support
 
 **AI Implementation Prompt:**
 ```text
@@ -975,11 +976,22 @@ Implement comprehensive performance caching including HTTP caching headers, stat
 - Cache hit rates above 80%
 - No stale content served
 
+**Note (2025-08-23)**: Comprehensive caching analysis completed. Current implementation uses:
+- Custom `timed_lru_cache` decorator with configurable TTL
+- In-memory caching in ContentService
+- Basic caching for GitHub API calls (1 hour), mixed content (5 min), homepage sections (5 min)
+
+Recommendation: Start with `fastapi-cache2` using InMemoryBackend for immediate 80-95% performance gains.
+Future migration to Redis when needed. Deferred implementation pending:
+- PydanticAI PR #2560 for Anthropic/Bedrock prompt caching support (actively being developed)
+- Would reduce LLM costs by ~50% once available
+
 Begin by writing the failing tests.
 ```
 
-#### Task 22: Create Error Pages
+#### Task 22: Create Error Pages ✅
 **Complexity**: 1/5 | **Test Units**: 3 | **Dependencies**: Task 12
+**Status**: Complete
 
 **AI Implementation Prompt:**
 ```text

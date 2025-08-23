@@ -16,6 +16,8 @@ import bleach
 import random
 import httpx
 import time
+import uuid
+import traceback
 from datetime import datetime, timedelta
 from typing import List, Optional, Dict, Any, TypeVar, Callable, Awaitable
 from functools import wraps
@@ -32,6 +34,7 @@ from .services.dependencies import get_content_service, get_path_navigation_serv
 from .interfaces import IContentProvider, IPathNavigationService, IBacklinkService
 from .services.growth_stage_renderer import GrowthStageRenderer
 from .routers import til, bookmarks, tags, garden, pages, api, content, feeds, explore
+from .content_manager import ContentManager
 
 # Constants
 CONTENT_DIR = "app/content"
@@ -110,6 +113,83 @@ setup_logging(LogConfig(
 
 # Initialize FastAPI
 app = FastAPI(lifespan=lifespan)
+
+# Custom exception handlers for user-friendly error pages
+@app.exception_handler(404)
+async def not_found_handler(request: Request, exc: HTTPException):
+    """Handle 404 errors with custom template."""
+    # Check if this is an API request or HTMX request that expects JSON
+    if request.url.path.startswith("/api/") or request.headers.get("Accept") == "application/json":
+        return JSONResponse(
+            status_code=404,
+            content={"detail": str(exc.detail) if hasattr(exc, 'detail') else "Not found"}
+        )
+    
+    # Get some recent content for the 404 page
+    try:
+        content_service = get_content_service()
+        all_content = content_service.get_all_content()
+        recent_content = sorted(all_content, key=lambda x: x.get("updated", x.get("created", "")), reverse=True)[:5]
+        
+        # Add growth symbols if available
+        growth_renderer = get_growth_stage_renderer()
+        for item in recent_content:
+            growth_stage = item.get("growth_stage", "seedling")
+            item["growth_symbol"] = growth_renderer.render_stage_symbol(growth_stage)
+    except Exception:
+        recent_content = []
+    
+    # Render the 404 template
+    template = env.get_template("404.html")
+    html_content = template.render(
+        request=request,
+        recent_content=recent_content,
+        debug_mode=os.getenv("ENVIRONMENT") != "production",
+        error_detail=str(exc.detail) if hasattr(exc, 'detail') else None
+    )
+    return HTMLResponse(content=html_content, status_code=404)
+
+@app.exception_handler(500)
+async def server_error_handler(request: Request, exc: Exception):
+    """Handle 500 errors with custom template."""
+    # Generate error ID for tracking
+    error_id = str(uuid.uuid4())[:8]
+    timestamp = datetime.now().isoformat()
+    
+    # Log the error with Logfire
+    logfire.error(
+        "server_error",
+        error_id=error_id,
+        path=request.url.path,
+        error_type=type(exc).__name__,
+        error_message=str(exc),
+        traceback=traceback.format_exc() if os.getenv("ENVIRONMENT") != "production" else None
+    )
+    
+    # Check if this is an API request that expects JSON
+    if request.url.path.startswith("/api/") or request.headers.get("Accept") == "application/json":
+        return JSONResponse(
+            status_code=500,
+            content={
+                "detail": "Internal server error",
+                "error_id": error_id,
+                "timestamp": timestamp
+            }
+        )
+    
+    # Render the 500 template
+    template = env.get_template("500.html")
+    html_content = template.render(
+        request=request,
+        error_id=error_id,
+        timestamp=timestamp,
+        debug_mode=os.getenv("ENVIRONMENT") != "production",
+        error_type=type(exc).__name__ if os.getenv("ENVIRONMENT") != "production" else None,
+        error_message=str(exc) if os.getenv("ENVIRONMENT") != "production" else None,
+        traceback=traceback.format_exc() if os.getenv("ENVIRONMENT") != "production" else None,
+        github_username="joshuaoliphant"  # You can make this configurable
+    )
+    return HTMLResponse(content=html_content, status_code=500)
 
 # Add logging middleware
 app.add_middleware(
