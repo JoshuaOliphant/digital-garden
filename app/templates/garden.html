@@ -1,277 +1,87 @@
 {% extends "base.html" %}
 
-{% block title %}Digital Garden{% endblock %}
-
-{% block head_extra %}
-<style>
-    /* Masonry column layout - Pinterest style with exactly 3 columns on desktop */
-    .masonry-grid {
-        column-count: 1;
-        column-gap: 1.25rem;
-        column-fill: auto; /* Changed from balance to auto for top-to-bottom flow */
-    }
-    
-    @media (min-width: 640px) {
-        .masonry-grid {
-            column-count: 2;
-            column-gap: 1.5rem;
-        }
-    }
-    
-    @media (min-width: 1024px) {
-        .masonry-grid {
-            column-count: 3; /* Exactly 3 columns as requested */
-            column-gap: 1.75rem;
-        }
-    }
-    
-    @media (min-width: 1536px) {
-        .masonry-grid {
-            column-count: 3; /* Keep at 3 columns even on wide screens */
-            column-gap: 2rem;
-            max-width: 1400px;
-            margin-left: auto;
-            margin-right: auto;
-        }
-    }
-    
-    .masonry-item {
-        break-inside: avoid;
-        page-break-inside: avoid;
-        margin-bottom: 1.25rem;
-        display: inline-block;
-        width: 100%;
-        transform-origin: center top;
-        animation: fadeInUp 0.4s ease-out;
-    }
-    
-    @keyframes fadeInUp {
-        from {
-            opacity: 0;
-            transform: translateY(20px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
-    
-    /* Growth stage colors with Maggie Appleton-inspired styling */
-    .stage-seedling { 
-        border-top: 3px solid #C2B59B;
-        background: linear-gradient(180deg, rgba(250, 248, 245, 0.8) 0%, rgba(255, 255, 255, 0.95) 100%);
-    }
-    .stage-budding { 
-        border-top: 3px solid #F59E0B;
-        background: linear-gradient(180deg, rgba(254, 249, 195, 0.4) 0%, rgba(255, 255, 255, 0.95) 100%);
-    }
-    .stage-growing { 
-        border-top: 3px solid #84CC16;
-        background: linear-gradient(180deg, rgba(217, 249, 157, 0.3) 0%, rgba(255, 255, 255, 0.95) 100%);
-    }
-    .stage-evergreen { 
-        border-top: 3px solid #10B981;
-        background: linear-gradient(180deg, rgba(167, 243, 208, 0.4) 0%, rgba(255, 255, 255, 0.95) 100%);
-    }
-    
-    /* Dark mode adjustments */
-    @media (prefers-color-scheme: dark) {
-        .stage-seedling { 
-            background: linear-gradient(180deg, rgba(55, 48, 42, 0.5) 0%, rgba(31, 41, 55, 0.95) 100%);
-        }
-        .stage-budding { 
-            background: linear-gradient(180deg, rgba(92, 45, 10, 0.3) 0%, rgba(31, 41, 55, 0.95) 100%);
-        }
-        .stage-growing { 
-            background: linear-gradient(180deg, rgba(54, 83, 20, 0.3) 0%, rgba(31, 41, 55, 0.95) 100%);
-        }
-        .stage-evergreen { 
-            background: linear-gradient(180deg, rgba(6, 78, 59, 0.3) 0%, rgba(31, 41, 55, 0.95) 100%);
-        }
-    }
-    
-    /* Enhanced card styling */
-    .masonry-item article {
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        border-radius: 12px;
-        overflow: hidden;
-        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-    }
-    
-    .masonry-item:hover article {
-        transform: translateY(-4px);
-        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-    }
-    
-    /* Content card title styling */
-    .card-title {
-        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-        font-weight: 600;
-        letter-spacing: -0.025em;
-        line-height: 1.25;
-    }
-    
-    /* Tag pills with better styling */
-    .tag-pill {
-        font-size: 0.75rem;
-        padding: 0.125rem 0.5rem;
-        border-radius: 9999px;
-        font-weight: 500;
-        transition: all 0.2s;
-    }
-    
-    /* Topic pills */
-    .topic-pill {
-        @apply inline-block px-3 py-1 text-sm rounded-full bg-sage-100 text-sage-800 hover:bg-sage-200 transition-colors cursor-pointer;
-    }
-    
-    .topic-pill.active {
-        @apply bg-sage-600 text-white;
-    }
-    
-    /* Dropdown styles */
-    .filter-dropdown {
-        @apply relative inline-block;
-    }
-    
-    .filter-dropdown-content {
-        @apply absolute z-10 mt-2 w-48 rounded-md shadow-lg bg-garden-surface ring-1 ring-black ring-opacity-5;
-    }
-</style>
-{% endblock %}
+{% block title %}~/notes{% endblock %}
+{% block current_path %}/notes{% endblock %}
 
 {% block content %}
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-    
-    <!-- Header -->
-    <div class="mb-8">
-        <h1 class="text-4xl font-serif text-sage-900 dark:text-sage-100 mb-2">Digital Garden</h1>
-        <p class="text-lg text-garden-text-muted">
-            {{ garden_data.total_count }} notes growing • Explore by wandering
-        </p>
+<!-- Command Output Header -->
+<div class="output-block">
+    <div class="output-line">
+        <span class="prompt-symbol">$</span> <span style="color: var(--term-green);">ls -la ~/notes</span>
     </div>
-    
-    <!-- Topics Bar -->
-    <div class="mb-6 border-b border-gray-200 dark:border-gray-700 pb-4">
-        <div class="flex flex-wrap gap-2 items-center">
-            <span class="text-sm font-medium text-garden-text-secondary mr-2">Topics:</span>
-            
-            <!-- Display first 8 tags -->
-            {% for tag in garden_data.tags[:8] %}
-                <button class="inline-block px-3 py-1 text-sm rounded-full bg-sage-100 text-sage-800 hover:bg-sage-200 transition-colors cursor-pointer">
-                    {{ tag }}
-                </button>
-            {% endfor %}
-            
-            {% if garden_data.tags|length > 8 %}
-                <button class="inline-flex items-center px-3 py-1 text-sm text-sage-600 hover:text-sage-800 dark:text-sage-400 dark:hover:text-sage-200">
-                    <span>SHOW MORE</span>
-                    <svg class="ml-1 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                    </svg>
-                </button>
-            {% endif %}
-        </div>
+    <div class="output-line" style="margin-top: 0.5rem; color: var(--term-gray);">
+        total {{ garden_data.total_count }} notes in the garden
     </div>
-    
-    <!-- Filter Dropdowns -->
-    <div class="mb-8 flex flex-wrap gap-4">
-        
-        <!-- Growth Stage Dropdown -->
-        <div class="filter-dropdown">
-            <button class="inline-flex items-center px-4 py-2 border border-garden-border rounded-md text-sm font-medium text-garden-text-secondary bg-garden-surface hover:bg-garden-accent/10">
-                <span>All Growth Stages</span>
-                <svg class="ml-2 -mr-0.5 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                </svg>
-            </button>
-        </div>
-        
-        <!-- Content Type Dropdown -->
-        <div class="filter-dropdown">
-            <button class="inline-flex items-center px-4 py-2 border border-garden-border rounded-md text-sm font-medium text-garden-text-secondary bg-garden-surface hover:bg-garden-accent/10">
-                <span>All Types</span>
-                <svg class="ml-2 -mr-0.5 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                </svg>
-            </button>
-        </div>
-        
-        <!-- Results count -->
-        <div class="flex items-center text-sm text-garden-text-muted">
-            Showing <span class="mx-1 font-medium">{{ garden_data.content|length }}</span> of <span class="mx-1 font-medium">{{ garden_data.total_count }}</span> notes
-        </div>
-    </div>
-    
-    <!-- Content Cards in Masonry Layout -->
-    <div class="masonry-grid">
-        {% for item in garden_data.content %}
-            <div class="masonry-item">
-                <article class="stage-{{ (item.growth_stage or 'seedling')|lower }} bg-garden-surface rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 p-6 relative overflow-hidden">
-                    
-                    <!-- Growth stage indicator -->
-                    <div class="flex items-center justify-between mb-4">
-                        <div class="flex items-center gap-2">
-                            <span class="text-2xl" title="Growth Stage: {{ item.growth_stage|title }}">
-                                {{ item.growth_symbol }}
-                            </span>
-                            <span class="text-xs font-medium uppercase tracking-wider text-garden-text-muted">
-                                {{ item.type_label or item.content_type }}
-                            </span>
-                        </div>
-                    </div>
-                    
-                    <!-- Title -->
-                    <h2 class="card-title text-xl mb-3">
-                        <a href="/{{ item.content_type.lower() }}/{{ item.slug or item.name }}" 
-                           class="text-garden-text-primary hover:text-garden-accent transition-colors">
-                            {{ item.title }}
-                        </a>
-                    </h2>
-                    
-                    <!-- Excerpt (if available) -->
-                    {% if item.excerpt %}
-                        <p class="text-sm text-garden-text-secondary mb-4 leading-relaxed line-clamp-3">
-                            {{ item.excerpt[:150] }}{% if item.excerpt|length > 150 %}...{% endif %}
-                        </p>
-                    {% endif %}
-                    
-                    <!-- Tags -->
-                    {% if item.tags %}
-                        <div class="flex flex-wrap gap-1.5 mb-4">
-                            {% for tag in item.tags[:3] %}
-                                <button class="tag-pill bg-garden-sage/10 text-garden-sage-dark hover:bg-garden-accent/20 hover:text-garden-accent">
-                                    {{ tag }}
-                                </button>
-                            {% endfor %}
-                            {% if item.tags|length > 3 %}
-                                <span class="tag-pill bg-transparent text-garden-text-muted">
-                                    +{{ item.tags|length - 3 }}
-                                </span>
-                            {% endif %}
-                        </div>
-                    {% endif %}
-                    
-                    <!-- Metadata -->
-                    <div class="text-xs text-garden-text-muted flex items-center justify-between pt-3 border-t border-garden-border">
-                        <span class="flex items-center gap-1">
-                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                            </svg>
-                            <span>{{ item.created }}</span>
-                        </span>
-                        {% if item.updated and item.updated != item.created %}
-                            <span class="flex items-center gap-1">
-                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-                                </svg>
-                                <span>{{ item.updated }}</span>
-                            </span>
-                        {% endif %}
-                    </div>
-                </article>
-            </div>
+</div>
+
+<!-- Tags/Topics Bar -->
+{% if garden_data.tags %}
+<div class="output-block">
+    <div class="output-line" style="color: var(--term-gray);">-- Topics --</div>
+    <div class="tags" style="margin-top: 0.5rem;">
+        {% for tag in garden_data.tags[:12] %}
+        <a href="/tags/{{ tag }}" class="tag">{{ tag }}</a>
         {% endfor %}
+        {% if garden_data.tags|length > 12 %}
+        <a href="/topics" class="tag" style="color: var(--term-gray);">+{{ garden_data.tags|length - 12 }} more</a>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
+<!-- Notes Listing -->
+{% if garden_data.content %}
+<ul class="content-list">
+    {% for item in garden_data.content %}
+    <li class="content-item">
+        <span class="content-type">
+            {% if item.growth_stage == 'evergreen' %}
+            <span class="growth-stage growth-evergreen">[E]</span>
+            {% elif item.growth_stage == 'growing' %}
+            <span class="growth-stage growth-budding">[G]</span>
+            {% elif item.growth_stage == 'budding' %}
+            <span class="growth-stage growth-budding">[B]</span>
+            {% else %}
+            <span class="growth-stage growth-seedling">[S]</span>
+            {% endif %}
+        </span>
+        <span class="content-title">
+            <a href="/{{ item.content_type|lower }}/{{ item.slug or item.name }}">{{ item.title }}</a>
+        </span>
+        <span class="content-date">{{ item.created }}</span>
+    </li>
+    {% if item.tags %}
+    <li class="content-meta">
+        <span class="tags">
+            {% for tag in item.tags[:4] %}
+            <a href="/tags/{{ tag }}" class="tag">{{ tag }}</a>
+            {% endfor %}
+        </span>
+    </li>
+    {% endif %}
+    {% if item.excerpt %}
+    <li class="content-meta" style="color: var(--term-gray); margin-bottom: 0.5rem;">
+        {{ item.excerpt[:120] }}{% if item.excerpt|length > 120 %}...{% endif %}
+    </li>
+    {% endif %}
+    {% endfor %}
+</ul>
+{% else %}
+<div class="output-block">
+    <div class="output-line" style="color: var(--term-amber);">
+        No notes found in the garden.
+    </div>
+</div>
+{% endif %}
+
+<!-- Growth Stage Legend -->
+<div class="output-block" style="margin-top: 2rem; color: var(--term-gray); font-size: 0.85rem;">
+    <div class="output-line">-- Legend --</div>
+    <div class="output-line">
+        <span class="growth-stage growth-seedling">[S]</span> Seedling
+        <span class="growth-stage growth-budding">[B]</span> Budding
+        <span class="growth-stage growth-budding">[G]</span> Growing
+        <span class="growth-stage growth-evergreen">[E]</span> Evergreen
     </div>
 </div>
 {% endblock %}

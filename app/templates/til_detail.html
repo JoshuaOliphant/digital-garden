@@ -1,41 +1,56 @@
 {% extends "base.html" %}
-{% from 'macros/layout.html' import page_container, content_layout, content_card_container, prose_content, metadata_badges, tag_list %}
-{% from 'macros/garden.html' import growth_indicator %}
+
+{% block title %}{{ til.title }}{% endblock %}
+{% block current_path %}/til/{{ til.slug }}{% endblock %}
 
 {% block content %}
-{% call page_container(title=til.title) %}
-  {% call content_layout() %}
-    
-    {% call content_card_container() %}
-      <!-- Metadata and Status -->
-      {{ metadata_badges(til) }}
-      
-      <!-- Growth Stage -->
-      {% if til.growth_stage %}
-        {{ growth_indicator(til.growth_stage) }}
-      {% endif %}
-      
-      <!-- Tags -->
-      {{ tag_list(til.tags, 'til') }}
-      
-      <!-- Main Content -->
-      <div class="mt-6">
-        {% call prose_content() %}
-          {{ til.html | safe }}
-        {% endcall %}
-      </div>
-      
-      <!-- TIL Metadata -->
-      <div class="mt-6 pt-4 border-t border-garden-border">
-        <div class="text-sm text-garden-text-secondary">
-          <p>Created: {{ til.created }}</p>
-          {% if til.updated and til.updated != til.created %}
-            <p>Updated: {{ til.updated }}</p>
-          {% endif %}
-        </div>
-      </div>
-    {% endcall %}
-    
-  {% endcall %}
-{% endcall %}
+<!-- Command Output Header -->
+<div class="output-block">
+    <div class="output-line">
+        <span class="prompt-symbol">$</span> <span style="color: var(--term-green);">cat ~/til/{{ til.slug }}.md</span>
+    </div>
+</div>
+
+<!-- Content Header -->
+<div class="content-header">
+    <h1>{{ til.title }}</h1>
+    <div class="content-header-meta">
+        <span style="color: var(--term-yellow);">til</span>
+        <span>{{ til.created }}</span>
+        {% if til.growth_stage %}
+        <span class="growth-stage growth-{{ til.growth_stage|lower }}">[{{ til.growth_stage|lower }}]</span>
+        {% endif %}
+        {% if til.difficulty %}
+        <span style="color: var(--term-magenta);">[{{ til.difficulty|lower }}]</span>
+        {% endif %}
+    </div>
+    {% if til.tags %}
+    <div class="tags" style="margin-top: 0.5rem;">
+        {% for tag in til.tags %}
+        <a href="/tags/{{ tag }}" class="tag">{{ tag }}</a>
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
+
+<!-- Main Content Body -->
+<div class="content-body">
+    {{ til.html | safe }}
+</div>
+
+<!-- File Info -->
+<div class="output-block" style="margin-top: 2rem; border-top: 1px dashed var(--term-gray); padding-top: 1rem; color: var(--term-gray); font-size: 0.85rem;">
+    <div class="output-line">
+        <span class="prompt-symbol">$</span> stat {{ til.slug }}.md
+    </div>
+    <div class="output-line">Created: {{ til.created }}</div>
+    {% if til.updated and til.updated != til.created %}
+    <div class="output-line">Modified: {{ til.updated }}</div>
+    {% endif %}
+</div>
+
+<!-- Navigation -->
+<div class="output-block" style="margin-top: 1rem;">
+    <a href="/til" style="color: var(--term-cyan);">[← back to til/]</a>
+</div>
 {% endblock %}

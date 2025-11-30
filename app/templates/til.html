@@ -1,79 +1,82 @@
 {% extends "base.html" %}
-{% from 'macros/layout.html' import page_container, content_layout %}
-{% from 'macros/garden.html' import growth_stage_legend %}
+
+{% block title %}~/til{% endblock %}
+{% block current_path %}/til{% endblock %}
 
 {% block content %}
-{% call page_container(title='Today I Learned') %}
-  {% call content_layout() %}
-    
-    <!-- Tags Section -->
-    {% if til_tags %}
-    <div class="mb-8">
-      <div class="flex flex-wrap gap-2">
+<!-- Command Output Header -->
+<div class="output-block">
+    <div class="output-line">
+        <span class="prompt-symbol">$</span> <span style="color: var(--term-green);">cat ~/til/README.md</span>
+    </div>
+    <div class="output-line" style="margin-top: 0.5rem;">
+        <span style="color: var(--term-amber);"># Today I Learned</span>
+    </div>
+    <div class="output-line" style="color: var(--term-gray);">
+        Quick learnings and discoveries. Small bits of knowledge collected over time.
+    </div>
+</div>
+
+<!-- Tags Section -->
+{% if til_tags %}
+<div class="output-block">
+    <div class="output-line" style="color: var(--term-gray);">-- Tags --</div>
+    <div class="tags" style="margin-top: 0.5rem;">
         {% for tag, count in til_tags.items() %}
-        <a href="/tags/{{ tag }}"
-           class="text-garden-accent hover:underline">
-          #{{ tag }} ({{ count }})
-        </a>
+        <a href="/tags/{{ tag }}" class="tag">{{ tag }} <span style="color: var(--term-gray);">({{ count }})</span></a>
         {% endfor %}
-      </div>
     </div>
-    {% endif %}
+</div>
+{% endif %}
 
-    <!-- TIL Entries - Simple Blog Style like Homepage -->
-    {% if tils %}
-    <div class="space-y-6">
-      {% for til in tils %}
-      <article class="border-b border-garden-border pb-6">
-        <div class="flex items-start gap-3">
-          <!-- Growth Stage Symbol -->
-          <span class="text-lg mt-1" title="Growth Stage: {{ til.growth_stage|default('seedling')|title }}">
-            {% set stage = til.growth_stage|default('seedling') %}
-            {% if stage == 'evergreen' %}■{% elif stage == 'growing' %}●{% elif stage == 'budding' %}◐{% else %}•{% endif %}
-          </span>
-          
-          <div class="flex-1">
-            <!-- Post Title -->
-            <h2 class="text-xl font-semibold mb-1">
-              <a href="/til/{{ til.slug }}" 
-                 class="text-garden-text-primary hover:text-garden-accent transition-colors">
-                {{ til.title }}
-              </a>
-            </h2>
-            
-            <!-- Post Meta -->
-            <div class="flex items-center gap-4 text-sm text-garden-text-muted mb-2">
-              <time datetime="{{ til.created }}">{{ til.created }}</time>
-              <span>TIL</span>
-              {% if til.tags %}
-              <div class="flex gap-2">
-                {% for tag in til.tags[:3] %}
-                <a href="/tags/{{ tag }}" class="text-garden-accent hover:underline">#{{ tag }}</a>
-                {% endfor %}
-              </div>
-              {% endif %}
-            </div>
-            
-            <!-- Post Description/Excerpt -->
-            {% if til.excerpt %}
-            <p class="text-garden-text-secondary leading-relaxed">{{ til.excerpt|truncate(200) }}</p>
+<!-- TIL Listing -->
+<div class="output-block">
+    <div class="output-line">
+        <span class="prompt-symbol">$</span> <span style="color: var(--term-green);">ls -la ~/til/</span>
+    </div>
+</div>
+
+{% if tils %}
+<ul class="content-list">
+    {% for til in tils %}
+    <li class="content-item">
+        <span class="content-type">
+            <span style="color: var(--term-yellow);">til</span>
+        </span>
+        <span class="content-title">
+            <a href="/til/{{ til.slug }}">{{ til.title }}</a>
+            {% if til.growth_stage %}
+            <span class="growth-stage growth-{{ til.growth_stage|lower }}">
+                [{{ til.growth_stage|lower }}]
+            </span>
             {% endif %}
-          </div>
-        </div>
-      </article>
-      {% endfor %}
-    </div>
-    {% else %}
-    <!-- Empty State -->
-    <div class="text-center py-12">
-      <p class="text-garden-text-muted mb-4">No TIL posts found yet.</p>
-      <p class="text-sm text-garden-text-muted">Start learning to see your posts here.</p>
-    </div>
+        </span>
+        <span class="content-date">{{ til.created }}</span>
+    </li>
+    {% if til.tags %}
+    <li class="content-meta">
+        <span class="tags">
+            {% for tag in til.tags[:3] %}
+            <a href="/tags/{{ tag }}" class="tag">{{ tag }}</a>
+            {% endfor %}
+        </span>
+    </li>
     {% endif %}
-
-    <!-- Growth Stage Legend -->
-    {{ growth_stage_legend() }}
-    
-  {% endcall %}
-{% endcall %}
+    {% if til.excerpt %}
+    <li class="content-meta" style="color: var(--term-gray);">
+        {{ til.excerpt[:150] }}{% if til.excerpt|length > 150 %}...{% endif %}
+    </li>
+    {% endif %}
+    {% endfor %}
+</ul>
+{% else %}
+<div class="output-block">
+    <div class="output-line" style="color: var(--term-amber);">
+        No TIL entries found yet.
+    </div>
+    <div class="output-line" style="color: var(--term-gray);">
+        Start learning to populate this directory.
+    </div>
+</div>
+{% endif %}
 {% endblock %}
