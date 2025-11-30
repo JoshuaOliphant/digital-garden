@@ -1,13 +1,13 @@
 ---
-title: "Vibe Code Alert: Andrej Karpathy on LLM Council"
-created: 2025-11-30
-updated: 2025-11-30
+title: Vibe Code Alert - Andrej Karpathy on LLM Council
+status: Evergreen
+created: '2025-11-30'
+updated: '2025-11-30'
 tags:
 - vibe-coding
 - ai
 - llm
 - andrej-karpathy
-status: Evergreen
 growth_stage: evergreen
 ---
 [Andrej Karpathy - LLM Council](https://github.com/karpathy/llm-council)
