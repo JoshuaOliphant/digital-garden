@@ -1,53 +1,71 @@
 {% extends "base.html" %}
-{% from 'macros/layout.html' import page_container, content_layout, content_card_container %}
-{% from 'macros/garden.html' import garden_card %}
+
+{% block title %}~/bookmarks{% endblock %}
+{% block current_path %}/bookmarks{% endblock %}
 
 {% block content %}
-{% call page_container(title='Bookmarks') %}
-  {% call content_layout() %}
-    <div class="grid gap-6">
-      {% for bookmark in bookmarks %}
-      {% call content_card_container() %}
-        <h2 class="text-xl font-semibold mb-2">
-          <a href="{{ bookmark.url }}" 
-             target="_blank" 
-             rel="noopener noreferrer"
-             class="text-garden-link hover:text-garden-link-hover">
-            {{ bookmark.title }}
-          </a>
-        </h2>
-        
-        {% if bookmark.description %}
-        <p class="text-garden-text-secondary mb-4">{{ bookmark.description }}</p>
-        {% endif %}
-        
-        <div class="flex items-center justify-between text-sm text-garden-text-muted">
-          <div class="flex gap-4">
-            {% if bookmark.created %}
-            <span>Created: {{ bookmark.created }}</span>
-            {% endif %}
-            {% if bookmark.github_stars %}
-            <span>⭐ {{ bookmark.github_stars }}</span>
-            {% endif %}
-          </div>
-          
-          {% if bookmark.tags %}
-          <div class="flex flex-wrap gap-2">
-            {% for tag in bookmark.tags %}
-            <span class="px-2 py-1 bg-garden-accent/10 text-garden-accent rounded text-xs">
-              {{ tag }}
-            </span>
-            {% endfor %}
-          </div>
-          {% endif %}
-        </div>
-      {% endcall %}
-      {% endfor %}
+<!-- Command Output Header -->
+<div class="output-block">
+    <div class="output-line">
+        <span class="prompt-symbol">$</span> <span style="color: var(--term-green);">cat ~/bookmarks/README.md</span>
     </div>
-    
-    {% if not bookmarks %}
-    <p class="text-garden-text-muted">No bookmarks found.</p>
+    <div class="output-line" style="margin-top: 0.5rem;">
+        <span style="color: var(--term-amber);"># Bookmarks</span>
+    </div>
+    <div class="output-line" style="color: var(--term-gray);">
+        Curated links to interesting resources, tools, and articles from around the web.
+    </div>
+</div>
+
+<!-- Bookmarks Listing -->
+<div class="output-block">
+    <div class="output-line">
+        <span class="prompt-symbol">$</span> <span style="color: var(--term-green);">ls -la ~/bookmarks/</span>
+    </div>
+    <div class="output-line" style="margin-top: 0.5rem; color: var(--term-gray);">
+        total {{ bookmarks|length if bookmarks else 0 }} bookmarks
+    </div>
+</div>
+
+{% if bookmarks %}
+<ul class="content-list">
+    {% for bookmark in bookmarks %}
+    <li class="content-item">
+        <span class="content-type">
+            <span style="color: var(--term-magenta);">link</span>
+        </span>
+        <span class="content-title">
+            <a href="{{ bookmark.url }}" target="_blank" rel="noopener noreferrer">
+                {{ bookmark.title }} <span style="color: var(--term-gray);">↗</span>
+            </a>
+            {% if bookmark.github_stars %}
+            <span class="bookmark-stars">★{{ bookmark.github_stars }}</span>
+            {% endif %}
+        </span>
+        <span class="content-date">{{ bookmark.created }}</span>
+    </li>
+    {% if bookmark.description %}
+    <li class="content-meta" style="color: var(--term-gray);">
+        {{ bookmark.description[:150] }}{% if bookmark.description|length > 150 %}...{% endif %}
+    </li>
     {% endif %}
-  {% endcall %}
-{% endcall %}
+    <li class="content-meta">
+        <span class="bookmark-url">{{ bookmark.url[:60] }}{% if bookmark.url|length > 60 %}...{% endif %}</span>
+        {% if bookmark.tags %}
+        <span class="tags" style="margin-left: 1rem;">
+            {% for tag in bookmark.tags[:3] %}
+            <a href="/tags/{{ tag }}" class="tag">{{ tag }}</a>
+            {% endfor %}
+        </span>
+        {% endif %}
+    </li>
+    {% endfor %}
+</ul>
+{% else %}
+<div class="output-block">
+    <div class="output-line" style="color: var(--term-amber);">
+        No bookmarks found.
+    </div>
+</div>
+{% endif %}
 {% endblock %}

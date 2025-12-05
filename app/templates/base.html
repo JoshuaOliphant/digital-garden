@@ -3,95 +3,115 @@
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>An Oliphant Never Forgets</title>
-        <!-- Include HTMX -->
+        <title>{% block title %}joshua@garden{% endblock %} ~ An Oliphant Never Forgets</title>
+        <meta name="description" content="{% block description %}An Oliphant Never Forgets - notes, learnings, and bookmarks from Joshua Oliphant{% endblock %}" />
+
+        <!-- Terminal CSS -->
+        <link href="/static/css/terminal.css" rel="stylesheet" />
+
+        <!-- HTMX for dynamic loading -->
         <script src="https://unpkg.com/htmx.org@1.9.10"></script>
-        
-        <!-- Use Custom CSS (replacing Tailwind) -->
-        <link href="/static/css/main.css" rel="stylesheet" />
+
+        <!-- Terminal JavaScript -->
+        <script src="/static/js/terminal.js" defer></script>
+
+        <!-- RSS Feed -->
         <link
             rel="alternate"
             type="application/rss+xml"
             title="RSS Feed"
             href="/feed.xml"
         />
+
+        <!-- Favicon - terminal style -->
+        <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>></text></svg>">
     </head>
-    <body class="bg-garden-bg text-garden-text-primary min-h-screen flex flex-col">
-        <!-- Navigation -->
-        <nav class="bg-garden-surface shadow-md sticky top-0 z-50 border-b border-garden-border">
-            <div class="container mx-auto px-4 py-3 flex justify-between items-center">
-                <a href="/" class="flex items-center">
-                    <img
-                        src="/static/images/joshua_oliphant.jpeg"
-                        alt="Joshua Oliphant Logo"
-                        class="h-8 w-8 rounded-full mr-2"
+    <body>
+        <div class="crt-container">
+            <div class="terminal">
+                <!-- Terminal Header with ASCII Art -->
+                <header class="terminal-header">
+                    <pre class="ascii-logo">
+  ___  _ _       _                 _
+ / _ \| (_)_ __ | |__   __ _ _ __ | |_
+| | | | | | '_ \| '_ \ / _` | '_ \| __|
+| |_| | | | |_) | | | | (_| | | | | |_
+ \___/|_|_| .__/|_| |_|\__,_|_| |_|\__|
+          |_|
+ _   _                         _____                    _
+| \ | | _____   _____ _ __    |  ___|__  _ __ __ _  ___| |_ ___
+|  \| |/ _ \ \ / / _ \ '__|   | |_ / _ \| '__/ _` |/ _ \ __/ __|
+| |\  |  __/\ V /  __/ |      |  _| (_) | | | (_| |  __/ |_\__ \
+|_| \_|\___| \_/ \___|_|      |_|  \___/|_|  \__, |\___|\__|___/
+                                             |___/
+                    </pre>
+                    <div class="terminal-title">An Oliphant Never Forgets :: v1.0.0</div>
+                </header>
+
+                <!-- System Info Bar -->
+                <div class="system-info">
+                    <div>Last login: <span>{{ now().strftime('%a %b %d %H:%M:%S %Y') if now is defined else 'Welcome' }}</span></div>
+                    <div>System: <span>oliphant/fastapi</span></div>
+                    <div>Type <span class="cmd-link" data-cmd="help">help</span> for commands</div>
+                </div>
+
+                <!-- Navigation Bar -->
+                <nav class="nav-bar">
+                    <a href="/" class="nav-item {% if request and request.url.path == '/' %}active{% endif %}">home</a>
+                    <a href="/garden" class="nav-item {% if request and '/garden' in request.url.path %}active{% endif %}">notes</a>
+                    <a href="/til" class="nav-item {% if request and '/til' in request.url.path %}active{% endif %}">til</a>
+                    <a href="/bookmarks" class="nav-item {% if request and '/bookmarks' in request.url.path %}active{% endif %}">bookmarks</a>
+                    <a href="/topics" class="nav-item {% if request and '/topics' in request.url.path or '/tags' in request.url.path %}active{% endif %}">tags</a>
+                    <a href="/now" class="nav-item {% if request and '/now' in request.url.path %}active{% endif %}">now</a>
+                </nav>
+
+                <!-- Main Content Output Area -->
+                <main id="terminal-output" class="output">
+                    {% block content %}{% endblock %}
+                </main>
+
+                <!-- Command Input -->
+                <div class="command-input-wrapper">
+                    <div class="prompt">
+                        <span class="prompt-user">visitor</span><span class="prompt-at">@</span><span class="prompt-host">garden</span><span class="prompt-separator">:</span><span class="prompt-path" id="prompt-path">{% block current_path %}/{% endblock %}</span><span class="prompt-symbol">$</span>
+                    </div>
+                    <input
+                        type="text"
+                        id="command-input"
+                        class="command-input"
+                        placeholder="type a command or click links above..."
+                        autocomplete="off"
+                        spellcheck="false"
                     />
-                    <span class="text-xl font-semibold text-garden-text-primary">An Oliphant Never Forgets</span>
-                </a>
-                <div class="flex items-center space-x-6">
-                    <!-- Mobile menu toggle button -->
-                    <button 
-                        class="mobile-menu-toggle md:hidden flex items-center px-3 py-2 border border-garden-border rounded text-white hover:text-garden-accent"
-                        aria-label="Toggle mobile menu"
-                        onclick="document.getElementById('mobile-nav').classList.toggle('hidden')"
-                    >
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
-                        </svg>
-                    </button>
-                    
-                    <!-- Desktop navigation - hidden on mobile -->
-                    <ul class="hidden md:flex space-x-6">
-                        <li><a href="/" class="text-white hover:text-garden-accent transition-colors touch-target">Home</a></li>
-                        <li><a href="/now" class="text-white hover:text-garden-accent transition-colors touch-target">Now</a></li>
-                        <li><a href="/til" class="text-white hover:text-garden-accent transition-colors touch-target">TIL</a></li>
-                        <li><a href="/projects" class="text-white hover:text-garden-accent transition-colors touch-target">Projects</a></li>
-                    </ul>
+                    <span class="cursor"></span>
                 </div>
-                
-                <!-- Mobile navigation menu - hidden by default -->
-                <div id="mobile-nav" class="hidden md:hidden absolute top-full left-0 w-full bg-garden-surface shadow-lg z-40">
-                    <ul class="flex flex-col py-2">
-                        <li><a href="/" class="block px-4 py-3 text-white hover:text-garden-accent hover:bg-garden-surface-alt transition-colors touch-target">Home</a></li>
-                        <li><a href="/now" class="block px-4 py-3 text-white hover:text-garden-accent hover:bg-garden-surface-alt transition-colors touch-target">Now</a></li>
-                        <li><a href="/til" class="block px-4 py-3 text-white hover:text-garden-accent hover:bg-garden-surface-alt transition-colors touch-target">TIL</a></li>
-                        <li><a href="/projects" class="block px-4 py-3 text-white hover:text-garden-accent hover:bg-garden-surface-alt transition-colors touch-target">Projects</a></li>
-                    </ul>
-                </div>
+
+                <!-- Footer -->
+                <footer class="terminal-footer">
+                    <div>
+                        <a href="/feed.xml">[RSS]</a> |
+                        <a href="https://github.com/JoshuaOliphant" target="_blank" rel="noopener">[GitHub]</a> |
+                        <span>&copy; {{ now().year if now is defined else '2024' }} Joshua Oliphant</span>
+                    </div>
+                </footer>
             </div>
-        </nav>
-
-        <!-- Main Content Area with ID for HTMX Targeting -->
-        <main class="flex-grow container mx-auto px-4 py-8" id="content-area">
-            {% block content %}{% endblock %}
-        </main>
-
-        <!-- Footer -->
-        <footer class="bg-garden-surface py-6 mt-auto border-t border-garden-border">
-            <div class="container mx-auto px-4 text-center text-garden-text-muted">
-                <p>&copy; 2024 Joshua Oliphant. All rights reserved.</p>
-            </div>
-        </footer>
-
-        <!-- Loading Indicator for HTMX -->
-        <div id="loading-indicator" 
-             class="fixed top-0 left-0 w-full h-1 bg-garden-accent transform scale-x-0 transition-transform duration-300"
-             style="display: none;">
         </div>
+
+        <!-- HTMX Loading Indicator -->
+        <div id="loading-indicator" class="loading-indicator">
+            Processing<span class="loading"></span>
+        </div>
+
         <script>
-            // HTMX Loading Indicator
+            // HTMX Loading states
             document.body.addEventListener('htmx:beforeRequest', function() {
                 document.getElementById('loading-indicator').style.display = 'block';
-                document.getElementById('loading-indicator').style.transform = 'scaleX(0.3)';
             });
             document.body.addEventListener('htmx:afterRequest', function() {
-                document.getElementById('loading-indicator').style.transform = 'scaleX(1)';
                 setTimeout(function() {
                     document.getElementById('loading-indicator').style.display = 'none';
-                    document.getElementById('loading-indicator').style.transform = 'scaleX(0)';
-                }, 300);
+                }, 200);
             });
-
         </script>
     </body>
 </html>

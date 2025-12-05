@@ -1,97 +1,53 @@
 {% extends "base.html" %}
-{% import 'macros/garden.html' as garden %}
-{% import 'macros/layout.html' as layout %}
 
-{% block title %}Garden Topics - Digital Garden{% endblock %}
+{% block title %}~/tags{% endblock %}
+{% block current_path %}/tags{% endblock %}
 
 {% block content %}
-<div class="container mx-auto px-4 py-8">
-    <!-- Page Header -->
-    <div class="mb-8">
-        <h1 class="text-4xl font-bold mb-4 text-garden-text-primary">
-            🌱 Garden Topics
-        </h1>
-        <p class="text-lg text-garden-text-muted">
-            Explore the garden by topic areas. Each bed contains related plants grouped by theme.
-        </p>
-        <div class="mt-4 flex gap-4 text-sm text-garden-text-muted">
-            <span>🏷️ {{ total_tags }} topics</span>
-            <span>📝 {{ total_content }} plants</span>
-        </div>
+<!-- Command Output Header -->
+<div class="output-block">
+    <div class="output-line">
+        <span class="prompt-symbol">$</span> <span style="color: var(--term-green);">ls ~/tags/</span>
     </div>
+    <div class="output-line" style="margin-top: 0.5rem; color: var(--term-gray);">
+        {{ total_tags }} topics | {{ total_content }} total items
+    </div>
+</div>
 
-    <!-- Garden Beds Grid -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-        {% for bed_name, bed_info in topics_data.items() %}
-        <div class="bg-garden-surface rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
-            <div class="flex items-center justify-between mb-4">
-                <h2 class="text-xl font-semibold text-garden-text-primary">
-                    {{ bed_info.icon }} {{ bed_name }}
-                </h2>
-                <span class="text-sm text-garden-text-muted">
-                    {{ bed_info.total_count }} plants
-                </span>
-            </div>
-            
-            <div class="flex flex-wrap gap-2">
-                {% for tag in bed_info.tags %}
-                <a href="/topics/filter?tags={{ tag.name }}" 
-                   class="inline-flex items-center px-3 py-1 rounded-full text-sm {{ bed_info.color }} hover:opacity-80 transition-opacity"
-                   hx-get="/topics/filter?tags={{ tag.name }}"
-                   hx-target="#filtered-content"
-                   hx-push-url="true">
-                    {{ tag.name }}
-                    <span class="ml-1 text-xs opacity-75">({{ tag.count }})</span>
-                </a>
-                {% endfor %}
-            </div>
-        </div>
+<!-- Topics/Garden Beds -->
+{% for bed_name, bed_info in topics_data.items() %}
+<div class="output-block" style="margin-top: 1.5rem;">
+    <div class="output-line">
+        <span style="color: var(--term-amber);">## {{ bed_info.icon }} {{ bed_name }}</span>
+        <span style="color: var(--term-gray);"> ({{ bed_info.total_count }} items)</span>
+    </div>
+    <div class="tags" style="margin-top: 0.5rem;">
+        {% for tag in bed_info.tags %}
+        <a href="/tags/{{ tag.name }}" class="tag">{{ tag.name }} <span style="color: var(--term-gray);">({{ tag.count }})</span></a>
         {% endfor %}
     </div>
+</div>
+{% endfor %}
 
-    <!-- Filter Interface -->
-    <div class="bg-garden-surface rounded-lg shadow-md p-6 mb-8">
-        <h2 class="text-2xl font-semibold mb-4 text-garden-text-primary">
-            🔍 Filter by Topics
-        </h2>
-        <p class="text-garden-text-muted mb-4">
-            Select multiple topics to find content at their intersection.
-        </p>
-        
-        <form hx-post="/topics/filter" 
-              hx-target="#filtered-content" 
-              hx-trigger="change"
-              class="space-y-4">
-            {% for bed_name, bed_info in topics_data.items() %}
-            <div>
-                <h3 class="font-medium text-garden-text-secondary mb-2">
-                    {{ bed_info.icon }} {{ bed_name }}
-                </h3>
-                <div class="flex flex-wrap gap-2">
-                    {% for tag in bed_info.tags %}
-                    <label class="inline-flex items-center p-2 rounded transition-colors has-[:checked]:bg-garden-accent/10">
-                        <input type="checkbox" 
-                               name="tags" 
-                               value="{{ tag.name }}"
-                               class="mr-2 rounded text-garden-accent focus:ring-garden-accent">
-                        <span class="text-sm text-garden-text-secondary">
-                            {{ tag.name }} ({{ tag.count }})
-                        </span>
-                    </label>
-                    {% endfor %}
-                </div>
-            </div>
-            {% endfor %}
-        </form>
+<!-- Filter Results -->
+<div class="output-block" style="margin-top: 2rem; border-top: 1px dashed var(--term-gray); padding-top: 1rem;">
+    <div class="output-line" style="color: var(--term-gray);">
+        -- Filtered Results --
     </div>
+    <div class="output-line" style="color: var(--term-cyan);">
+        Click a tag above to filter content
+    </div>
+</div>
 
-    <!-- Filtered Content Results -->
-    <div id="filtered-content">
-        <!-- HTMX will inject filtered results here -->
-        <div class="text-center text-garden-text-muted py-8">
-            <p>Select topics above to explore related content</p>
+<div id="filtered-content">
+    <!-- HTMX will inject filtered results here -->
+    <div class="output-block">
+        <div class="output-line" style="color: var(--term-gray);">
+            <span class="prompt-symbol">$</span> grep --tag=&lt;topic&gt; ~/garden/
+        </div>
+        <div class="output-line" style="color: var(--term-gray);">
+            Select topics above to search...
         </div>
     </div>
 </div>
 {% endblock %}
-

@@ -1,116 +1,98 @@
 {% extends "base.html" %}
-{% from 'macros/layout.html' import page_container, content_layout, prose_content %}
 
 {% block title %}{{ metadata.title }}{% endblock %}
+{% block current_path %}/{{ content_type }}/{{ metadata.slug or metadata.name }}{% endblock %}
 
 {% block content %}
-{% call page_container(title="Digital Garden", subtitle="A place for growing ideas") %}
-  {% call content_layout() %}
-    
-    <!-- Content Header with Growth Stage (matches homepage style) -->
-    <article class="border-b border-garden-border pb-6">
-      <div class="flex items-start gap-3">
-        <!-- Growth Stage Symbol (from server-side service) -->
-        <span class="text-lg mt-1" title="Growth Stage: {{ metadata.growth_stage|title }}">
-          {{ growth_symbol }}
-        </span>
-        
-        <div class="flex-1">
-          <!-- Post Title -->
-          <h1 class="text-2xl font-semibold mb-1 text-garden-text-primary">
-            {{ metadata.title }}
-          </h1>
-          
-          <!-- Post Meta -->
-          <div class="flex items-center gap-4 text-sm text-garden-text-muted mb-4">
-            <time datetime="{{ metadata.created }}">{{ metadata.created }}</time>
-            <span class="capitalize">{{ content_type }}</span>
-            {% if metadata.tags %}
-            <div class="flex gap-2">
-              {% for tag in metadata.tags %}
-              <a href="/tags/{{ tag }}" class="text-garden-accent hover:underline">#{{ tag }}</a>
-              {% endfor %}
-            </div>
-            {% endif %}
-          </div>
-        </div>
-      </div>
-    </article>
-    
-    <!-- Main Content -->
-    <div class="mt-6">
-      {% call prose_content() %}
-        {{ content | safe }}
-      {% endcall %}
+<!-- Command Output Header -->
+<div class="output-block">
+    <div class="output-line">
+        <span class="prompt-symbol">$</span> <span style="color: var(--term-green);">cat ~/{{ content_type }}/{{ metadata.slug or metadata.name }}.md</span>
     </div>
-    
-    <!-- Backlinks -->
-    {% if backlinks %}
-    <div class="mt-8 pt-6 border-t border-garden-border">
-      <h3 class="text-lg font-semibold mb-3 text-garden-text-primary">Backlinks</h3>
-      <ul class="space-y-2">
+</div>
+
+<!-- Content Header -->
+<div class="content-header">
+    <h1>{{ metadata.title }}</h1>
+    <div class="content-header-meta">
+        <span style="color: var(--term-cyan);">{{ content_type }}</span>
+        <span>{{ metadata.created }}</span>
+        {% if metadata.growth_stage %}
+        <span class="growth-stage growth-{{ metadata.growth_stage|lower }}">[{{ metadata.growth_stage|lower }}]</span>
+        {% endif %}
+        {% if metadata.updated and metadata.updated != metadata.created %}
+        <span style="color: var(--term-gray);">updated: {{ metadata.updated }}</span>
+        {% endif %}
+    </div>
+    {% if metadata.tags %}
+    <div class="tags" style="margin-top: 0.5rem;">
+        {% for tag in metadata.tags %}
+        <a href="/tags/{{ tag }}" class="tag">{{ tag }}</a>
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
+
+<!-- Main Content Body -->
+<div class="content-body">
+    {{ content | safe }}
+</div>
+
+<!-- Backlinks -->
+{% if backlinks %}
+<div class="output-block" style="margin-top: 2rem; border-top: 1px dashed var(--term-gray); padding-top: 1rem;">
+    <div class="output-line" style="color: var(--term-amber);">## Backlinks</div>
+    <div class="output-line" style="color: var(--term-gray);">Content that links to this page:</div>
+    <ul style="margin-top: 0.5rem; list-style: none;">
         {% for backlink in backlinks %}
-        <li>
-          <a href="/{{ backlink.content_type }}/{{ backlink.source_slug }}"
-             class="text-garden-accent hover:underline">
-            {{ backlink.source_title }}
-          </a>
+        <li style="padding: 0.25rem 0;">
+            <span style="color: var(--term-gray);">→</span>
+            <a href="/{{ backlink.content_type }}/{{ backlink.source_slug }}">{{ backlink.source_title }}</a>
         </li>
         {% endfor %}
-      </ul>
+    </ul>
+</div>
+{% endif %}
+
+<!-- Related/Recent Content -->
+{% if recent_how_tos or recent_notes %}
+<div class="output-block" style="margin-top: 2rem; border-top: 1px dashed var(--term-gray); padding-top: 1rem;">
+    <div class="output-line" style="color: var(--term-amber);">## See Also</div>
+
+    {% if recent_how_tos and recent_how_tos.content %}
+    <div style="margin-top: 0.5rem;">
+        <div class="output-line" style="color: var(--term-gray);">Recent guides:</div>
+        {% for how_to in recent_how_tos.content[:3] %}
+        <div class="output-line">
+            <span style="color: var(--term-gray);">→</span>
+            <a href="/how_to/{{ how_to.slug }}">{{ how_to.title }}</a>
+        </div>
+        {% endfor %}
     </div>
     {% endif %}
-    
-    <!-- Recent Content Section -->
-    {% if recent_how_tos or recent_notes %}
-    <div class="mt-8 pt-6 border-t border-garden-border">
-      <h2 class="text-xl font-semibold mb-4 text-garden-text-primary">Recent Content</h2>
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {% if recent_how_tos and recent_how_tos.content %}
-        <div>
-          <h3 class="text-lg font-medium mb-3 text-garden-text-primary">Recent How-to's</h3>
-          <ul class="space-y-2">
-            {% for how_to in recent_how_tos.content[:5] %}
-            <li>
-              <a href="/how_to/{{ how_to.name }}"
-                 class="text-garden-accent hover:underline">
-                {{ how_to.title }}
-              </a>
-            </li>
-            {% endfor %}
-          </ul>
+
+    {% if recent_notes and recent_notes.content %}
+    <div style="margin-top: 0.5rem;">
+        <div class="output-line" style="color: var(--term-gray);">Recent notes:</div>
+        {% for note in recent_notes.content[:3] %}
+        <div class="output-line">
+            <span style="color: var(--term-gray);">→</span>
+            <a href="/notes/{{ note.slug }}">{{ note.title }}</a>
         </div>
-        {% endif %}
-        
-        {% if recent_notes and recent_notes.content %}
-        <div>
-          <h3 class="text-lg font-medium mb-3 text-garden-text-primary">Recent Notes</h3>
-          <ul class="space-y-2">
-            {% for note in recent_notes.content[:5] %}
-            <li>
-              <a href="/notes/{{ note.name }}"
-                 class="text-garden-accent hover:underline">
-                {{ note.title }}
-              </a>
-            </li>
-            {% endfor %}
-          </ul>
-        </div>
-        {% endif %}
-      </div>
+        {% endfor %}
     </div>
     {% endif %}
-    
-    <!-- Content Metadata -->
-    <div class="mt-8 pt-6 border-t border-garden-border">
-      <div class="text-sm text-garden-text-secondary">
-        <p>Created: {{ metadata.created }}</p>
-        {% if metadata.updated and metadata.updated != metadata.created %}
-          <p>Updated: {{ metadata.updated }}</p>
-        {% endif %}
-      </div>
+</div>
+{% endif %}
+
+<!-- File Info -->
+<div class="output-block" style="margin-top: 2rem; border-top: 1px dashed var(--term-gray); padding-top: 1rem; color: var(--term-gray); font-size: 0.85rem;">
+    <div class="output-line">
+        <span class="prompt-symbol">$</span> stat {{ metadata.slug or metadata.name }}.md
     </div>
-    
-  {% endcall %}
-{% endcall %}
+    <div class="output-line">Created: {{ metadata.created }}</div>
+    {% if metadata.updated and metadata.updated != metadata.created %}
+    <div class="output-line">Modified: {{ metadata.updated }}</div>
+    {% endif %}
+</div>
 {% endblock %}

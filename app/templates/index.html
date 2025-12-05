@@ -1,119 +1,143 @@
 {% extends "base.html" %}
 
-{% block title %}Digital Garden{% endblock %}
+{% block title %}~{% endblock %}
+{% block current_path %}/{% endblock %}
 
 {% block content %}
-{% from 'macros/layout.html' import page_container, content_layout, prose_content %}
-{% from 'macros/garden.html' import growth_stage_legend %}
+<!-- MOTD (Message of the Day) -->
+<div class="motd">
+    <div class="motd-welcome">Welcome! An Oliphant Never Forgets.</div>
+    <div class="motd-info">Notes, learnings, and bookmarks from Joshua Oliphant.</div>
+    <div class="motd-hint">Hint: Use keyboard commands or click navigation links above. Type <span class="cmd-link" data-cmd="help">help</span> for all commands.</div>
+</div>
 
-{% call page_container(title="Digital Garden", subtitle="A place for growing ideas") %}
-  {% call content_layout() %}
-    
-    <!-- Recent Posts - Simple Blog Style -->
-    {% if recent_posts %}
-    <div class="space-y-6">
-      {% for post in recent_posts %}
-      <article class="border-b border-garden-border pb-6">
-        <div class="flex items-start gap-3">
-          <!-- Growth Stage Symbol (from server-side service) -->
-          <span class="text-lg mt-1" title="Growth Stage: {{ post.growth_stage|default('seedling')|title }}">
-            {{ post.growth_symbol }}
-          </span>
-          
-          <div class="flex-1">
-            <!-- Post Title -->
-            <h2 class="text-xl font-semibold mb-1">
-              {% if post.content_type == 'bookmarks' and post.url %}
-              <a href="{{ post.url }}" 
-                 target="_blank"
-                 rel="noopener noreferrer"
-                 class="text-garden-text-primary hover:text-garden-accent transition-colors">
-                {{ post.title }}
-                <span class="ml-1 text-sm text-garden-text-muted">↗</span>
-              </a>
-              {% else %}
-              <a href="/{{ post.content_type }}/{{ post.slug }}" 
-                 class="text-garden-text-primary hover:text-garden-accent transition-colors">
-                {{ post.title }}
-              </a>
-              {% endif %}
-            </h2>
-            
-            <!-- Post Meta -->
-            <div class="flex items-center gap-4 text-sm text-garden-text-muted mb-2">
-              <time datetime="{{ post.created }}">{{ post.created }}</time>
-              <span class="capitalize">{{ post.content_type }}</span>
-              {% if post.tags %}
-              <div class="flex gap-2">
-                {% for tag in post.tags[:3] %}
-                <a href="/tags/{{ tag }}" class="text-garden-accent hover:underline">#{{ tag }}</a>
-                {% endfor %}
-              </div>
-              {% endif %}
-            </div>
-            
-            <!-- Post Description/Excerpt -->
-            {% if post.description %}
-            <p class="text-garden-text-secondary leading-relaxed">{{ post.description|truncate(200) }}</p>
-            {% endif %}
-          </div>
-        </div>
-      </article>
-      {% endfor %}
-      
-      <!-- Pagination -->
-      {% if pagination and (pagination.has_prev or pagination.has_next) %}
-      <div class="mt-8 pt-6 border-t border-garden-border">
-        <div class="flex justify-between items-center">
-          <div>
-            {% if pagination.has_prev %}
-            <a href="/?page={{ pagination.page - 1 }}" 
-               class="inline-flex items-center text-garden-accent hover:underline">
-              ← Previous Page
-            </a>
-            {% endif %}
-          </div>
-          <div class="text-sm text-garden-text-muted">
-            Page {{ pagination.page }} of {{ pagination.total_pages }}
-          </div>
-          <div>
-            {% if pagination.has_next %}
-            <a href="/?page={{ pagination.page + 1 }}" 
-               class="inline-flex items-center text-garden-accent hover:underline">
-              Next Page →
-            </a>
-            {% endif %}
-          </div>
-        </div>
-      </div>
-      {% endif %}
+<!-- Command Output: ls -la -->
+<div class="output-block">
+    <div class="output-line">
+        <span class="prompt-symbol">$</span> <span style="color: var(--term-green);">ls -la ~/garden</span>
     </div>
+    <div class="output-line" style="margin-top: 0.5rem; color: var(--term-gray);">
+        total {{ recent_posts|length if recent_posts else 0 }} items
+    </div>
+</div>
+
+<!-- Recent Posts as File Listing -->
+{% if recent_posts %}
+<ul class="content-list">
+    {% for post in recent_posts %}
+    <li class="content-item">
+        <span class="content-type">
+            {% if post.content_type == 'notes' %}
+            <span style="color: var(--term-cyan);">note</span>
+            {% elif post.content_type == 'til' %}
+            <span style="color: var(--term-yellow);">til</span>
+            {% elif post.content_type == 'bookmarks' %}
+            <span style="color: var(--term-magenta);">link</span>
+            {% elif post.content_type == 'how_to' %}
+            <span style="color: var(--term-amber);">howto</span>
+            {% else %}
+            <span style="color: var(--term-gray);">{{ post.content_type }}</span>
+            {% endif %}
+        </span>
+        <span class="content-title">
+            {% if post.content_type == 'bookmarks' and post.url %}
+            <a href="{{ post.url }}" target="_blank" rel="noopener noreferrer">
+                {{ post.title }} <span style="color: var(--term-gray);">↗</span>
+            </a>
+            {% else %}
+            <a href="/{{ post.content_type }}/{{ post.slug }}">{{ post.title }}</a>
+            {% endif %}
+            {% if post.growth_stage %}
+            <span class="growth-stage growth-{{ post.growth_stage|lower }}">
+                [{{ post.growth_stage|lower }}]
+            </span>
+            {% endif %}
+        </span>
+        <span class="content-date">{{ post.created }}</span>
+    </li>
+    {% if post.tags %}
+    <li class="content-meta">
+        <span class="tags">
+            {% for tag in post.tags[:4] %}
+            <a href="/tags/{{ tag }}" class="tag">{{ tag }}</a>
+            {% endfor %}
+        </span>
+    </li>
+    {% endif %}
+    {% endfor %}
+</ul>
+
+<!-- Pagination -->
+{% if pagination and (pagination.has_prev or pagination.has_next) %}
+<div class="pagination">
+    {% if pagination.has_prev %}
+    <a href="/?page={{ pagination.page - 1 }}" class="page-link">[prev]</a>
     {% else %}
-    <!-- Empty State -->
-    <div class="text-center py-12">
-      <p class="text-garden-text-muted mb-4">No content found yet.</p>
-      <p class="text-sm text-garden-text-muted">Start writing to see your posts here.</p>
-    </div>
+    <span class="page-link disabled">[prev]</span>
     {% endif %}
 
-    <!-- Browse Links (moved to bottom) -->
-    <div class="mt-12 pt-8 border-t border-garden-border">
-      <div class="flex flex-wrap justify-center gap-4">
-        <a href="/topics" 
-           class="inline-flex items-center px-4 py-2 text-garden-accent hover:underline">
-          Browse Topics
-        </a>
-        <a href="/wander" 
-           class="inline-flex items-center px-4 py-2 text-garden-accent hover:underline">
-          Wander
-        </a>
-      </div>
+    <span class="page-info">page {{ pagination.page }}/{{ pagination.total_pages }}</span>
+
+    {% if pagination.has_next %}
+    <a href="/?page={{ pagination.page + 1 }}" class="page-link">[next]</a>
+    {% else %}
+    <span class="page-link disabled">[next]</span>
+    {% endif %}
+</div>
+{% endif %}
+
+{% else %}
+<!-- Empty State -->
+<div class="output-block">
+    <div class="output-line" style="color: var(--term-amber);">
+        No content found. The garden is empty.
     </div>
+    <div class="output-line" style="color: var(--term-gray);">
+        Start planting seeds by creating content in app/content/
+    </div>
+</div>
+{% endif %}
 
-    <!-- Growth Stage Legend -->
-    {{ growth_stage_legend() }}
+<!-- Quick Navigation -->
+<div class="output-block" style="margin-top: 2rem;">
+    <div class="output-line" style="color: var(--term-gray);">
+        -- Quick access --
+    </div>
+    <div class="dir-listing" style="margin-top: 0.5rem;">
+        <a href="/garden" class="dir-item">
+            <span class="dir-icon">d</span>
+            <span class="dir-name">notes/</span>
+        </a>
+        <a href="/til" class="dir-item">
+            <span class="dir-icon">d</span>
+            <span class="dir-name">til/</span>
+        </a>
+        <a href="/bookmarks" class="dir-item">
+            <span class="dir-icon">d</span>
+            <span class="dir-name">bookmarks/</span>
+        </a>
+        <a href="/topics" class="dir-item">
+            <span class="dir-icon">d</span>
+            <span class="dir-name">tags/</span>
+        </a>
+        <a href="/wander" class="dir-item">
+            <span class="file-icon">x</span>
+            <span class="file-name">random</span>
+        </a>
+    </div>
+</div>
 
-  {% endcall %}
-{% endcall %}
+<!-- Growth Stage Legend -->
+<div class="output-block" style="margin-top: 2rem; color: var(--term-gray); font-size: 0.85rem;">
+    <div class="output-line">-- Growth stages --</div>
+    <div class="output-line">
+        <span class="growth-stage growth-seedling">[seedling]</span> New idea, just planted
+    </div>
+    <div class="output-line">
+        <span class="growth-stage growth-budding">[budding]</span> Growing, needs tending
+    </div>
+    <div class="output-line">
+        <span class="growth-stage growth-evergreen">[evergreen]</span> Mature, well-developed
+    </div>
+</div>
 {% endblock %}
-

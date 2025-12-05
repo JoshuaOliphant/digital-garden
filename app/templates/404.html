@@ -1,111 +1,113 @@
 {% extends "base.html" %}
 
+{% block title %}404 - Not Found{% endblock %}
+{% block current_path %}{{ request.url.path if request else '/404' }}{% endblock %}
+
 {% block content %}
-<div class="container mx-auto px-4 py-16 max-w-4xl">
-    <!-- Error Icon and Message -->
-    <div class="text-center mb-12">
-        <!-- Seedling icon representing lost/not grown content -->
-        <div class="text-6xl mb-6">🌱</div>
-        <h1 class="text-5xl font-bold text-garden-text-primary mb-4">404</h1>
-        <h2 class="text-2xl font-semibold text-garden-text-secondary mb-4">
-            This seed hasn't sprouted yet
-        </h2>
-        <p class="text-lg text-garden-text-muted max-w-2xl mx-auto">
-            The page you're looking for might have been moved, removed, or is still germinating in the garden. 
-            Let's help you find what you're looking for.
-        </p>
+<!-- Error Output -->
+<div class="output-block">
+    <div class="output-line">
+        <span class="prompt-symbol">$</span> <span style="color: var(--term-green);">cat {{ request.url.path if request else '/unknown' }}</span>
     </div>
-
-    <!-- Helpful Navigation Options -->
-    <div class="grid md:grid-cols-2 gap-8 mb-12">
-        <!-- Quick Links -->
-        <div class="bg-garden-surface rounded-lg p-6 border border-garden-border">
-            <h3 class="text-xl font-semibold mb-4 text-garden-text-primary">
-                Popular Paths
-            </h3>
-            <ul class="space-y-3">
-                <li>
-                    <a href="/" class="text-garden-accent hover:text-garden-accent-hover transition-colors">
-                        🏡 Home - Return to the garden entrance
-                    </a>
-                </li>
-                <li>
-                    <a href="/garden" class="text-garden-accent hover:text-garden-accent-hover transition-colors">
-                        🌿 Garden - Explore all growing content
-                    </a>
-                </li>
-                <li>
-                    <a href="/topics" class="text-garden-accent hover:text-garden-accent-hover transition-colors">
-                        🏷️ Topics - Browse by category
-                    </a>
-                </li>
-                <li>
-                    <a href="/til" class="text-garden-accent hover:text-garden-accent-hover transition-colors">
-                        💡 Today I Learned - Quick insights
-                    </a>
-                </li>
-                <li>
-                    <a href="/projects" class="text-garden-accent hover:text-garden-accent-hover transition-colors">
-                        🚀 Projects - View my work
-                    </a>
-                </li>
-            </ul>
-        </div>
-
-        <!-- Recent Content -->
-        <div class="bg-garden-surface rounded-lg p-6 border border-garden-border">
-            <h3 class="text-xl font-semibold mb-4 text-garden-text-primary">
-                Recently Tended
-            </h3>
-            <p class="text-garden-text-muted mb-4">
-                Here are some recently updated pages you might find interesting:
-            </p>
-            <div class="space-y-2">
-                {% if recent_content %}
-                    {% for item in recent_content[:5] %}
-                    <a href="/{{ item.content_type }}/{{ item.slug }}" 
-                       class="block text-garden-accent hover:text-garden-accent-hover transition-colors">
-                        {{ item.growth_symbol }} {{ item.title }}
-                    </a>
-                    {% endfor %}
-                {% else %}
-                    <p class="text-garden-text-muted italic">
-                        Check back soon for new content!
-                    </p>
-                {% endif %}
-            </div>
-        </div>
+    <div class="output-line" style="margin-top: 0.5rem;">
+        <span class="error">No such file or directory</span>
     </div>
+</div>
 
-    <!-- Search Suggestion -->
-    <div class="bg-garden-surface rounded-lg p-6 border border-garden-border text-center">
-        <p class="text-garden-text-secondary mb-4">
-            Still can't find what you're looking for?
-        </p>
-        <div class="flex justify-center gap-4">
-            <a href="/explore" 
-               class="inline-block px-6 py-3 bg-garden-accent text-white rounded-lg hover:bg-garden-accent-hover transition-colors">
-                🔍 Explore the Garden
-            </a>
-            <a href="/" 
-               class="inline-block px-6 py-3 bg-garden-border text-garden-text-primary rounded-lg hover:bg-garden-surface-hover transition-colors">
-                🏠 Go Home
-            </a>
-        </div>
+<!-- ASCII Art 404 -->
+<div class="output-block" style="margin-top: 1rem;">
+<pre style="color: var(--term-red);">
+ _  _    ___  _  _
+| || |  / _ \| || |
+| || |_| | | | || |_
+|__   _| | | |__   _|
+   | | | |_| |  | |
+   |_|  \___/   |_|
+</pre>
+</div>
+
+<div class="output-block">
+    <div class="output-line" style="color: var(--term-amber);">
+        File not found in the garden.
     </div>
+    <div class="output-line" style="color: var(--term-gray);">
+        The path you requested doesn't exist. It may have been moved, deleted, or never planted.
+    </div>
+</div>
 
-    <!-- Technical Details (if in development) -->
-    {% if debug_mode %}
-    <div class="mt-8 p-4 bg-garden-surface rounded-lg border border-red-600 text-sm">
-        <h4 class="font-semibold text-red-600 mb-2">Debug Information:</h4>
-        <p class="text-garden-text-muted font-mono">
-            Path requested: {{ request.url.path }}<br>
-            Method: {{ request.method }}<br>
-            {% if error_detail %}
-            Error: {{ error_detail }}
-            {% endif %}
-        </p>
+<!-- Help Section -->
+<div class="output-block" style="margin-top: 1.5rem;">
+    <div class="output-line">
+        <span class="prompt-symbol">$</span> <span style="color: var(--term-green);">ls ~/</span>
+    </div>
+    <div class="output-line" style="color: var(--term-gray); margin-top: 0.5rem;">
+        Try one of these directories:
+    </div>
+    <div class="dir-listing" style="margin-top: 0.5rem;">
+        <a href="/" class="dir-item">
+            <span class="dir-icon">d</span>
+            <span class="dir-name">home</span>
+        </a>
+        <a href="/garden" class="dir-item">
+            <span class="dir-icon">d</span>
+            <span class="dir-name">notes/</span>
+        </a>
+        <a href="/til" class="dir-item">
+            <span class="dir-icon">d</span>
+            <span class="dir-name">til/</span>
+        </a>
+        <a href="/bookmarks" class="dir-item">
+            <span class="dir-icon">d</span>
+            <span class="dir-name">bookmarks/</span>
+        </a>
+        <a href="/topics" class="dir-item">
+            <span class="dir-icon">d</span>
+            <span class="dir-name">tags/</span>
+        </a>
+    </div>
+</div>
+
+<!-- Recent Content -->
+{% if recent_content %}
+<div class="output-block" style="margin-top: 1.5rem; border-top: 1px dashed var(--term-gray); padding-top: 1rem;">
+    <div class="output-line">
+        <span class="prompt-symbol">$</span> <span style="color: var(--term-green);">ls -t ~/garden/ | head -5</span>
+    </div>
+    <div class="output-line" style="color: var(--term-gray); margin-top: 0.5rem;">
+        Recently updated content:
+    </div>
+    <ul class="content-list" style="margin-top: 0.5rem;">
+        {% for item in recent_content[:5] %}
+        <li class="content-item">
+            <span class="content-type">
+                <span style="color: var(--term-cyan);">{{ item.content_type[:4] }}</span>
+            </span>
+            <span class="content-title">
+                <a href="/{{ item.content_type }}/{{ item.slug }}">{{ item.title }}</a>
+            </span>
+        </li>
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}
+
+<!-- Debug Info (if enabled) -->
+{% if debug_mode %}
+<div class="output-block" style="margin-top: 1.5rem; border-top: 1px dashed var(--term-red); padding-top: 1rem;">
+    <div class="output-line" style="color: var(--term-red);">
+        ## Debug Info
+    </div>
+    <div class="output-line" style="color: var(--term-gray);">
+        Path: {{ request.url.path if request else 'unknown' }}
+    </div>
+    <div class="output-line" style="color: var(--term-gray);">
+        Method: {{ request.method if request else 'unknown' }}
+    </div>
+    {% if error_detail %}
+    <div class="output-line" style="color: var(--term-red);">
+        Error: {{ error_detail }}
     </div>
     {% endif %}
 </div>
+{% endif %}
 {% endblock %}

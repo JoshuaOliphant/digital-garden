@@ -1,43 +1,65 @@
 {% extends "base.html" %}
 
-{% block title %}Projects{% endblock %}
+{% block title %}~/projects{% endblock %}
+{% block current_path %}/projects{% endblock %}
 
 {% block content %}
-<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-    <h1 class="text-3xl font-serif text-garden-text-primary mb-8">Projects</h1>
-    
-    {% if content %}
-        <article class="prose prose-lg
-                 prose-p:text-garden-text-primary 
-                 prose-li:text-garden-text-primary 
-                 prose-strong:text-garden-text-primary prose-strong:font-bold
-                 prose-h1:text-garden-text-primary prose-h1:font-serif
-                 prose-h2:text-garden-text-primary prose-h2:font-serif
-                 prose-h3:text-garden-text-primary prose-h3:font-serif
-                 prose-h4:text-garden-text-primary
-                 prose-h5:text-garden-text-primary
-                 prose-h6:text-garden-text-primary
-                 prose-code:bg-garden-sage/10 
-                 prose-code:text-garden-sage-dark 
-                 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded 
-                 prose-code:before:content-[''] prose-code:after:content-[''] 
-                 prose-a:text-garden-accent prose-a:hover:text-garden-accent
-                 max-w-none">
-            {{ content.html|safe }}
-        </article>
-        
-        <div class="mt-8 pt-8 border-t border-garden-border">
-            <p class="text-sm text-garden-text-muted">
-                Last updated: {{ content.updated or content.created }}
-            </p>
+<!-- Command Output Header -->
+<div class="output-block">
+    <div class="output-line">
+        <span class="prompt-symbol">$</span> <span style="color: var(--term-green);">cat ~/projects/README.md</span>
+    </div>
+</div>
+
+<!-- Content Header -->
+<div class="content-header">
+    <h1>Projects</h1>
+    <div class="content-header-meta">
+        <span style="color: var(--term-gray);">Things I've built</span>
+        {% if content %}
+        <span>Last updated: {{ content.updated or content.created }}</span>
+        {% endif %}
+    </div>
+</div>
+
+{% if content %}
+<!-- Main Content Body -->
+<div class="content-body">
+    {{ content.html|safe }}
+</div>
+{% else %}
+<!-- Empty State -->
+<div class="output-block">
+    <div class="output-line" style="color: var(--term-amber);">
+        # Coming Soon
+    </div>
+    <div class="output-line" style="color: var(--term-gray);">
+        Projects page is under construction. Check back later to see what I've been building.
+    </div>
+</div>
+
+<!-- Placeholder Projects -->
+<div class="output-block" style="margin-top: 1.5rem;">
+    <div class="output-line">
+        <span class="prompt-symbol">$</span> <span style="color: var(--term-green);">ls ~/projects/</span>
+    </div>
+    <div class="dir-listing" style="margin-top: 0.5rem;">
+        <div class="dir-item">
+            <span class="dir-icon">d</span>
+            <span class="dir-name" style="color: var(--term-gray);">digital-garden/</span>
         </div>
-    {% else %}
-        <div class="text-center py-12">
-            <h2 class="text-xl text-garden-text-primary mb-4">Projects Coming Soon</h2>
-            <p class="text-garden-text-muted">
-                I'm working on showcasing my projects here. Check back later to see what I've been building.
-            </p>
+        <div class="dir-item">
+            <span class="file-icon">-</span>
+            <span class="file-name" style="color: var(--term-gray);">coming-soon.md</span>
         </div>
-    {% endif %}
+    </div>
+</div>
+{% endif %}
+
+<!-- Check GitHub -->
+<div class="output-block" style="margin-top: 2rem; border-top: 1px dashed var(--term-gray); padding-top: 1rem; color: var(--term-gray); font-size: 0.85rem;">
+    <div class="output-line">
+        Check out my projects on <a href="https://github.com/JoshuaOliphant" target="_blank" rel="noopener">GitHub</a>
+    </div>
 </div>
 {% endblock %}

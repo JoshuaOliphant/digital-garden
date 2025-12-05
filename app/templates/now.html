@@ -1,42 +1,51 @@
 {% extends "base.html" %}
 
-{% block title %}Now{% endblock %}
+{% block title %}~/now{% endblock %}
+{% block current_path %}/now{% endblock %}
 
 {% block content %}
-<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-    <h1 class="text-3xl font-serif text-garden-text-primary mb-8">Now</h1>
-    
-    {% if content %}
-        <article class="prose prose-lg
-                 prose-p:text-garden-text-primary 
-                 prose-li:text-garden-text-primary 
-                 prose-strong:text-garden-text-primary prose-strong:font-bold
-                 prose-h1:text-garden-text-primary prose-h1:font-serif
-                 prose-h2:text-garden-text-primary prose-h2:font-serif
-                 prose-h3:text-garden-text-primary prose-h3:font-serif
-                 prose-h4:text-garden-text-primary
-                 prose-h5:text-garden-text-primary
-                 prose-h6:text-garden-text-primary
-                 prose-code:bg-garden-sage/10 
-                 prose-code:text-garden-sage-dark 
-                 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded 
-                 prose-code:before:content-[''] prose-code:after:content-[''] 
-                 prose-a:text-garden-accent prose-a:hover:text-garden-accent
-                 max-w-none">
-            {{ content.html|safe }}
-        </article>
-        
-        <div class="mt-8 pt-8 border-t border-garden-border">
-            <p class="text-sm text-garden-text-muted">
-                Last updated: {{ content.updated or content.created }}
-            </p>
-        </div>
-    {% else %}
-        <div class="text-center py-12">
-            <p class="text-garden-text-muted">
-                The /now page is coming soon. Check back later to see what I'm currently working on.
-            </p>
-        </div>
-    {% endif %}
+<!-- Command Output Header -->
+<div class="output-block">
+    <div class="output-line">
+        <span class="prompt-symbol">$</span> <span style="color: var(--term-green);">cat ~/now.md</span>
+    </div>
+</div>
+
+<!-- Content Header -->
+<div class="content-header">
+    <h1>Now</h1>
+    <div class="content-header-meta">
+        <span style="color: var(--term-gray);">What I'm currently focused on</span>
+        {% if content %}
+        <span>Last updated: {{ content.updated or content.created }}</span>
+        {% endif %}
+    </div>
+</div>
+
+{% if content %}
+<!-- Main Content Body -->
+<div class="content-body">
+    {{ content.html|safe }}
+</div>
+{% else %}
+<!-- Empty State -->
+<div class="output-block">
+    <div class="output-line" style="color: var(--term-amber);">
+        # Coming Soon
+    </div>
+    <div class="output-line" style="color: var(--term-gray);">
+        The /now page is being written. Check back later to see what I'm currently working on.
+    </div>
+</div>
+{% endif %}
+
+<!-- Now Page Info -->
+<div class="output-block" style="margin-top: 2rem; border-top: 1px dashed var(--term-gray); padding-top: 1rem; color: var(--term-gray); font-size: 0.85rem;">
+    <div class="output-line">
+        This is a <a href="https://nownownow.com/about" target="_blank" rel="noopener">/now page</a>.
+    </div>
+    <div class="output-line">
+        It tells you what I'm focused on at this point in my life.
+    </div>
 </div>
 {% endblock %}
