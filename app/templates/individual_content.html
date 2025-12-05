@@ -65,7 +65,7 @@
         {% for how_to in recent_how_tos.content[:3] %}
         <div class="output-line">
             <span style="color: var(--term-gray);">→</span>
-            <a href="/how_to/{{ how_to.name }}">{{ how_to.title }}</a>
+            <a href="/how_to/{{ how_to.slug }}">{{ how_to.title }}</a>
         </div>
         {% endfor %}
     </div>
@@ -77,7 +77,7 @@
         {% for note in recent_notes.content[:3] %}
         <div class="output-line">
             <span style="color: var(--term-gray);">→</span>
-            <a href="/notes/{{ note.name }}">{{ note.title }}</a>
+            <a href="/notes/{{ note.slug }}">{{ note.title }}</a>
         </div>
         {% endfor %}
     </div>

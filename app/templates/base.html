@@ -4,7 +4,7 @@
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>{% block title %}joshua@garden{% endblock %} ~ An Oliphant Never Forgets</title>
-        <meta name="description" content="{% block description %}A digital garden - notes, learnings, and bookmarks from Joshua Oliphant{% endblock %}" />
+        <meta name="description" content="{% block description %}An Oliphant Never Forgets - notes, learnings, and bookmarks from Joshua Oliphant{% endblock %}" />
 
         <!-- Terminal CSS -->
         <link href="/static/css/terminal.css" rel="stylesheet" />
@@ -32,11 +32,18 @@
                 <!-- Terminal Header with ASCII Art -->
                 <header class="terminal-header">
                     <pre class="ascii-logo">
-     _       _ _        _                      _
-  __| |_  __(_) |_ __ _| |   __ _  __ _ _ _ __| |___ _ __
- / _` \ \/ /| |  _/ _` | |  / _` |/ _` | '_/ _` / -_) '  \
- \__,_|\__/ |_|\__\__,_|_|  \__, |\__,_|_| \__,_\___|_||_|
-                            |___/
+  ___  _ _       _                 _
+ / _ \| (_)_ __ | |__   __ _ _ __ | |_
+| | | | | | '_ \| '_ \ / _` | '_ \| __|
+| |_| | | | |_) | | | | (_| | | | | |_
+ \___/|_|_| .__/|_| |_|\__,_|_| |_|\__|
+          |_|
+ _   _                         _____                    _
+| \ | | _____   _____ _ __    |  ___|__  _ __ __ _  ___| |_ ___
+|  \| |/ _ \ \ / / _ \ '__|   | |_ / _ \| '__/ _` |/ _ \ __/ __|
+| |\  |  __/\ V /  __/ |      |  _| (_) | | | (_| |  __/ |_\__ \
+|_| \_|\___| \_/ \___|_|      |_|  \___/|_|  \__, |\___|\__|___/
+                                             |___/
                     </pre>
                     <div class="terminal-title">An Oliphant Never Forgets :: v1.0.0</div>
                 </header>
@@ -44,7 +51,7 @@
                 <!-- System Info Bar -->
                 <div class="system-info">
                     <div>Last login: <span>{{ now().strftime('%a %b %d %H:%M:%S %Y') if now is defined else 'Welcome' }}</span></div>
-                    <div>System: <span>digital-garden/fastapi</span></div>
+                    <div>System: <span>oliphant/fastapi</span></div>
                     <div>Type <span class="cmd-link" data-cmd="help">help</span> for commands</div>
                 </div>
 
@@ -55,7 +62,6 @@
                     <a href="/til" class="nav-item {% if request and '/til' in request.url.path %}active{% endif %}">til</a>
                     <a href="/bookmarks" class="nav-item {% if request and '/bookmarks' in request.url.path %}active{% endif %}">bookmarks</a>
                     <a href="/topics" class="nav-item {% if request and '/topics' in request.url.path or '/tags' in request.url.path %}active{% endif %}">tags</a>
-                    <a href="/pages/about" class="nav-item {% if request and '/about' in request.url.path %}active{% endif %}">about</a>
                     <a href="/now" class="nav-item {% if request and '/now' in request.url.path %}active{% endif %}">now</a>
                 </nav>
 

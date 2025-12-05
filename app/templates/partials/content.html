@@ -28,9 +28,9 @@
           <ul class="space-y-2">
             {% for how_to in recent_how_tos.content[:5] %}
             <li>
-              <a href="/how_to/{{ how_to.name }}"
+              <a href="/how_to/{{ how_to.slug }}"
                  class="text-garden-accent hover:text-garden-accent hover:underline transition-colors"
-                 hx-get="/how_to/{{ how_to.name }}"
+                 hx-get="/how_to/{{ how_to.slug }}"
                  hx-target="#content-area"
                  hx-swap="innerHTML"
                  hx-push-url="true">
@@ -41,16 +41,16 @@
           </ul>
         </div>
         {% endif %}
-        
+
         {% if recent_notes.content %}
         <div>
           <h3 class="text-lg font-semibold mb-3 text-garden-text-primary">Recent Notes</h3>
           <ul class="space-y-2">
             {% for note in recent_notes.content[:5] %}
             <li>
-              <a href="/notes/{{ note.name }}"
+              <a href="/notes/{{ note.slug }}"
                  class="text-garden-accent hover:text-garden-accent hover:underline transition-colors"
-                 hx-get="/notes/{{ note.name }}"
+                 hx-get="/notes/{{ note.slug }}"
                  hx-target="#content-area"
                  hx-swap="innerHTML"
                  hx-push-url="true">

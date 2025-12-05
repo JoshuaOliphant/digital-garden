@@ -1,5 +1,5 @@
 /**
- * Terminal Emulator for Digital Garden
+ * Terminal Emulator for An Oliphant Never Forgets
  * Provides a CLI-like interface for navigating the blog
  */
 
@@ -11,7 +11,7 @@ class Terminal {
 
     this.history = [];
     this.historyIndex = -1;
-    this.currentPath = '/';
+    this.currentPath = this.getPathFromUrl();
 
     // Command definitions
     this.commands = {
@@ -23,15 +23,20 @@ class Terminal {
       clear: this.cmdClear.bind(this),
       pwd: this.cmdPwd.bind(this),
       history: this.cmdHistory.bind(this),
-      about: this.cmdAbout.bind(this),
       now: this.cmdNow.bind(this),
       whoami: this.cmdWhoami.bind(this),
       date: this.cmdDate.bind(this),
       tree: this.cmdTree.bind(this),
     };
 
+    // Cache for content items (for autocomplete)
+    this.contentCache = {};
+
     // Valid directories
     this.directories = ['/', '/notes', '/til', '/bookmarks', '/how-to', '/tags'];
+
+    // Autocomplete selection state
+    this.autocompleteState = null;
 
     this.init();
   }
@@ -42,8 +47,11 @@ class Terminal {
       this.inputElement.focus();
 
       // Focus input when clicking anywhere in terminal
-      document.querySelector('.terminal')?.addEventListener('click', () => {
-        this.inputElement.focus();
+      document.querySelector('.terminal')?.addEventListener('click', (e) => {
+        // Don't steal focus if clicking on an autocomplete item
+        if (!e.target.closest('.autocomplete-menu')) {
+          this.inputElement.focus();
+        }
       });
     }
 
@@ -55,10 +63,44 @@ class Terminal {
           this.executeCommand(cmd);
         }
       }
+      // Handle autocomplete item clicks
+      if (e.target.closest('.autocomplete-item')) {
+        const item = e.target.closest('.autocomplete-item');
+        const slug = item.dataset.slug;
+        if (slug) {
+          this.selectAutocompleteItem(slug);
+        }
+      }
     });
   }
 
   handleKeyDown(e) {
+    // If autocomplete menu is open, handle navigation
+    if (this.autocompleteState) {
+      switch (e.key) {
+        case 'ArrowUp':
+          e.preventDefault();
+          this.navigateAutocomplete(-1);
+          return;
+        case 'ArrowDown':
+          e.preventDefault();
+          this.navigateAutocomplete(1);
+          return;
+        case 'Enter':
+          e.preventDefault();
+          this.confirmAutocompleteSelection();
+          return;
+        case 'Escape':
+          e.preventDefault();
+          this.closeAutocomplete();
+          return;
+        case 'Tab':
+          e.preventDefault();
+          this.navigateAutocomplete(1);
+          return;
+      }
+    }
+
     switch (e.key) {
       case 'Enter':
         e.preventDefault();
@@ -104,13 +146,14 @@ class Terminal {
     this.inputElement.value = '';
   }
 
-  executeCommand(input) {
+  async executeCommand(input) {
     const parts = input.split(/\s+/);
     const cmd = parts[0].toLowerCase();
     const args = parts.slice(1);
 
     if (this.commands[cmd]) {
-      this.commands[cmd](args);
+      // Handle both sync and async commands
+      await this.commands[cmd](args);
     } else if (cmd) {
       // Check if it's a navigation shortcut
       if (this.directories.includes('/' + cmd) || this.directories.includes(cmd)) {
@@ -134,7 +177,7 @@ class Terminal {
     }
   }
 
-  autocomplete() {
+  async autocomplete() {
     const input = this.inputElement.value;
     const parts = input.split(/\s+/);
 
@@ -144,8 +187,7 @@ class Terminal {
       if (matches.length === 1) {
         this.inputElement.value = matches[0] + ' ';
       } else if (matches.length > 1) {
-        this.appendOutput(this.formatPrompt() + input);
-        this.appendOutput(matches.join('  '));
+        this.showAutocompleteMenu(matches.map(m => ({ slug: m, title: '', type: 'command' })), 'command');
       }
     } else if (parts.length === 2 && (parts[0] === 'cd' || parts[0] === 'ls')) {
       // Autocomplete directories
@@ -153,13 +195,181 @@ class Terminal {
       if (matches.length === 1) {
         this.inputElement.value = parts[0] + ' ' + matches[0];
       } else if (matches.length > 1) {
-        this.appendOutput(this.formatPrompt() + input);
-        this.appendOutput(matches.join('  '));
+        this.showAutocompleteMenu(matches.map(m => ({ slug: m, title: '', type: 'directory' })), 'directory');
       }
+    } else if (parts.length === 2 && parts[0] === 'cat') {
+      // Autocomplete content slugs
+      await this.autocompleteContent(parts[1]);
     }
   }
 
+  async autocompleteContent(partial) {
+    // Fetch content slugs if not cached
+    if (Object.keys(this.contentCache).length === 0) {
+      try {
+        const response = await fetch('/api/content-slugs');
+        this.contentCache = await response.json();
+      } catch (e) {
+        this.appendOutput(`<span class="error">Failed to fetch content list</span>`);
+        return;
+      }
+    }
+
+    // Determine which content type to search based on current path
+    const pathToType = {
+      '/notes': 'notes',
+      '/til': 'til',
+      '/bookmarks': 'bookmarks',
+      '/how-to': 'how_to',
+    };
+    const contentType = pathToType[this.currentPath];
+
+    // Collect all matching slugs
+    let allSlugs = [];
+    const typesToSearch = contentType ? [contentType] : Object.keys(this.contentCache);
+
+    for (const type of typesToSearch) {
+      const items = this.contentCache[type] || [];
+      for (const item of items) {
+        if (item.slug.toLowerCase().startsWith(partial.toLowerCase()) ||
+            item.title.toLowerCase().includes(partial.toLowerCase())) {
+          allSlugs.push({
+            slug: item.slug,
+            title: item.title,
+            type: type,
+          });
+        }
+      }
+    }
+
+    if (allSlugs.length === 1) {
+      this.inputElement.value = 'cat ' + allSlugs[0].slug;
+    } else if (allSlugs.length > 0) {
+      this.showAutocompleteMenu(allSlugs.slice(0, 15), 'content');
+    } else {
+      this.appendOutput(this.formatPrompt() + 'cat ' + partial);
+      this.appendOutput(`<span class="help-desc">No matching content found</span>`);
+    }
+  }
+
+  showAutocompleteMenu(items, type) {
+    // Close any existing menu
+    this.closeAutocomplete();
+
+    // Create menu container
+    const menu = document.createElement('div');
+    menu.className = 'autocomplete-menu';
+    menu.id = 'autocomplete-menu';
+
+    // Add header
+    const header = document.createElement('div');
+    header.className = 'autocomplete-header';
+    header.innerHTML = `<span class="autocomplete-hint">↑↓ navigate • Enter select • Esc close</span>`;
+    menu.appendChild(header);
+
+    // Add items
+    items.forEach((item, index) => {
+      const itemEl = document.createElement('div');
+      itemEl.className = 'autocomplete-item' + (index === 0 ? ' selected' : '');
+      itemEl.dataset.slug = item.slug;
+      itemEl.dataset.index = index;
+
+      if (type === 'content') {
+        itemEl.innerHTML = `
+          <span class="autocomplete-slug">${item.slug}</span>
+          <span class="autocomplete-title">${item.title}</span>
+          <span class="autocomplete-type">[${item.type}]</span>
+        `;
+      } else {
+        itemEl.innerHTML = `<span class="autocomplete-slug">${item.slug}</span>`;
+      }
+
+      menu.appendChild(itemEl);
+    });
+
+    // Position menu near input
+    const inputWrapper = document.querySelector('.command-input-wrapper');
+    inputWrapper.insertAdjacentElement('beforebegin', menu);
+
+    // Store state
+    this.autocompleteState = {
+      items: items,
+      selectedIndex: 0,
+      type: type,
+      menuElement: menu,
+    };
+
+    this.scrollToBottom();
+  }
+
+  navigateAutocomplete(direction) {
+    if (!this.autocompleteState) return;
+
+    const { items, selectedIndex, menuElement } = this.autocompleteState;
+    const newIndex = Math.max(0, Math.min(items.length - 1, selectedIndex + direction));
+
+    // Update selection
+    const allItems = menuElement.querySelectorAll('.autocomplete-item');
+    allItems[selectedIndex].classList.remove('selected');
+    allItems[newIndex].classList.add('selected');
+
+    // Scroll item into view
+    allItems[newIndex].scrollIntoView({ block: 'nearest' });
+
+    this.autocompleteState.selectedIndex = newIndex;
+  }
+
+  confirmAutocompleteSelection() {
+    if (!this.autocompleteState) return;
+
+    const { items, selectedIndex, type } = this.autocompleteState;
+    const selectedItem = items[selectedIndex];
+
+    this.selectAutocompleteItem(selectedItem.slug, type);
+  }
+
+  selectAutocompleteItem(slug, type) {
+    const currentType = this.autocompleteState?.type || type;
+
+    if (currentType === 'command') {
+      this.inputElement.value = slug + ' ';
+      this.closeAutocomplete();
+      this.inputElement.focus();
+    } else if (currentType === 'directory') {
+      const parts = this.inputElement.value.split(/\s+/);
+      this.inputElement.value = parts[0] + ' ' + slug;
+      this.closeAutocomplete();
+      this.inputElement.focus();
+    } else {
+      // For content, navigate directly to the page
+      const selectedItem = this.autocompleteState?.items.find(i => i.slug === slug);
+      const contentType = selectedItem?.type || 'notes';
+      this.closeAutocomplete();
+      this.navigateToContent(slug, contentType);
+    }
+  }
+
+  navigateToContent(slug, contentType) {
+    // Map content types to URL paths
+    const typeToPath = {
+      'notes': '/notes/',
+      'til': '/til/',
+      'bookmarks': '/bookmarks/',
+      'how_to': '/how_to/',
+    };
+    const basePath = typeToPath[contentType] || '/notes/';
+    window.location.href = basePath + slug;
+  }
+
+  closeAutocomplete() {
+    if (this.autocompleteState?.menuElement) {
+      this.autocompleteState.menuElement.remove();
+    }
+    this.autocompleteState = null;
+  }
+
   cancelInput() {
+    this.closeAutocomplete();
     this.appendOutput(this.formatPrompt() + this.inputElement.value + '^C');
     this.inputElement.value = '';
   }
@@ -174,6 +384,37 @@ class Terminal {
 
   scrollToBottom() {
     window.scrollTo(0, document.body.scrollHeight);
+  }
+
+  getPathFromUrl() {
+    const pathname = window.location.pathname;
+
+    // Map URL paths to terminal paths
+    const urlToPath = {
+      '/': '/',
+      '/garden': '/notes',
+      '/til': '/til',
+      '/bookmarks': '/bookmarks',
+      '/how_to': '/how-to',
+      '/topics': '/tags',
+      '/tags': '/tags',
+      '/now': '/now',
+    };
+
+    // Check for exact match first
+    if (urlToPath[pathname]) {
+      return urlToPath[pathname];
+    }
+
+    // Check for content paths (e.g., /notes/some-article)
+    if (pathname.startsWith('/notes/')) return '/notes';
+    if (pathname.startsWith('/til/')) return '/til';
+    if (pathname.startsWith('/bookmarks/')) return '/bookmarks';
+    if (pathname.startsWith('/how_to/')) return '/how-to';
+    if (pathname.startsWith('/tags/')) return '/tags';
+
+    // Default to root
+    return '/';
   }
 
   formatPrompt() {
@@ -231,7 +472,6 @@ class Terminal {
 </div>
 <div class="help-section">
   <div class="help-title">PAGES</div>
-  <div class="help-command"><span class="help-cmd">about</span><span class="help-desc">About the author</span></div>
   <div class="help-command"><span class="help-cmd">now</span><span class="help-desc">What I'm doing now</span></div>
   <div class="help-command"><span class="help-cmd">whoami</span><span class="help-desc">Who is this?</span></div>
 </div>
@@ -310,17 +550,62 @@ class Terminal {
     window.location.href = url;
   }
 
-  cmdGrep(args) {
+  async cmdGrep(args) {
     if (!args[0]) {
       this.appendOutput(`<span class="error">grep: missing search pattern</span>`);
       return;
     }
 
     const query = args.join(' ');
-    window.location.href = `/topics?search=${encodeURIComponent(query)}`;
+    this.appendOutput(`<span style="color: var(--term-gray);">Searching for "${query}"...</span>`);
+
+    try {
+      const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+      const data = await response.json();
+
+      if (data.results.length === 0) {
+        this.appendOutput(`<span style="color: var(--term-amber);">No results found for "${query}"</span>`);
+        return;
+      }
+
+      // Display results header
+      this.appendOutput(`<span style="color: var(--term-green);">Found ${data.total} result${data.total !== 1 ? 's' : ''} for "${query}":</span>`);
+      this.appendOutput('');
+
+      // Display each result
+      for (const result of data.results) {
+        const typeColor = {
+          'notes': 'var(--term-cyan)',
+          'til': 'var(--term-yellow)',
+          'bookmarks': 'var(--term-magenta)',
+          'how_to': 'var(--term-amber)',
+        }[result.content_type] || 'var(--term-gray)';
+
+        const url = `/${result.content_type}/${result.slug}`;
+        this.appendOutput(`<span style="color: ${typeColor};">[${result.content_type}]</span> <a href="${url}">${result.title}</a>`);
+
+        // Show excerpt if available
+        if (result.excerpt) {
+          const cleanExcerpt = result.excerpt
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .substring(0, 150);
+          this.appendOutput(`<span style="color: var(--term-gray); font-size: 0.9em; margin-left: 1rem;">  ${cleanExcerpt}</span>`);
+        }
+      }
+
+      if (data.total > data.results.length) {
+        this.appendOutput('');
+        this.appendOutput(`<span style="color: var(--term-gray);">Showing ${data.results.length} of ${data.total} results</span>`);
+      }
+
+    } catch (error) {
+      this.appendOutput(`<span class="error">grep: search failed - ${error.message}</span>`);
+    }
   }
 
   cmdClear() {
+    this.closeAutocomplete();
     this.outputElement.innerHTML = '';
   }
 
@@ -340,16 +625,12 @@ class Terminal {
     this.appendOutput(historyHtml);
   }
 
-  cmdAbout() {
-    window.location.href = '/pages/about';
-  }
-
   cmdNow() {
     window.location.href = '/now';
   }
 
   cmdWhoami() {
-    this.appendOutput(`<span class="term-cyan">visitor</span> - exploring Joshua Oliphant's digital garden`);
+    this.appendOutput(`<span class="term-cyan">visitor</span> - exploring Joshua Oliphant's blog (An Oliphant Never Forgets)`);
   }
 
   cmdDate() {
@@ -366,7 +647,6 @@ class Terminal {
 ├── <span class="dir-name">bookmarks/</span>      Curated external links
 ├── <span class="dir-name">how-to/</span>         Step-by-step guides
 ├── <span class="dir-name">tags/</span>           Browse content by topic
-├── <span class="file-name">about</span>           About the author
 ├── <span class="file-name">now</span>             What I'm currently doing
 └── <span class="file-name">projects</span>        My projects
 </pre>`;

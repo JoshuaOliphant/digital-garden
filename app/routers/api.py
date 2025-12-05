@@ -1,7 +1,7 @@
 """API routes with service injection."""
 
 from fastapi import APIRouter, Request, Depends, HTTPException, Query
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from app.interfaces import IContentProvider
 from app.services.dependencies import get_content_service
 from jinja2 import Environment, FileSystemLoader
@@ -11,6 +11,31 @@ import logfire
 
 env = Environment(loader=FileSystemLoader("app/templates"))
 router = APIRouter(prefix="/api")
+
+
+@router.get("/content-slugs")
+async def get_content_slugs(
+    content_type: Optional[str] = Query(None, description="Filter by content type: notes, til, bookmarks"),
+    content_service: IContentProvider = Depends(get_content_service),
+):
+    """Return content slugs for terminal autocomplete."""
+    all_content = content_service.get_all_content()
+
+    result = {}
+    for item in all_content:
+        item_type = item.get("type", "notes")
+        if content_type and item_type != content_type:
+            continue
+
+        if item_type not in result:
+            result[item_type] = []
+
+        result[item_type].append({
+            "slug": item.get("slug", ""),
+            "title": item.get("title", ""),
+        })
+
+    return JSONResponse(content=result)
 
 
 @router.post("/topics/filter", response_class=HTMLResponse)
@@ -49,6 +74,72 @@ async def filter_topics_api(
             feature_flags=get_feature_flags(),
         )
     )
+
+
+@router.get("/search")
+async def search_content(
+    q: str = Query(..., min_length=1, description="Search query"),
+    content_service: IContentProvider = Depends(get_content_service),
+):
+    """Search content by title and text."""
+    all_content = content_service.get_all_content()
+    query_lower = q.lower()
+
+    results = []
+    for item in all_content:
+        # Search in title
+        title = item.get("title", "").lower()
+        # Search in markdown content
+        markdown = item.get("markdown", "").lower()
+        # Search in tags
+        tags = [t.lower() for t in item.get("tags", [])]
+
+        if query_lower in title or query_lower in markdown or any(query_lower in tag for tag in tags):
+            results.append({
+                "slug": item.get("slug", ""),
+                "title": item.get("title", ""),
+                "content_type": item.get("content_type", "notes"),
+                "created": str(item.get("created", "")),
+                "tags": item.get("tags", []),
+                "excerpt": _get_excerpt(item.get("markdown", ""), query_lower),
+            })
+
+    # Sort by relevance (title matches first, then by date)
+    def relevance_key(item):
+        title_match = 1 if query_lower in item["title"].lower() else 0
+        return (-title_match, item["created"])
+
+    results.sort(key=relevance_key, reverse=True)
+
+    return JSONResponse(content={
+        "query": q,
+        "results": results[:20],  # Limit to 20 results
+        "total": len(results),
+    })
+
+
+def _get_excerpt(text: str, query: str, context_chars: int = 100) -> str:
+    """Extract an excerpt around the query match."""
+    text_lower = text.lower()
+    pos = text_lower.find(query)
+
+    if pos == -1:
+        # No match in text, return start of text
+        return text[:context_chars * 2] + "..." if len(text) > context_chars * 2 else text
+
+    # Get context around the match
+    start = max(0, pos - context_chars)
+    end = min(len(text), pos + len(query) + context_chars)
+
+    excerpt = text[start:end]
+
+    # Add ellipsis if truncated
+    if start > 0:
+        excerpt = "..." + excerpt
+    if end < len(text):
+        excerpt = excerpt + "..."
+
+    return excerpt
 
 
 @router.get("/mixed-content", response_class=HTMLResponse)

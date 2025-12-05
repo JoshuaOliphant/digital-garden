@@ -1,4 +1,4 @@
-/* Terminal Emulator UI - Digital Garden */
+/* Terminal Emulator UI - An Oliphant Never Forgets */
 
 /* ===== IMPORTS ===== */
 @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap');
@@ -528,6 +528,76 @@ a:visited {
 
 .help-desc {
   color: var(--term-gray);
+}
+
+/* ===== AUTOCOMPLETE MENU ===== */
+.autocomplete-menu {
+  background: var(--term-bg);
+  border: 1px solid var(--term-gray);
+  border-radius: 4px;
+  margin: 0.5rem 0;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.autocomplete-header {
+  padding: 0.5rem 1rem;
+  border-bottom: 1px dashed var(--term-gray);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.autocomplete-hint {
+  color: var(--term-gray);
+  font-size: 0.85em;
+}
+
+.autocomplete-item {
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  transition: background 0.1s ease;
+}
+
+.autocomplete-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.autocomplete-item.selected {
+  background: var(--term-cyan);
+  color: var(--term-bg);
+}
+
+.autocomplete-item.selected .autocomplete-slug {
+  color: var(--term-bg);
+  font-weight: bold;
+}
+
+.autocomplete-item.selected .autocomplete-title,
+.autocomplete-item.selected .autocomplete-type {
+  color: var(--term-bg);
+  opacity: 0.8;
+}
+
+.autocomplete-slug {
+  color: var(--term-cyan);
+  min-width: 30ch;
+  flex-shrink: 0;
+}
+
+.autocomplete-title {
+  color: var(--term-gray);
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.autocomplete-type {
+  color: var(--term-amber);
+  font-size: 0.85em;
+  flex-shrink: 0;
 }
 
 /* ===== PAGINATION ===== */

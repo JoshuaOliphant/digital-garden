@@ -23,11 +23,7 @@
     </div>
     <div class="tags" style="margin-top: 0.5rem;">
         {% for tag in bed_info.tags %}
-        <a href="/tags/{{ tag.name }}"
-           class="tag"
-           hx-get="/topics/filter?tags={{ tag.name }}"
-           hx-target="#filtered-content"
-           hx-push-url="false">{{ tag.name }} <span style="color: var(--term-gray);">({{ tag.count }})</span></a>
+        <a href="/tags/{{ tag.name }}" class="tag">{{ tag.name }} <span style="color: var(--term-gray);">({{ tag.count }})</span></a>
         {% endfor %}
     </div>
 </div>
